@@ -25,14 +25,19 @@ create table public.example_things (
   -- ...domain columns that pass the 80% rule...
   notes       text,                        -- optional; free-form human context
   metadata    jsonb not null default '{}', -- one-off/rare structured attributes
+  created_by  uuid not null references public.profiles (id),
+  deleted_at  timestamptz,                 -- soft delete; null = live
+  deleted_by  uuid references public.profiles (id),
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
 ```
 
 - `notes` and `metadata` are the escape hatches; only add them when the module stores that kind of info (the 80% rule applies to them as well).
-- `created_by uuid references public.profiles (id)` — add only when "who created this" matters for the module.
+- `created_by`/`deleted_by` are the audit trail — we always track who added and who deleted (foundations decision, see [foundations.md](foundations.md)).
+- **Soft delete is the standard**: user-facing deletion sets `deleted_at`/`deleted_by`; queries and RLS `select` policies exclude `deleted_at is not null`. Hard deletes happen only as system operations — chiefly the space-delete cascade (space removed → all its rows removed via FK).
 - `updated_at` is maintained by the shared `set_updated_at()` trigger — create it with every table.
+- **User-scoped exceptions:** `profiles` and `notifications` are identity/infrastructure tables — they hang off the user, not a space, and skip `space_id` and soft delete.
 
 ## Naming
 
@@ -45,6 +50,7 @@ create table public.example_things (
 
 - **Money:** `bigint` cents + `currency char(3)` — never `float`/`numeric` dollars
 - **Time:** `timestamptz` always; `date` only for true calendar-day values (birthdays, due dates)
+- **Deletion:** soft delete via `deleted_at`/`deleted_by` (see standard shape) — no bespoke `is_archived`-style flags
 - **Enum-ish values:** `text` + `check` constraint (easy to extend); Postgres `enum` only for values that will truly never change
 - **IDs:** `uuid` everywhere, `gen_random_uuid()` default
 
@@ -80,7 +86,7 @@ Run through this for every new/changed table before merging:
 
 - [ ] Every column passes the 80% rule (challenge each one: "will ≥80% of rows fill this?")
 - [ ] One-offs are in `metadata`, human context in `notes` — not columns
-- [ ] Standard base shape present (`id`, `space_id`, timestamps, trigger)
+- [ ] Standard base shape present (`id`, `space_id`, `created_by`, soft-delete columns, timestamps, trigger)
 - [ ] Money is integer cents; time is `timestamptz`
 - [ ] Naming follows conventions
 - [ ] RLS enabled with membership-scoped policies for all verbs used

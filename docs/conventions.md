@@ -25,7 +25,7 @@ The shell's look and feel is the approved standard ("continue like this"). Every
 Linear is the board (mirrored in [board.md](board.md) until connected). Tickets are **agent-sized**: one focused session, independently shippable.
 
 1. **Pick** a ticket that is `Ready` and unassigned, whose dependencies are done. Assign it to yourself / note the agent claiming it.
-2. **Branch** `los-<ticket>-short-slug` (e.g. `los-12-spaces-schema`). One ticket = one branch = one PR.
+2. **Branch** `life-<ticket>-short-slug` (e.g. `life-15-foundations-schema`), matching the Linear identifier. One ticket = one branch = one PR.
 3. **Build** within the ticket's stated scope. If you must touch shared files (`lib/modules.ts`, shell components, schema), keep those edits minimal and self-contained — they're the collision hot-spots.
 4. **Verify** the definition of done, then commit (conventional style: `feat:`, `fix:`, `docs:`, `chore:`).
 5. **Close** with a comment: what shipped, what was verified, any follow-up tickets created.
