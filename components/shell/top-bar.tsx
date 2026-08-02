@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
+import { signOut } from "@/lib/auth/actions"
 import { currentUser, spaces } from "@/lib/workspace"
 import { cn } from "@/lib/utils"
 
@@ -160,7 +161,7 @@ function UserMenu() {
           <Settings /> Settings
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled>
+        <DropdownMenuItem onClick={() => signOut()}>
           <LogOut /> Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
