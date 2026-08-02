@@ -32,6 +32,7 @@ Apex defines the design language for every future module body. Every surface is 
 | 8 | Cancelling a subscription/bill = **soft delete** (history transactions remain); no `is_active` flag | Follows the soft-delete standard; avoids a bespoke flag |
 | 9 | Default categories are **lazily seeded** per space on first Apex visit, then fully editable | No coupling of space creation to a module; sensible starting point without setup effort |
 | 10 | Mortgage trajectory / overpayment what-ifs are **client-side amortization math** — nothing stored | Projections are derived, not data |
+| 11 | Sign-off (2026-08-02): default category list approved as proposed; **account colors reuse the six space swatches**; loans stay bill-level for MVP (no first-class loan entity) | John's answers to the open questions |
 
 ## Pages
 
@@ -118,12 +119,12 @@ icon         text not null                  -- lucide icon name
 account_id            uuid not null references accounts (id) on delete cascade,
 card_id               uuid references cards (id),           -- optional tag: which card was used
 kind                  text not null check (kind in ('income','expense','transfer','adjustment')),
-amount                bigint not null check (amount > 0),   -- pence; direction comes from kind
+amount                bigint not null,                      -- pence; >0, direction from kind — except adjustments, which carry the signed sync delta
 description           text not null,                        -- payee/what: "Tesco", "Salary"
 category_id           uuid references categories (id),
 occurred_on           date not null default current_date,
 transfer_account_id   uuid references accounts (id),        -- destination; required iff kind='transfer'
-recurring_payment_id  uuid references recurring_payments (id) -- set by Mark paid; powers payment history
+recurring_payment_id  uuid references recurring_payments (id) -- set by Mark paid; powers payment history (column added by LIFE-27's migration)
 ```
 
 ```sql
@@ -212,8 +213,8 @@ CSV import (LIFE-28) · bank feeds/Open Banking · multi-currency · split trans
 
 Order: 18 → 21 → 25 → 27 → 22 → 26; Mortgage can run in parallel any time after 18.
 
-## Open questions
+## Resolved at sign-off (2026-08-02)
 
-1. Default category seed list — proposed: Groceries, Eating Out, Transport, Fuel, Home, Utilities, Entertainment, Health, Kids, Gifts, Holidays, Shopping, Insurance, Housing + income: Salary, Other. Trim/extend?
-2. Account colors: pick-a-swatch like spaces (same six colors), or a finance-specific palette?
-3. Anything the household tracks that has no home here? (Car finance/loans would be a `bill` + optionally an account of kind `credit_card`-like — flag if you want loans first-class.)
+1. Default category seed: **approved** — Groceries, Eating Out, Transport, Fuel, Home, Utilities, Entertainment, Health, Kids, Gifts, Holidays, Shopping, Insurance, Housing + income: Salary, Other.
+2. Account colors: **same six swatches as spaces.**
+3. Loans/car finance: **bill-level for MVP**; revisit a first-class loan entity if the need shows up.
