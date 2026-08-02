@@ -1,16 +1,15 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
-import { CalendarSync } from "lucide-react"
+import { CalendarClock, CalendarSync, ReceiptText, Repeat } from "lucide-react"
 
 import { AddRecurringButton } from "@/components/apex/subscriptions/add-recurring-button"
 import { RecurringTable } from "@/components/apex/subscriptions/recurring-table"
-import { RecurringStatCard } from "@/components/apex/subscriptions/stat-card"
+import { ApexCardGrid, ApexPage, ApexPageHeader } from "@/components/apex/page"
 import {
-  ApexCardGrid,
-  ApexPage,
-  ApexPageHeader,
-  ApexSection,
-} from "@/components/apex/page"
+  ApexStatCard,
+  ApexStatHint,
+  ApexStatValue,
+} from "@/components/apex/stat-card"
 import {
   Empty,
   EmptyContent,
@@ -78,7 +77,9 @@ export default async function SubscriptionsPage() {
             </EmptyMedia>
             <EmptyTitle>Nothing recurring yet</EmptyTitle>
             <EmptyDescription>
-              {"Add what leaves the account each month and due dates surface themselves."}
+              {
+                "Add what leaves the account each month and due dates surface themselves."
+              }
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>{addButton}</EmptyContent>
@@ -86,56 +87,71 @@ export default async function SubscriptionsPage() {
       ) : (
         <>
           <ApexCardGrid>
-            <RecurringStatCard
+            <ApexStatCard
               label="Subscriptions / month"
-              value={formatPence(subscriptionsMonthly)}
-              support={
-                subscriptions.length === 1
+              icon={Repeat}
+              iconClassName="bg-violet-500/10 text-violet-600 dark:text-violet-400"
+            >
+              <ApexStatValue>{formatPence(subscriptionsMonthly)}</ApexStatValue>
+              <ApexStatHint>
+                {subscriptions.length === 1
                   ? `1 active subscription`
-                  : `${subscriptions.length} active subscriptions`
-              }
-            />
-            <RecurringStatCard
+                  : `${subscriptions.length} active subscriptions`}
+              </ApexStatHint>
+            </ApexStatCard>
+            <ApexStatCard
               label="Bills / month"
-              value={formatPence(billsMonthly)}
-              support={
-                bills.length === 1
+              icon={ReceiptText}
+              iconClassName="bg-sky-500/10 text-sky-600 dark:text-sky-400"
+            >
+              <ApexStatValue>{formatPence(billsMonthly)}</ApexStatValue>
+              <ApexStatHint>
+                {bills.length === 1
                   ? `1 committed bill`
-                  : `${bills.length} committed bills`
-              }
-            />
-            <RecurringStatCard
+                  : `${bills.length} committed bills`}
+              </ApexStatHint>
+            </ApexStatCard>
+            <ApexStatCard
               label="Next due"
-              value={nextDue ? formatPence(nextDue.amount) : "—"}
-              support={
-                nextDue
+              icon={CalendarClock}
+              iconClassName="bg-amber-500/10 text-amber-600 dark:text-amber-400"
+            >
+              <ApexStatValue>
+                {nextDue ? formatPence(nextDue.amount) : "—"}
+              </ApexStatValue>
+              <ApexStatHint className="truncate">
+                {nextDue
                   ? `${nextDue.name} · ${dueDateFormat.format(new Date(`${nextDue.nextDueOn}T00:00:00`))}`
-                  : `Nothing scheduled`
-              }
-            />
+                  : `Nothing scheduled`}
+              </ApexStatHint>
+            </ApexStatCard>
           </ApexCardGrid>
 
-          <ApexSection label="Subscriptions">
-            <RecurringTable
-              payments={subscriptions}
-              accounts={accounts}
-              categories={categories}
-              spaceId={spaceId}
-              today={today}
-              emptyLine="No subscriptions — just the way your wallet likes it."
-            />
-          </ApexSection>
+          <RecurringTable
+            title="Subscriptions"
+            description="Optional recurring spend, soonest due first."
+            kind="subscription"
+            monthlyTotal={subscriptionsMonthly}
+            payments={subscriptions}
+            accounts={accounts}
+            categories={categories}
+            spaceId={spaceId}
+            today={today}
+            emptyLine="No subscriptions — just the way your wallet likes it."
+          />
 
-          <ApexSection label="Bills">
-            <RecurringTable
-              payments={bills}
-              accounts={accounts}
-              categories={categories}
-              spaceId={spaceId}
-              today={today}
-              emptyLine="No committed bills tracked yet."
-            />
-          </ApexSection>
+          <RecurringTable
+            title="Bills"
+            description="Committed outgoings, soonest due first."
+            kind="bill"
+            monthlyTotal={billsMonthly}
+            payments={bills}
+            accounts={accounts}
+            categories={categories}
+            spaceId={spaceId}
+            today={today}
+            emptyLine="No committed bills tracked yet."
+          />
         </>
       )}
     </ApexPage>
