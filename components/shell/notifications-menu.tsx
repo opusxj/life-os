@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -49,7 +50,9 @@ export function NotificationsMenu({ invites }: { invites: MyInvite[] }) {
         )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
-        <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+        </DropdownMenuGroup>
         {invites.length === 0 ? (
           <p className="px-2 py-4 text-center text-[13px] text-muted-foreground">
             {"You're all caught up."}

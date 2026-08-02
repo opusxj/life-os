@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -86,19 +87,21 @@ function SpaceSwitcher({ workspace }: { workspace: Workspace }) {
           <ChevronDown className="size-3 text-muted-foreground" />
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56">
-          <DropdownMenuLabel>Spaces</DropdownMenuLabel>
-          {spaces.map((space) => (
-            <DropdownMenuItem key={space.id} onClick={() => selectSpace(space.id)}>
-              <span
-                className="flex size-5 items-center justify-center rounded text-[10px] font-semibold text-white"
-                style={{ backgroundColor: space.color }}
-              >
-                {space.initial}
-              </span>
-              {space.name}
-              {space.id === activeSpace.id && <Check className="ml-auto size-4" />}
-            </DropdownMenuItem>
-          ))}
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Spaces</DropdownMenuLabel>
+            {spaces.map((space) => (
+              <DropdownMenuItem key={space.id} onClick={() => selectSpace(space.id)}>
+                <span
+                  className="flex size-5 items-center justify-center rounded text-[10px] font-semibold text-white"
+                  style={{ backgroundColor: space.color }}
+                >
+                  {space.initial}
+                </span>
+                {space.name}
+                {space.id === activeSpace.id && <Check className="ml-auto size-4" />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setManageOpen(true)}>
             <Settings2 /> Manage space
@@ -169,14 +172,16 @@ function UserMenu({ user }: { user: CurrentUser }) {
         </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>
-          <div className="flex flex-col">
-            {user.name}
-            <span className="text-xs font-normal text-muted-foreground">
-              {user.email}
-            </span>
-          </div>
-        </DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>
+            <div className="flex flex-col">
+              {user.name}
+              <span className="text-xs font-normal text-muted-foreground">
+                {user.email}
+              </span>
+            </div>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled>
           <CircleUser /> Profile
