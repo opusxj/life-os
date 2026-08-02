@@ -1,7 +1,14 @@
+import { Landmark } from "lucide-react"
+
+import {
+  ApexStatCard,
+  ApexStatHint,
+  ApexStatValue,
+} from "@/components/apex/stat-card"
+import { Progress } from "@/components/ui/progress"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 
-import { formatPounds } from "./format"
-import { StatCard, StatSupport, StatValue } from "./stat-card"
+import { EMERALD_ANCHOR, formatPounds } from "./format"
 import { UpdateBalancePopover } from "./update-balance-popover"
 
 /** How much is left of the mortgage? */
@@ -16,25 +23,26 @@ export function BalanceCard({ mortgage }: { mortgage: Mortgage }) {
   )
 
   return (
-    <StatCard
+    <ApexStatCard
       label="Balance"
-      action={
+      icon={Landmark}
+      iconClassName={EMERALD_ANCHOR}
+      footer={
         <UpdateBalancePopover
           mortgageId={mortgage.id}
           balance={mortgage.balance}
         />
       }
     >
-      <StatValue>{formatPounds(mortgage.balance)}</StatValue>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div
-          className="h-full rounded-full bg-emerald-500"
-          style={{ width: `${paidPct}%` }}
-        />
-      </div>
-      <StatSupport>
+      <ApexStatValue>{formatPounds(mortgage.balance)}</ApexStatValue>
+      <Progress
+        value={paidPct}
+        aria-label="Paid off"
+        className="mt-2 **:data-[slot=progress-indicator]:bg-emerald-500"
+      />
+      <ApexStatHint className="mt-1.5">
         {`${paidPct.toFixed(0)}% paid off of ${formatPounds(mortgage.originalAmount)}`}
-      </StatSupport>
-    </StatCard>
+      </ApexStatHint>
+    </ApexStatCard>
   )
 }
