@@ -1,4 +1,4 @@
-import { ApexCardGrid, ApexSection } from "@/components/apex/page"
+import { ApexSection } from "@/components/apex/page"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 
 import { BalanceCard } from "./balance-card"
@@ -16,8 +16,11 @@ export function MortgageStack({ mortgage }: { mortgage: Mortgage }) {
       label={`${mortgage.name} · ${mortgage.lender}`}
       action={<MortgageMenu mortgage={mortgage} />}
     >
-      <ApexCardGrid>
-        <BalanceCard mortgage={mortgage} />
+      {/* Mortgage grid: Balance goes wide from xl, What-if from 2xl — six
+          cards land as two clean rows of four at 2xl; the fully-owned
+          five-card stack fills 4 + 3 with no orphan row. */}
+      <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <BalanceCard mortgage={mortgage} className="xl:col-span-2" />
         <RateCard mortgage={mortgage} />
         <MonthlyCostCard mortgage={mortgage} />
         <OwnershipCard mortgage={mortgage} />
@@ -26,8 +29,9 @@ export function MortgageStack({ mortgage }: { mortgage: Mortgage }) {
           balance={mortgage.balance}
           interestRate={mortgage.interestRate}
           monthlyPayment={mortgage.monthlyPayment}
+          className="2xl:col-span-2"
         />
-      </ApexCardGrid>
+      </div>
     </ApexSection>
   )
 }

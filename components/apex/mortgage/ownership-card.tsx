@@ -7,7 +7,7 @@ import {
 } from "@/components/apex/stat-card"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 
-import { EMERALD_ANCHOR, formatShare } from "./format"
+import { formatShare } from "./format"
 
 /**
  * Shared ownership only: how much of the home is yours? Hidden entirely when
@@ -19,11 +19,7 @@ export function OwnershipCard({ mortgage }: { mortgage: Mortgage }) {
   if (share === null || share >= 100) return null
 
   return (
-    <ApexStatCard
-      label="Ownership"
-      icon={ChartPie}
-      iconClassName={EMERALD_ANCHOR}
-    >
+    <ApexStatCard label="Ownership" icon={ChartPie}>
       <ApexStatValue>{`You own ${formatShare(share)}%`}</ApexStatValue>
       {/* Two owners, not progress-toward-empty: ui/Progress renders exactly
           one indicator, so this two-segment bar stays intentionally custom. */}

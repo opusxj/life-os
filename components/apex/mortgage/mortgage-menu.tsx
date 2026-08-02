@@ -3,16 +3,7 @@
 import * as React from "react"
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { ConfirmDialog } from "@/components/apex/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -94,32 +85,16 @@ export function MortgageMenu({ mortgage }: { mortgage: Mortgage }) {
         />
       )}
 
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{`Delete ${mortgage.name}?`}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {`It disappears from the space but stays recoverable — deletion here is always soft.`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {error && (
-            <p role="alert" className="text-[13px] text-destructive">
-              {error}
-            </p>
-          )}
-          <AlertDialogFooter>
-            <AlertDialogCancel size="sm">Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              size="sm"
-              disabled={pending}
-              onClick={handleDelete}
-            >
-              {pending ? "Deleting…" : "Delete mortgage"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`Delete ${mortgage.name}?`}
+        description={`It disappears from the space but stays recoverable — deletion here is always soft.`}
+        confirmLabel="Delete mortgage"
+        pending={pending}
+        error={error}
+        onConfirm={handleDelete}
+      />
     </>
   )
 }
