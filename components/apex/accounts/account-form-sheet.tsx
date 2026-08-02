@@ -144,7 +144,7 @@ export function AccountFormSheet({
                   name="startingBalance"
                   placeholder="0.00"
                 />
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[13px] text-muted-foreground">
                   Recorded as a balance sync, so history stays honest.
                 </p>
               </div>

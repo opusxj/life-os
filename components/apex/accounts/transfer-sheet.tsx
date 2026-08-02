@@ -23,7 +23,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { transferBetween, type ApexFormState } from "@/lib/apex/accounts/actions"
-import { formatPence } from "@/lib/apex/money"
+import { formatPenceShort } from "@/lib/apex/money"
 import type { Account } from "@/lib/apex/accounts/queries"
 
 export function TransferSheet({
@@ -58,7 +58,7 @@ export function TransferSheet({
   const accountItems = Object.fromEntries(
     accounts.map((account) => [
       account.id,
-      `${account.name} · ${formatPence(account.balance)}`,
+      `${account.name} · ${formatPenceShort(account.balance)}`,
     ])
   )
 
@@ -90,7 +90,7 @@ export function TransferSheet({
                 <SelectContent>
                   {accounts.map((account) => (
                     <SelectItem key={account.id} value={account.id}>
-                      {`${account.name} · ${formatPence(account.balance)}`}
+                      {`${account.name} · ${formatPenceShort(account.balance)}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -113,7 +113,7 @@ export function TransferSheet({
                 <SelectContent>
                   {accounts.map((account) => (
                     <SelectItem key={account.id} value={account.id}>
-                      {`${account.name} · ${formatPence(account.balance)}`}
+                      {`${account.name} · ${formatPenceShort(account.balance)}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
