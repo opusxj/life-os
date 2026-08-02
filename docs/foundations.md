@@ -20,7 +20,7 @@ Decided with John 2026-08-02. This is the contract for E1 Foundations; schema an
 
 - Anyone can create spaces. Cap: a user may **own at most 2 shared spaces** (personal space excluded → max 3 owned). Enforced in the DB; single constant to raise if it ever chafes. Membership in *other people's* spaces is uncapped.
 - Roles per space: **owner / admin / member / guest** (guest ≈ read-only). Simple names in the schema; family-flavored display labels can be a UI decision later.
-- Future (phase 2, schema leaves room, no speculative columns now): modules toggled on/off per space and per member; per-member data visibility toggles.
+- Future (phase 2, schema leaves room, no speculative columns now): modules toggled on/off per space and per member; per-member data visibility toggles; ownership transfer (until then, owners cannot be removed or leave, and deleting an account cascades the spaces that user owns — including shared ones).
 
 ## Invites & joining (LIFE-23)
 

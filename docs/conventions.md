@@ -50,4 +50,5 @@ Linear is the board (mirrored in [board.md](board.md) until connected). Tickets 
 When the same mistake happens twice, it gets an entry here and (if warranted) a rule above. Format: date · mistake · rule created.
 
 - 2026-08-02 · JSX trims a significant space between an expression and text on the same line (`{expr} text` rendered without the space) · Interpolate full sentences as one template string instead.
+- 2026-08-02 · `INSERT … RETURNING` on `spaces` violated RLS: the creator's owner membership is added by an AFTER trigger, so the RETURNING row couldn't satisfy the membership-based SELECT policy · Any table whose visibility comes from a trigger-created membership row needs `or created_by = auth.uid()` in its SELECT policy — and always test `INSERT … RETURNING` under RLS, since PostgREST's `.insert().select()` does exactly that.
 - 2026-08-02 · Strict `react-hooks/set-state-in-effect` lint errors in generated shadcn files · Generated `components/ui/**` files get lint-rule exceptions in `eslint.config.mjs`; never hand-patch generated files.
