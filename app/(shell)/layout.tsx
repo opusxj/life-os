@@ -16,11 +16,7 @@ export default async function ShellLayout({
 
   return (
     <div className="flex h-svh flex-col gap-2 bg-muted p-2 dark:bg-neutral-950">
-      <TopBar
-        user={workspace.user}
-        spaces={workspace.spaces}
-        activeSpaceId={workspace.activeSpace.id}
-      />
+      <TopBar workspace={workspace} />
       <div className="flex min-h-0 flex-1 gap-2">
         <Rail />
         {/* Sidebar and body share one floating panel, joined by a border */}

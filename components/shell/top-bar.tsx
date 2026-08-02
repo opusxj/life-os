@@ -3,7 +3,6 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import {
-  Bell,
   Check,
   ChevronDown,
   CircleUser,
@@ -12,10 +11,14 @@ import {
   Plus,
   Search,
   Settings,
+  Settings2,
   Sun,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 
+import { NotificationsMenu } from "@/components/shell/notifications-menu"
+import { CreateSpaceDialog } from "@/components/spaces/create-space-dialog"
+import { ManageSpaceDialog } from "@/components/spaces/manage-space-dialog"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -27,47 +30,34 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import { signOut } from "@/lib/auth/actions"
-import type { CurrentUser, WorkspaceSpace } from "@/lib/data/workspace"
+import type { CurrentUser, Workspace } from "@/lib/data/workspace"
 import { setActiveSpace } from "@/lib/spaces/actions"
 import { cn } from "@/lib/utils"
 
-export function TopBar({
-  user,
-  spaces,
-  activeSpaceId,
-}: {
-  user: CurrentUser
-  spaces: WorkspaceSpace[]
-  activeSpaceId: string
-}) {
+export function TopBar({ workspace }: { workspace: Workspace }) {
   return (
     <header className="relative flex h-11 shrink-0 items-center justify-between gap-2 rounded-xl border bg-background px-1.5 dark:bg-card">
-      <SpaceSwitcher spaces={spaces} activeSpaceId={activeSpaceId} />
+      <SpaceSwitcher workspace={workspace} />
       <SearchButton />
       <div className="flex items-center gap-0.5">
-        <Button variant="ghost" size="icon-sm" aria-label="Notifications">
-          <Bell />
-        </Button>
+        <NotificationsMenu invites={workspace.myInvites} />
         <ThemeToggle />
-        <UserMenu user={user} />
+        <UserMenu user={workspace.user} />
       </div>
     </header>
   )
 }
 
-function SpaceSwitcher({
-  spaces,
-  activeSpaceId,
-}: {
-  spaces: WorkspaceSpace[]
-  activeSpaceId: string
-}) {
+function SpaceSwitcher({ workspace }: { workspace: Workspace }) {
   const router = useRouter()
   const [isPending, startTransition] = React.useTransition()
-  const active = spaces.find((s) => s.id === activeSpaceId) ?? spaces[0]
+  const [createOpen, setCreateOpen] = React.useState(false)
+  const [manageOpen, setManageOpen] = React.useState(false)
+
+  const { spaces, activeSpace } = workspace
 
   function selectSpace(id: string) {
-    if (id === activeSpaceId) return
+    if (id === activeSpace.id) return
     startTransition(async () => {
       await setActiveSpace(id)
       router.refresh()
@@ -75,45 +65,57 @@ function SpaceSwitcher({
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn("gap-1.5 px-1 text-[13px]", isPending && "opacity-60")}
-          />
-        }
-      >
-        <span
-          className="flex size-5.5 items-center justify-center rounded-md text-[10px] font-semibold text-white"
-          style={{ backgroundColor: active.color }}
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn("gap-1.5 px-1 text-[13px]", isPending && "opacity-60")}
+            />
+          }
         >
-          {active.initial}
-        </span>
-        {active.name}
-        <ChevronDown className="size-3 text-muted-foreground" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56">
-        <DropdownMenuLabel>Spaces</DropdownMenuLabel>
-        {spaces.map((s) => (
-          <DropdownMenuItem key={s.id} onClick={() => selectSpace(s.id)}>
-            <span
-              className="flex size-5 items-center justify-center rounded text-[10px] font-semibold text-white"
-              style={{ backgroundColor: s.color }}
-            >
-              {s.initial}
-            </span>
-            {s.name}
-            {s.id === activeSpaceId && <Check className="ml-auto size-4" />}
+          <span
+            className="flex size-5.5 items-center justify-center rounded-md text-[10px] font-semibold text-white"
+            style={{ backgroundColor: activeSpace.color }}
+          >
+            {activeSpace.initial}
+          </span>
+          {activeSpace.name}
+          <ChevronDown className="size-3 text-muted-foreground" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56">
+          <DropdownMenuLabel>Spaces</DropdownMenuLabel>
+          {spaces.map((space) => (
+            <DropdownMenuItem key={space.id} onClick={() => selectSpace(space.id)}>
+              <span
+                className="flex size-5 items-center justify-center rounded text-[10px] font-semibold text-white"
+                style={{ backgroundColor: space.color }}
+              >
+                {space.initial}
+              </span>
+              {space.name}
+              {space.id === activeSpace.id && <Check className="ml-auto size-4" />}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setManageOpen(true)}>
+            <Settings2 /> Manage space
           </DropdownMenuItem>
-        ))}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem disabled>
-          <Plus /> New space
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuItem onClick={() => setCreateOpen(true)}>
+            <Plus /> New space
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <CreateSpaceDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <ManageSpaceDialog
+        open={manageOpen}
+        onOpenChange={setManageOpen}
+        workspace={workspace}
+      />
+    </>
   )
 }
 

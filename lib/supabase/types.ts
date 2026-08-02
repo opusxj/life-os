@@ -234,6 +234,18 @@ export type Database = {
     Functions: {
       accept_space_invite: { Args: { invite_id: string }; Returns: undefined }
       is_space_member: { Args: { target_space: string }; Returns: boolean }
+      my_pending_invites: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          invited_by_name: string
+          role: string
+          space_color: string
+          space_id: string
+          space_name: string
+        }[]
+      }
       shares_space_with: { Args: { other_user: string }; Returns: boolean }
       space_role: { Args: { target_space: string }; Returns: string }
     }
