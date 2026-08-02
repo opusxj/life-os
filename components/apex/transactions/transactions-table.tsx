@@ -91,60 +91,48 @@ function TransactionsTable({
   rows: TransactionRow[]
 }) {
   return (
-    <Table className="text-[13px]">
+    <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead className="h-8 px-3 text-[11px] font-medium text-muted-foreground">
-            Date
-          </TableHead>
-          <TableHead className="h-8 px-2 text-[11px] font-medium text-muted-foreground">
-            Description
-          </TableHead>
-          <TableHead className="h-8 px-2 text-[11px] font-medium text-muted-foreground">
-            Category
-          </TableHead>
-          <TableHead className="h-8 px-2 text-[11px] font-medium text-muted-foreground">
-            Account
-          </TableHead>
-          <TableHead className="h-8 px-2 text-[11px] font-medium text-muted-foreground">
-            Card
-          </TableHead>
-          <TableHead className="h-8 px-3 text-right text-[11px] font-medium text-muted-foreground">
-            Amount
-          </TableHead>
-          <TableHead className="h-8 w-10 px-2" />
+          <TableHead className="px-4">Date</TableHead>
+          <TableHead>Description</TableHead>
+          <TableHead>Category</TableHead>
+          <TableHead>Account</TableHead>
+          <TableHead>Card</TableHead>
+          <TableHead className="px-4 text-right">Amount</TableHead>
+          <TableHead className="w-10" />
         </TableRow>
       </TableHeader>
       <TableBody>
         {rows.map((row) => (
-          <TableRow key={row.id} className="group/row h-8">
-            <TableCell className="w-20 px-3 py-0 whitespace-nowrap text-muted-foreground">
+          <TableRow key={row.id} className="group/row">
+            <TableCell className="w-24 px-4 whitespace-nowrap text-muted-foreground">
               {formatDay(row.occurredOn)}
             </TableCell>
-            <TableCell className="w-full max-w-0 truncate px-2 py-0">
+            <TableCell className="w-full max-w-0 truncate font-medium">
               {row.description}
             </TableCell>
-            <TableCell className="px-2 py-0 whitespace-nowrap">
+            <TableCell className="whitespace-nowrap">
               <CategoryCell row={row} />
             </TableCell>
-            <TableCell className="px-2 py-0 whitespace-nowrap text-muted-foreground">
+            <TableCell className="whitespace-nowrap text-muted-foreground">
               {row.accountName}
             </TableCell>
             <TableCell
-              className="px-2 py-0 whitespace-nowrap text-muted-foreground"
+              className="whitespace-nowrap text-muted-foreground"
               title={row.cardName ?? undefined}
             >
               {row.cardLast4 ? `·${row.cardLast4}` : null}
             </TableCell>
             <TableCell
               className={cn(
-                "px-3 py-0 text-right font-medium whitespace-nowrap tabular-nums",
+                "px-4 text-right font-medium whitespace-nowrap tabular-nums",
                 amountClass(row.kind)
               )}
             >
               {amountText(row)}
             </TableCell>
-            <TableCell className="w-10 px-2 py-0 text-right">
+            <TableCell className="w-10 py-0 text-right">
               <TransactionRowActions
                 spaceId={spaceId}
                 options={options}
@@ -179,14 +167,14 @@ function TotalsFooter({ rows }: { rows: TransactionRow[] }) {
 
   return (
     <TableFooter>
-      <TableRow className="h-8 hover:bg-transparent">
+      <TableRow className="hover:bg-transparent">
         <TableCell
           colSpan={5}
-          className="px-3 py-0 font-normal whitespace-nowrap text-muted-foreground"
+          className="px-4 font-normal whitespace-nowrap text-muted-foreground"
         >
           {parts.join(" · ")}
         </TableCell>
-        <TableCell className="px-3 py-0 text-right whitespace-nowrap tabular-nums">
+        <TableCell className="px-4 text-right whitespace-nowrap tabular-nums">
           <span className="inline-flex items-baseline gap-3">
             <span className="text-emerald-600 dark:text-emerald-400">
               {`In +${formatPence(incomeTotal)}`}
@@ -194,7 +182,7 @@ function TotalsFooter({ rows }: { rows: TransactionRow[] }) {
             <span>{`Out −${formatPence(expenseTotal)}`}</span>
           </span>
         </TableCell>
-        <TableCell className="w-10 px-2 py-0" />
+        <TableCell className="w-10" />
       </TableRow>
     </TableFooter>
   )
