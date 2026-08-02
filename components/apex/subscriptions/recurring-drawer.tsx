@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Sheet,
   SheetContent,
@@ -25,6 +28,7 @@ import {
 import type {
   AccountOption,
   CategoryOption,
+  RecurringCadence,
   RecurringKind,
   RecurringPayment,
 } from "@/lib/apex/subscriptions/queries"
@@ -34,6 +38,17 @@ const KIND_OPTIONS: { value: RecurringKind; label: string }[] = [
   { value: "subscription", label: "Subscription" },
   { value: "bill", label: "Bill" },
 ]
+
+/** Sentinel for the optional "None" choices — Base UI Select item values must
+ *  be real strings; the hidden inputs map it back to "" for FormData. */
+const NONE = "none"
+
+const CADENCE_ITEMS = {
+  weekly: "Weekly",
+  monthly: "Monthly",
+  quarterly: "Quarterly",
+  yearly: "Yearly",
+}
 
 /** Add/edit drawer — minimum viable fields, everything optional that can be. */
 export function RecurringDrawer({
@@ -56,6 +71,23 @@ export function RecurringDrawer({
   const [kind, setKind] = React.useState<RecurringKind>(
     payment?.kind ?? "subscription"
   )
+  const [cadence, setCadence] = React.useState(payment?.cadence ?? "monthly")
+  const [accountId, setAccountId] = React.useState(payment?.accountId ?? NONE)
+  const [categoryId, setCategoryId] = React.useState(
+    payment?.categoryId ?? NONE
+  )
+  const accountItems = {
+    [NONE]: "None — ask when paying",
+    ...Object.fromEntries(
+      accounts.map((account) => [account.id, account.name])
+    ),
+  }
+  const categoryItems = {
+    [NONE]: "None",
+    ...Object.fromEntries(
+      categories.map((category) => [category.id, category.name])
+    ),
+  }
   const [state, action, pending] = React.useActionState<
     RecurringFormState,
     FormData
@@ -142,17 +174,24 @@ export function RecurringDrawer({
                 <Label htmlFor="recurring-cadence" className="text-[13px]">
                   Cadence
                 </Label>
-                <NativeSelect
-                  id="recurring-cadence"
-                  name="cadence"
-                  defaultValue={payment?.cadence ?? "monthly"}
-                  className="w-full"
+                <input type="hidden" name="cadence" value={cadence} />
+                <Select
+                  items={CADENCE_ITEMS}
+                  value={cadence}
+                  onValueChange={(value) =>
+                    setCadence(value as RecurringCadence)
+                  }
                 >
-                  <NativeSelectOption value="weekly">Weekly</NativeSelectOption>
-                  <NativeSelectOption value="monthly">Monthly</NativeSelectOption>
-                  <NativeSelectOption value="quarterly">Quarterly</NativeSelectOption>
-                  <NativeSelectOption value="yearly">Yearly</NativeSelectOption>
-                </NativeSelect>
+                  <SelectTrigger id="recurring-cadence" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="quarterly">Quarterly</SelectItem>
+                    <SelectItem value="yearly">Yearly</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -173,40 +212,56 @@ export function RecurringDrawer({
               <Label htmlFor="recurring-account" className="text-[13px]">
                 Paying account
               </Label>
-              <NativeSelect
-                id="recurring-account"
+              <input
+                type="hidden"
                 name="accountId"
-                defaultValue={payment?.accountId ?? ""}
-                className="w-full"
+                value={accountId === NONE ? "" : accountId}
+              />
+              <Select
+                items={accountItems}
+                value={accountId}
+                onValueChange={(value) => setAccountId(value as string)}
               >
-                <NativeSelectOption value="">
-                  None — ask when paying
-                </NativeSelectOption>
-                {accounts.map((account) => (
-                  <NativeSelectOption key={account.id} value={account.id}>
-                    {account.name}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                <SelectTrigger id="recurring-account" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE}>None — ask when paying</SelectItem>
+                  {accounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="recurring-category" className="text-[13px]">
                 Category
               </Label>
-              <NativeSelect
-                id="recurring-category"
+              <input
+                type="hidden"
                 name="categoryId"
-                defaultValue={payment?.categoryId ?? ""}
-                className="w-full"
+                value={categoryId === NONE ? "" : categoryId}
+              />
+              <Select
+                items={categoryItems}
+                value={categoryId}
+                onValueChange={(value) => setCategoryId(value as string)}
               >
-                <NativeSelectOption value="">None</NativeSelectOption>
-                {categories.map((category) => (
-                  <NativeSelectOption key={category.id} value={category.id}>
-                    {category.name}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                <SelectTrigger id="recurring-category" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE}>None</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {state?.error && (

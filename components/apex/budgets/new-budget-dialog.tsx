@@ -33,6 +33,10 @@ export function NewBudgetDialog({
   const router = useRouter()
   const [open, setOpen] = React.useState(false)
   const [categoryId, setCategoryId] = React.useState<string | null>(null)
+  // Without `items`, Base UI's SelectValue renders the raw id in the trigger
+  const categoryItems = Object.fromEntries(
+    categories.map((category) => [category.id, category.name])
+  )
   const [state, action, pending] = React.useActionState<
     BudgetsFormState,
     FormData
@@ -72,6 +76,7 @@ export function NewBudgetDialog({
               <div className="space-y-1.5">
                 <Label className="text-[13px]">Category</Label>
                 <Select
+                  items={categoryItems}
                   value={categoryId}
                   onValueChange={(value) => setCategoryId(value as string)}
                 >

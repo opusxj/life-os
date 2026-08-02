@@ -5,7 +5,13 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Sheet,
   SheetContent,
@@ -26,6 +32,10 @@ const RATE_TYPES = [
   { value: "variable", label: "Variable" },
   { value: "tracker", label: "Tracker" },
 ] as const
+
+const RATE_TYPE_ITEMS = Object.fromEntries(
+  RATE_TYPES.map((type) => [type.value, type.label])
+)
 
 /** Add/edit drawer — pass `mortgage` to edit, omit to create. */
 export function MortgageDrawer({
@@ -126,19 +136,7 @@ export function MortgageDrawer({
                 />
               </FormField>
               <FormField label="Rate type" name="rateType">
-                <NativeSelect
-                  className="w-full"
-                  id="mortgage-rateType"
-                  name="rateType"
-                  defaultValue={mortgage?.rateType ?? "fixed"}
-                  required
-                >
-                  {RATE_TYPES.map((type) => (
-                    <NativeSelectOption key={type.value} value={type.value}>
-                      {type.label}
-                    </NativeSelectOption>
-                  ))}
-                </NativeSelect>
+                <RateTypeField defaultValue={mortgage?.rateType ?? "fixed"} />
               </FormField>
             </FieldPair>
 
@@ -240,6 +238,34 @@ export function MortgageDrawer({
 
 function FieldPair({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-2 gap-2.5">{children}</div>
+}
+
+/** Controlled Select serialized through a hidden input; lives inside the keyed
+ *  form so a mortgage switch remounts it, resetting to `defaultValue` exactly
+ *  like the native select it replaced. */
+function RateTypeField({ defaultValue }: { defaultValue: string }) {
+  const [rateType, setRateType] = React.useState(defaultValue)
+  return (
+    <>
+      <input type="hidden" name="rateType" value={rateType} />
+      <Select
+        items={RATE_TYPE_ITEMS}
+        value={rateType}
+        onValueChange={(value) => setRateType(value as string)}
+      >
+        <SelectTrigger id="mortgage-rateType" className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {RATE_TYPES.map((type) => (
+            <SelectItem key={type.value} value={type.value}>
+              {type.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </>
+  )
 }
 
 function FormField({
