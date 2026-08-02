@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { X } from "lucide-react"
+import { ListFilter, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -57,10 +57,10 @@ export function TransactionFilterBar({
 
   const isFiltered = Boolean(
     filters.account ||
-      filters.card ||
-      filters.category ||
-      filters.kind ||
-      filters.month !== defaultMonth
+    filters.card ||
+    filters.category ||
+    filters.kind ||
+    filters.month !== defaultMonth
   )
 
   const expenseCategories = options.categories.filter(
@@ -72,6 +72,10 @@ export function TransactionFilterBar({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      <ListFilter
+        aria-hidden
+        className="size-4 shrink-0 text-muted-foreground"
+      />
       <NativeSelect
         size="sm"
         aria-label="Filter by month"
@@ -185,7 +189,9 @@ export function TransactionFilterBar({
           variant="ghost"
           size="xs"
           className="text-muted-foreground"
-          onClick={() => router.replace("/apex/transactions", { scroll: false })}
+          onClick={() =>
+            router.replace("/apex/transactions", { scroll: false })
+          }
         >
           <X data-icon="inline-start" />
           Clear
