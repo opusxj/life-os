@@ -35,7 +35,8 @@ create table public.example_things (
 
 - `notes` and `metadata` are the escape hatches; only add them when the module stores that kind of info (the 80% rule applies to them as well).
 - `created_by`/`deleted_by` are the audit trail — we always track who added and who deleted (foundations decision, see [foundations.md](foundations.md)).
-- **Soft delete is the standard**: user-facing deletion sets `deleted_at`/`deleted_by`; queries and RLS `select` policies exclude `deleted_at is not null`. Hard deletes happen only as system operations — chiefly the space-delete cascade (space removed → all its rows removed via FK).
+- **Soft delete is the standard**: user-facing deletion sets `deleted_at` **and** `deleted_by = auth.uid()` in one UPDATE; queries always filter `deleted_at is null`. Hard deletes happen only as system operations — chiefly the space-delete cascade (space removed → all its rows removed via FK).
+- **RLS select policies hide deleted rows from everyone except the deleter**: `deleted_at is null or deleted_by = auth.uid()`. A bare `deleted_at is null` blocks soft delete itself — Postgres applies the SELECT policy to an UPDATE's new row (any UPDATE with a WHERE reads the relation), so the freshly-deleted row must remain visible to its updater. Side benefit: an unstamped soft delete is rejected, making the audit trail RLS-enforced. (Found in LIFE-18; see the mistake log.)
 - `updated_at` is maintained by the shared `set_updated_at()` trigger — create it with every table.
 - **User-scoped exceptions:** `profiles` and `notifications` are identity/infrastructure tables — they hang off the user, not a space, and skip `space_id` and soft delete.
 
@@ -63,12 +64,19 @@ alter table public.example_things enable row level security;
 
 create policy "members read" on public.example_things
   for select using (
-    space_id in (
-      select space_id from public.space_members
-      where user_id = auth.uid()
-    )
+    public.is_space_member(space_id)
+    and (deleted_at is null or deleted_by = auth.uid()) -- see soft-delete rule above
   );
--- equivalent policies for insert/update/delete
+-- writes require a writing role (guests are read-only); no delete policy at all,
+-- so hard deletes only happen via the space-delete cascade
+create policy "writers insert" on public.example_things
+  for insert with check (
+    public.space_role(space_id) in ('owner', 'admin', 'member') and created_by = auth.uid()
+  );
+create policy "writers update" on public.example_things
+  for update using (
+    public.space_role(space_id) in ('owner', 'admin', 'member') and deleted_at is null
+  ) with check (public.space_role(space_id) in ('owner', 'admin', 'member'));
 ```
 
 - No table ships without RLS enabled and policies written.

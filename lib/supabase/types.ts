@@ -18,6 +18,235 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          balance: number
+          color: string
+          created_at: string
+          created_by: string
+          currency: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          institution: string | null
+          kind: string
+          metadata: Json
+          name: string
+          notes: string | null
+          space_id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          color: string
+          created_at?: string
+          created_by: string
+          currency?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          institution?: string | null
+          kind: string
+          metadata?: Json
+          name: string
+          notes?: string | null
+          space_id: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          color?: string
+          created_at?: string
+          created_by?: string
+          currency?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          institution?: string | null
+          kind?: string
+          metadata?: Json
+          name?: string
+          notes?: string | null
+          space_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cards: {
+        Row: {
+          account_id: string
+          brand: string | null
+          color: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          expires_on: string | null
+          id: string
+          last4: string | null
+          metadata: Json
+          name: string
+          notes: string | null
+          space_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          brand?: string | null
+          color: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          expires_on?: string | null
+          id?: string
+          last4?: string | null
+          metadata?: Json
+          name: string
+          notes?: string | null
+          space_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          brand?: string | null
+          color?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          expires_on?: string | null
+          id?: string
+          last4?: string | null
+          metadata?: Json
+          name?: string
+          notes?: string | null
+          space_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cards_account_id_space_id_fkey"
+            columns: ["account_id", "space_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id", "space_id"]
+          },
+          {
+            foreignKeyName: "cards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cards_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cards_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          color: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          icon: string
+          id: string
+          kind: string
+          metadata: Json
+          name: string
+          notes: string | null
+          space_id: string
+          updated_at: string
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          icon: string
+          id?: string
+          kind: string
+          metadata?: Json
+          name: string
+          notes?: string | null
+          space_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          icon?: string
+          id?: string
+          kind?: string
+          metadata?: Json
+          name?: string
+          notes?: string | null
+          space_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -227,6 +456,116 @@ export type Database = {
           },
         ]
       }
+      transactions: {
+        Row: {
+          account_id: string
+          amount: number
+          card_id: string | null
+          category_id: string | null
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          description: string
+          id: string
+          kind: string
+          metadata: Json
+          notes: string | null
+          occurred_on: string
+          space_id: string
+          transfer_account_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          card_id?: string | null
+          category_id?: string | null
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description: string
+          id?: string
+          kind: string
+          metadata?: Json
+          notes?: string | null
+          occurred_on?: string
+          space_id: string
+          transfer_account_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          card_id?: string | null
+          category_id?: string | null
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string
+          id?: string
+          kind?: string
+          metadata?: Json
+          notes?: string | null
+          occurred_on?: string
+          space_id?: string
+          transfer_account_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_account_id_space_id_fkey"
+            columns: ["account_id", "space_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id", "space_id"]
+          },
+          {
+            foreignKeyName: "transactions_card_id_account_id_fkey"
+            columns: ["card_id", "account_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id", "account_id"]
+          },
+          {
+            foreignKeyName: "transactions_category_id_space_id_fkey"
+            columns: ["category_id", "space_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id", "space_id"]
+          },
+          {
+            foreignKeyName: "transactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_transfer_account_id_space_id_fkey"
+            columns: ["transfer_account_id", "space_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id", "space_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -246,7 +585,15 @@ export type Database = {
           space_name: string
         }[]
       }
+      seed_default_categories: {
+        Args: { target_space: string }
+        Returns: undefined
+      }
       shares_space_with: { Args: { other_user: string }; Returns: boolean }
+      shift_balances: {
+        Args: { acct: string; delta: number; txn_kind: string; xfer: string }
+        Returns: undefined
+      }
       space_role: { Args: { target_space: string }; Returns: string }
     }
     Enums: {
