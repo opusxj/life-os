@@ -9,16 +9,13 @@ import {
 } from "@/components/ui/empty"
 import { cn } from "@/lib/utils"
 
-/** Scrollable page body: centered column, house density. */
+/** Scrollable page body: full dashboard width, house density. */
 export function ApexPage({
   className,
   ...props
 }: React.ComponentProps<"div">) {
   return (
-    <div
-      className={cn("mx-auto w-full max-w-5xl space-y-7 p-4 pb-10", className)}
-      {...props}
-    />
+    <div className={cn("w-full space-y-6 p-5 pb-10", className)} {...props} />
   )
 }
 
@@ -71,7 +68,10 @@ export function ApexCardGrid({
 }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("grid gap-3 sm:grid-cols-2 xl:grid-cols-3", className)}
+      className={cn(
+        "grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4",
+        className
+      )}
       {...props}
     />
   )
