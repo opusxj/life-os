@@ -65,7 +65,7 @@ export function BankCard({
         }}
       />
       <div className="flex items-start justify-between gap-2">
-        <span className="truncate text-[11px] text-white/70">
+        <span className="truncate text-[13px] text-white/70">
           {accountName}
         </span>
         {card.brand && (
@@ -81,13 +81,13 @@ export function BankCard({
       />
 
       <div className="mt-auto space-y-1">
-        <p className="truncate text-[12px] text-white/90">{card.name}</p>
+        <p className="truncate text-[13px] text-white/90">{card.name}</p>
         <div className="flex items-end justify-between gap-2">
           <span className="font-mono text-[13px] tracking-[0.22em]">
             {`•••• ${card.last4 ?? "····"}`}
           </span>
           {card.expires_on && (
-            <span className="text-[10px] text-white/70">
+            <span className="text-[13px] text-white/70">
               {formatExpiry(card.expires_on)}
             </span>
           )}
@@ -98,8 +98,8 @@ export function BankCard({
         <span
           className={
             expiry === "expired"
-              ? "absolute right-3 bottom-11 rounded bg-red-500/90 px-1.5 py-0.5 text-[10px] font-medium"
-              : "absolute right-3 bottom-11 rounded bg-amber-400/90 px-1.5 py-0.5 text-[10px] font-medium text-amber-950"
+              ? "absolute right-3 bottom-11 rounded bg-red-500/90 px-1.5 py-0.5 text-xs font-medium"
+              : "absolute right-3 bottom-11 rounded bg-amber-400/90 px-1.5 py-0.5 text-xs font-medium text-amber-950"
           }
         >
           {expiry === "expired" ? "Expired" : "Expires soon"}

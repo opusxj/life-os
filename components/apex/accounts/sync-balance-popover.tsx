@@ -16,7 +16,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { syncBalance, type ApexFormState } from "@/lib/apex/accounts/actions"
-import { formatPence } from "@/lib/apex/money"
+import { formatPenceShort } from "@/lib/apex/money"
 import type { Account } from "@/lib/apex/accounts/queries"
 
 /** The guilt-free reset: type what the bank says, Apex records the difference. */
@@ -46,7 +46,7 @@ export function SyncBalancePopover({ account }: { account: Account }) {
         <PopoverHeader>
           <PopoverTitle>Sync balance</PopoverTitle>
           <PopoverDescription className="text-[13px]">
-            {`Apex has ${formatPence(account.balance)}. What does the bank say?`}
+            {`Apex has ${formatPenceShort(account.balance)}. What does the bank say?`}
           </PopoverDescription>
         </PopoverHeader>
         <form action={action} className="space-y-2.5">

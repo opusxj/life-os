@@ -9,20 +9,13 @@ import { AccountFormSheet } from "@/components/apex/accounts/account-form-sheet"
 import { BankCard } from "@/components/apex/accounts/bank-card"
 import { CardFormSheet } from "@/components/apex/accounts/card-form-sheet"
 import { TransferSheet } from "@/components/apex/accounts/transfer-sheet"
+import { ConfirmDialog } from "@/components/apex/confirm-dialog"
 import {
   ApexCardGrid,
   ApexPageHeader,
   ApexSection,
 } from "@/components/apex/page"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import {
   Empty,
   EmptyContent,
@@ -119,6 +112,7 @@ export function AccountsView({
                 <AccountCard
                   key={account.id}
                   account={account}
+                  canTransfer={accounts.length > 1}
                   onEdit={(target) =>
                     setAccountForm({ open: true, account: target })
                   }
@@ -138,8 +132,24 @@ export function AccountsView({
             </ApexCardGrid>
           </ApexSection>
 
-          <ApexSection label="Cards">
-            <ApexCardGrid className="lg:grid-cols-3">
+          <ApexSection
+            label="Cards"
+            action={
+              allCards.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCardForm(true)}
+                  className="border-dashed text-muted-foreground hover:text-foreground"
+                >
+                  <Plus /> Add card
+                </Button>
+              )
+            }
+          >
+            {/* Capped tracks keep one or two cards at wallet scale instead of
+                stretching to fill the row. */}
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,280px))] gap-3.5">
               {allCards.map(({ card, accountName }) => (
                 <BankCard
                   key={card.id}
@@ -154,15 +164,17 @@ export function AccountsView({
                   }
                 />
               ))}
-              <Button
-                variant="outline"
-                onClick={() => setCardForm(true)}
-                className="aspect-[1.586/1] h-auto w-full flex-col gap-1.5 rounded-xl border-dashed bg-transparent text-[13px] font-normal text-muted-foreground shadow-none hover:bg-muted/50 hover:text-foreground"
-              >
-                <CreditCard className="size-5" />
-                Add card
-              </Button>
-            </ApexCardGrid>
+              {allCards.length === 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => setCardForm(true)}
+                  className="aspect-[1.586/1] h-auto w-full flex-col gap-1.5 rounded-xl border-dashed bg-transparent text-[13px] font-normal text-muted-foreground shadow-none hover:bg-muted/50 hover:text-foreground"
+                >
+                  <CreditCard className="size-5" />
+                  Add card
+                </Button>
+              )}
+            </div>
           </ApexSection>
         </>
       )}
@@ -190,42 +202,21 @@ export function AccountsView({
         fromId={transferFrom}
       />
 
-      <Dialog
+      <ConfirmDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null)
         }}
-      >
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>
-              {deleteTarget ? `Delete ${deleteTarget.name}?` : "Delete"}
-            </DialogTitle>
-            <DialogDescription>
-              {deleteTarget?.type === "account"
-                ? "It disappears from Apex; its transaction history stays in the ledger."
-                : "The card art goes away; transactions it was tagged on are untouched."}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setDeleteTarget(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={isPending}
-              onClick={confirmDelete}
-            >
-              {isPending ? "Deleting…" : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        title={deleteTarget ? `Delete ${deleteTarget.name}?` : "Delete"}
+        description={
+          deleteTarget?.type === "account"
+            ? "It disappears from Apex; its transaction history stays in the ledger."
+            : "The card art goes away; transactions it was tagged on are untouched."
+        }
+        confirmLabel="Delete"
+        pending={isPending}
+        onConfirm={confirmDelete}
+      />
     </>
   )
 }
