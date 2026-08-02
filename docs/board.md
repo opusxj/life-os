@@ -11,7 +11,7 @@ Near-term tickets (E0, E1, top of E2) carry full acceptance criteria. Later tick
 | ID | Title | Priority | Size | Status |
 |----|-------|----------|------|--------|
 | LOS-1 | Connect Linear and import this board | P0 | S | Ready (John) |
-| LOS-2 | Create Supabase project + environment wiring | P0 | S | Ready |
+| LOS-2 | Create Supabase project + environment wiring | P0 | S | Done |
 
 **LOS-1 — Connect Linear and import this board**
 John connects the Linear MCP connector to Claude Code; agent then creates the team/project, epics as Linear projects/labels, and all tickets below with priorities and dependencies.
@@ -29,8 +29,8 @@ Everything the modules stand on. Finish before Apex build tickets start.
 
 | ID | Title | Priority | Size | Status |
 |----|-------|----------|------|--------|
-| LOS-3 | Foundations schema: profiles, spaces, space_members | P0 | M | Blocked (LOS-2) |
-| LOS-4 | Supabase client plumbing (server + browser, typed) | P0 | S | Blocked (LOS-2) |
+| LOS-3 | Foundations schema: profiles, spaces, space_members | P0 | M | Ready |
+| LOS-4 | Supabase client plumbing (server + browser, typed) | P0 | S | Ready |
 | LOS-5 | Auth: sign-in flow + session + route protection | P0 | M | Blocked (LOS-4) |
 | LOS-6 | Profile dropdown on real user data + sign out | P1 | S | Blocked (LOS-5) |
 | LOS-7 | Space switcher on real spaces + active-space context | P1 | M | Blocked (LOS-3, LOS-5) |
