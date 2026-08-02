@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react"
 
+import { ConfirmDialog } from "@/components/apex/confirm-dialog"
 import { ProgressGrid } from "@/components/apex/progress-grid"
 import { ApexStatHint } from "@/components/apex/stat-card"
 import { Badge } from "@/components/ui/badge"
@@ -46,8 +47,8 @@ import {
   type BudgetsFormState,
 } from "@/lib/apex/budgets/actions"
 import type { AccountOption, SavingGoal } from "@/lib/apex/budgets/queries"
+import { formatPenceShort } from "@/lib/apex/money"
 
-import { formatPenceShort } from "./format"
 import { GoalDrawer } from "./goal-drawer"
 
 export function GoalCard({
@@ -64,7 +65,9 @@ export function GoalCard({
   const [editOpen, setEditOpen] = React.useState(false)
   // Remount the edit drawer each open so its fields re-seed from fresh data
   const [editKey, setEditKey] = React.useState(0)
-  const [, startTransition] = React.useTransition()
+  const [confirmOpen, setConfirmOpen] = React.useState(false)
+  const [deleteError, setDeleteError] = React.useState<string | null>(null)
+  const [deleting, startTransition] = React.useTransition()
 
   const fraction = Math.min(1, goal.saved / goal.targetAmount)
   const percent = Math.floor(fraction * 100)
@@ -74,7 +77,12 @@ export function GoalCard({
 
   function remove() {
     startTransition(async () => {
-      await deleteSavingGoal(goal.id)
+      const result = await deleteSavingGoal(goal.id)
+      if (result.error) {
+        setDeleteError(result.error)
+        return
+      }
+      setConfirmOpen(false)
       router.refresh()
     })
   }
@@ -116,7 +124,13 @@ export function GoalCard({
               >
                 <Pencil /> Edit goal
               </DropdownMenuItem>
-              <DropdownMenuItem variant="destructive" onClick={remove}>
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => {
+                  setDeleteError(null)
+                  setConfirmOpen(true)
+                }}
+              >
                 <Trash2 /> Delete goal
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -162,6 +176,20 @@ export function GoalCard({
         savingsAccounts={savingsAccounts}
         open={editOpen}
         onOpenChange={setEditOpen}
+      />
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`Delete ${goal.name}?`}
+        description={
+          goal.account
+            ? `The goal and its target go; ${goal.account.name} and its balance are untouched.`
+            : `The goal and the ${formatPenceShort(goal.saved)} tracked against it go.`
+        }
+        confirmLabel="Delete goal"
+        pending={deleting}
+        error={deleteError}
+        onConfirm={remove}
       />
     </Card>
   )

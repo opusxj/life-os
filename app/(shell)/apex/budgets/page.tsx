@@ -1,7 +1,8 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
-import { PiggyBank, PieChart } from "lucide-react"
+import { PiggyBank, PieChart, Wallet } from "lucide-react"
 
+import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import {
   ApexCardGrid,
   ApexPage,
@@ -9,11 +10,16 @@ import {
   ApexSection,
 } from "@/components/apex/page"
 import { BudgetRow } from "@/components/apex/budgets/budget-row"
-import { formatPenceShort } from "@/components/apex/budgets/format"
 import { GoalCard } from "@/components/apex/budgets/goal-card"
 import { NewGoalButton } from "@/components/apex/budgets/goal-drawer"
 import { NewBudgetDialog } from "@/components/apex/budgets/new-budget-dialog"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { DataProgress } from "@/components/apex/progress"
+import {
+  ApexStatCard,
+  ApexStatHint,
+  ApexStatValue,
+} from "@/components/apex/stat-card"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Empty,
   EmptyDescription,
@@ -22,6 +28,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { getBudgetsPageData } from "@/lib/apex/budgets/queries"
+import { formatPenceShort } from "@/lib/apex/money"
 import { getWorkspace } from "@/lib/data/workspace"
 import { cn } from "@/lib/utils"
 
@@ -41,13 +48,26 @@ export default async function BudgetsPage() {
   )
   const totalSpent = data.budgets.reduce((sum, budget) => sum + budget.spent, 0)
   const headroom = totalBudgeted - totalSpent
+  const over = headroom < 0
+  const spentPercent =
+    totalBudgeted > 0 ? Math.min(100, (totalSpent / totalBudgeted) * 100) : 0
+
+  // Pace marker: how far through the month we are, resolved server-side so
+  // every budget bar shares the same tick.
+  const now = new Date()
+  const daysInMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0
+  ).getDate()
+  const monthTick = Math.round((now.getDate() / daysInMonth) * 100)
 
   return (
     <ApexPage>
       <ApexPageHeader title="Budgets & Savings" />
 
       <ApexSection
-        label={`Budgets · ${data.monthLabel}`}
+        label="Budgets"
         action={<NewBudgetDialog categories={data.budgetableCategories} />}
       >
         {data.budgets.length === 0 ? (
@@ -63,30 +83,44 @@ export default async function BudgetsPage() {
             </EmptyHeader>
           </Empty>
         ) : (
-          <Card size="sm" className="gap-0 py-0">
-            <CardContent className="px-0">
-              <div className="divide-y">
-                {data.budgets.map((budget) => (
-                  <BudgetRow key={budget.id} budget={budget} />
-                ))}
-              </div>
-            </CardContent>
-            <CardFooter className="justify-between gap-2 px-3 py-2">
-              <span className="text-[13px] text-muted-foreground">
-                {`${formatPenceShort(totalSpent)} spent of ${formatPenceShort(totalBudgeted)} budgeted`}
-              </span>
-              <span
-                className={cn(
-                  "text-[13px] font-medium tabular-nums",
-                  headroom < 0 && "text-destructive"
-                )}
-              >
-                {headroom >= 0
-                  ? `${formatPenceShort(headroom)} left`
-                  : `over by ${formatPenceShort(-headroom)}`}
-              </span>
-            </CardFooter>
-          </Card>
+          <>
+            <ApexStatCard
+              label="Headroom"
+              icon={Wallet}
+              iconClassName={ANCHOR_TINTS.primary}
+            >
+              <ApexStatValue className={cn(over && "text-destructive")}>
+                {over
+                  ? `Over by ${formatPenceShort(-headroom)}`
+                  : `${formatPenceShort(headroom)} left`}
+              </ApexStatValue>
+              <DataProgress
+                value={spentPercent}
+                color={over ? "var(--destructive)" : "var(--primary)"}
+                dim={over}
+                tick={monthTick}
+                aria-label="Spent of budgeted this month"
+                className="mt-2"
+              />
+              <ApexStatHint className="mt-1.5">
+                {`${formatPenceShort(totalSpent)} of ${formatPenceShort(totalBudgeted)} · ${data.monthLabel}`}
+              </ApexStatHint>
+            </ApexStatCard>
+
+            <Card size="sm" className="py-1">
+              <CardContent className="px-1">
+                <div className="grid gap-x-6 xl:grid-cols-2">
+                  {data.budgets.map((budget) => (
+                    <BudgetRow
+                      key={budget.id}
+                      budget={budget}
+                      tick={monthTick}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </>
         )}
       </ApexSection>
 
