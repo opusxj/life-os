@@ -1,5 +1,6 @@
 import {
   getBudgetsPageData,
+  type AccountOption as GoalAccountOption,
   type Budget,
   type SavingGoal,
 } from "@/lib/apex/budgets/queries"
@@ -42,8 +43,12 @@ export type OverviewData = {
   goals: SavingGoal[]
   /** Recurring payments due within the next 7 days (incl. overdue), soonest first */
   dueSoon: RecurringPayment[]
+  /** First payment beyond the 7-day window — the all-clear card's "Next:" line */
+  nextUp: RecurringPayment | null
   /** Account choices for Mark paid on items without a paying account */
   payAccounts: AccountOption[]
+  /** All live accounts — Top up source choices for the savings tiles */
+  goalAccounts: GoalAccountOption[]
   mortgages: Mortgage[]
   /** Income vs expense per calendar month, oldest first — always six entries */
   cashflow: CashflowMonth[]
@@ -94,7 +99,12 @@ export async function getOverviewData(spaceId: string): Promise<OverviewData> {
     dueSoon: subsData.payments.filter(
       (payment) => payment.nextDueOn <= horizonKey
     ),
+    // Payments arrive soonest-first, so the first one past the horizon is next
+    nextUp:
+      subsData.payments.find((payment) => payment.nextDueOn > horizonKey) ??
+      null,
     payAccounts: subsData.accounts,
+    goalAccounts: budgetsData.accounts,
     mortgages,
     cashflow: foldCashflow(cashflowScaffold, cashflowRows),
   }
