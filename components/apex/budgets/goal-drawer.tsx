@@ -146,7 +146,7 @@ export function GoalDrawer({
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
               {`Linked goals track the account's balance; unlinked goals count top-ups.`}
             </p>
           </div>
