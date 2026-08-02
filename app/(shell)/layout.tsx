@@ -4,19 +4,23 @@ import { ContextSidebar } from "@/components/shell/context-sidebar"
 import { ShellFooter } from "@/components/shell/footer"
 import { Rail } from "@/components/shell/rail"
 import { TopBar } from "@/components/shell/top-bar"
-import { getCurrentProfile } from "@/lib/data/workspace"
+import { getWorkspace } from "@/lib/data/workspace"
 
 export default async function ShellLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const user = await getCurrentProfile()
-  if (!user) redirect("/sign-in")
+  const workspace = await getWorkspace()
+  if (!workspace) redirect("/sign-in")
 
   return (
     <div className="flex h-svh flex-col gap-2 bg-muted p-2 dark:bg-neutral-950">
-      <TopBar user={user} />
+      <TopBar
+        user={workspace.user}
+        spaces={workspace.spaces}
+        activeSpaceId={workspace.activeSpace.id}
+      />
       <div className="flex min-h-0 flex-1 gap-2">
         <Rail />
         {/* Sidebar and body share one floating panel, joined by a border */}
