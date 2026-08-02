@@ -1,6 +1,17 @@
 # Project Board
 
-Source of truth until Linear is connected; after that, Linear is canonical and this file becomes a mirror/archive. Tickets are agent-sized (one focused session each). Statuses: `Ready` (pickable now), `Blocked (LOS-n)` (dependency), `Later` (refine when its epic is up). Priorities P0 (now) → P3 (someday).
+> **Linear is canonical as of 2026-08-02** — team `LifeOS`, epics imported as projects E0–E7, dependencies as native "blocked by" relations. This file is the original breakdown kept as an archive; statuses below are frozen at import time. Check Linear for live state.
+
+| Board ref → Linear | | | |
+|---|---|---|---|
+| LOS-1 → LIFE-5 | LOS-7 → LIFE-20 | LOS-13 → LIFE-25 | LOS-19 → LIFE-9 |
+| LOS-2 → LIFE-6 | LOS-8 → LIFE-23 | LOS-14 → LIFE-22 | LOS-20 → LIFE-10 |
+| LOS-3 → LIFE-15 | LOS-9 → LIFE-24 | LOS-15 → LIFE-26 | LOS-21 → LIFE-11 |
+| LOS-4 → LIFE-16 | LOS-10 → LIFE-7 | LOS-16 → LIFE-27 | LOS-22 → LIFE-12 |
+| LOS-5 → LIFE-17 | LOS-11 → LIFE-18 | LOS-17 → LIFE-28 | LOS-23 → LIFE-13 |
+| LOS-6 → LIFE-19 | LOS-12 → LIFE-21 | LOS-18 → LIFE-8 | LOS-24 → LIFE-14 |
+
+Tickets are agent-sized (one focused session each). Statuses: `Ready` (pickable now), `Blocked (LOS-n)` (dependency), `Later` (refine when its epic is up). Priorities P0 (now) → P3 (someday).
 
 Near-term tickets (E0, E1, top of E2) carry full acceptance criteria. Later tickets are intentionally lighter — they get refined just-in-time when their epic comes up, per our no-upfront-breakdown rule.
 
@@ -10,7 +21,7 @@ Near-term tickets (E0, E1, top of E2) carry full acceptance criteria. Later tick
 
 | ID | Title | Priority | Size | Status |
 |----|-------|----------|------|--------|
-| LOS-1 | Connect Linear and import this board | P0 | S | Ready (John) |
+| LOS-1 | Connect Linear and import this board | P0 | S | Done |
 | LOS-2 | Create Supabase project + environment wiring | P0 | S | Done |
 
 **LOS-1 — Connect Linear and import this board**
