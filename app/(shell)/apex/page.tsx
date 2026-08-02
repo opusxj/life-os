@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
+import { todayKey } from "@/components/apex/due-state"
 import {
   CashflowCard,
   DueSoonCard,
@@ -21,11 +22,33 @@ export default async function ApexOverviewPage() {
   if (!workspace) redirect("/sign-in")
 
   const data = await getOverviewData(workspace.activeSpace.id)
+  const today = todayKey()
   const empty =
     data.accounts.length === 0 &&
     data.dueSoon.length === 0 &&
+    data.topBudgets.length === 0 &&
     data.goals.length === 0 &&
     data.mortgages.length === 0
+
+  // Third-row spans are computed from the data so a conditionally-null card
+  // never leaves a hole: the row always sums to 3 at lg and 4 at 2xl.
+  const goalCount = data.goals.length
+  const hasMortgage = data.mortgages.length > 0
+  const savingsClass = !hasMortgage
+    ? "lg:col-span-3 2xl:col-span-4"
+    : goalCount === 1
+      ? undefined
+      : goalCount === 2
+        ? "lg:col-span-2"
+        : "lg:col-span-2 2xl:col-span-3"
+  const mortgageClass =
+    goalCount === 0
+      ? "lg:col-span-3 2xl:col-span-4"
+      : goalCount === 1
+        ? "lg:col-span-2 2xl:col-span-3"
+        : goalCount === 2
+          ? "2xl:col-span-2"
+          : undefined
 
   return (
     <ApexPage>
@@ -41,7 +64,9 @@ export default async function ApexOverviewPage() {
           />
           <DueSoonCard
             payments={data.dueSoon}
+            nextUp={data.nextUp}
             payAccounts={data.payAccounts}
+            today={today}
             className="2xl:col-span-2"
           />
           <CashflowCard months={data.cashflow} className="lg:col-span-2" />
@@ -50,10 +75,15 @@ export default async function ApexOverviewPage() {
             budgets={data.topBudgets}
             className="2xl:col-span-2"
           />
-          <MortgageSnapshot mortgages={data.mortgages} />
+          <MortgageSnapshot
+            mortgages={data.mortgages}
+            className={mortgageClass}
+          />
           <SavingsStrip
             goals={data.goals}
-            className="lg:col-span-2 2xl:col-span-3"
+            accounts={data.goalAccounts}
+            maxColumns={hasMortgage ? 3 : 4}
+            className={savingsClass}
           />
         </div>
       )}

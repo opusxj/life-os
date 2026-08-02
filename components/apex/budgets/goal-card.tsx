@@ -3,9 +3,10 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { motion, MotionConfig } from "motion/react"
 import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react"
 
+import { ConfirmDialog } from "@/components/apex/confirm-dialog"
+import { ProgressGrid } from "@/components/apex/progress-grid"
 import { ApexStatHint } from "@/components/apex/stat-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -46,11 +47,9 @@ import {
   type BudgetsFormState,
 } from "@/lib/apex/budgets/actions"
 import type { AccountOption, SavingGoal } from "@/lib/apex/budgets/queries"
+import { formatPenceShort } from "@/lib/apex/money"
 
-import { formatPenceShort } from "./format"
 import { GoalDrawer } from "./goal-drawer"
-
-const spring = { type: "spring", stiffness: 500, damping: 32 } as const
 
 export function GoalCard({
   goal,
@@ -66,7 +65,9 @@ export function GoalCard({
   const [editOpen, setEditOpen] = React.useState(false)
   // Remount the edit drawer each open so its fields re-seed from fresh data
   const [editKey, setEditKey] = React.useState(0)
-  const [, startTransition] = React.useTransition()
+  const [confirmOpen, setConfirmOpen] = React.useState(false)
+  const [deleteError, setDeleteError] = React.useState<string | null>(null)
+  const [deleting, startTransition] = React.useTransition()
 
   const fraction = Math.min(1, goal.saved / goal.targetAmount)
   const percent = Math.floor(fraction * 100)
@@ -76,7 +77,12 @@ export function GoalCard({
 
   function remove() {
     startTransition(async () => {
-      await deleteSavingGoal(goal.id)
+      const result = await deleteSavingGoal(goal.id)
+      if (result.error) {
+        setDeleteError(result.error)
+        return
+      }
+      setConfirmOpen(false)
       router.refresh()
     })
   }
@@ -118,7 +124,13 @@ export function GoalCard({
               >
                 <Pencil /> Edit goal
               </DropdownMenuItem>
-              <DropdownMenuItem variant="destructive" onClick={remove}>
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => {
+                  setDeleteError(null)
+                  setConfirmOpen(true)
+                }}
+              >
                 <Trash2 /> Delete goal
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -165,63 +177,25 @@ export function GoalCard({
         open={editOpen}
         onOpenChange={setEditOpen}
       />
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`Delete ${goal.name}?`}
+        description={
+          goal.account
+            ? `The goal and its target go; ${goal.account.name} and its balance are untouched.`
+            : `The goal and the ${formatPenceShort(goal.saved)} tracked against it go.`
+        }
+        confirmLabel="Delete goal"
+        pending={deleting}
+        error={deleteError}
+        onConfirm={remove}
+      />
     </Card>
   )
 }
 
-/**
- * The hero: the target cut into cells that fill as savings grow.
- * 1% cells for big targets, chunkier cells for small ones.
- */
-function ProgressGrid({
-  target,
-  fraction,
-  color,
-}: {
-  target: number
-  fraction: number
-  color: string
-}) {
-  const cells = target >= 1_000_000 ? 100 : target >= 100_000 ? 50 : 20
-  const exact = fraction * cells
-  const full = Math.floor(exact)
-  const hasPartial = full < cells && exact - full > 0.02
-
-  return (
-    <MotionConfig reducedMotion="user">
-      <div
-        role="img"
-        aria-label={`${Math.floor(fraction * 100)}% of target saved`}
-        className="grid grid-cols-10 gap-1"
-      >
-        {Array.from({ length: cells }, (_, index) => {
-          const isFull = index < full
-          const isPartial = index === full && hasPartial
-          if (!isFull && !isPartial) {
-            return (
-              <span
-                key={index}
-                className="aspect-square rounded-[3px] bg-muted"
-              />
-            )
-          }
-          return (
-            <motion.span
-              key={index}
-              className="aspect-square rounded-[3px]"
-              style={{ backgroundColor: color }}
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: isPartial ? 0.45 : 1, scale: 1 }}
-              transition={{ ...spring, delay: Math.min(index * 0.006, 0.45) }}
-            />
-          )
-        })}
-      </div>
-    </MotionConfig>
-  )
-}
-
-function TopUpDrawer({
+export function TopUpDrawer({
   goal,
   accounts,
   open,

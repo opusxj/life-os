@@ -1,5 +1,6 @@
 "use client"
 
+import type * as React from "react"
 import { useRouter } from "next/navigation"
 import { ListFilter, X } from "lucide-react"
 
@@ -29,10 +30,13 @@ export function TransactionFilterBar({
   options,
   filters,
   defaultMonth,
+  children,
 }: {
   options: TransactionOptions
   filters: TransactionFilters
   defaultMonth: string
+  /** Right-aligned extras (the In/Out/Net totals) sharing the filter row */
+  children?: React.ReactNode
 }) {
   const router = useRouter()
 
@@ -242,6 +246,8 @@ export function TransactionFilterBar({
           Clear
         </Button>
       )}
+
+      {children}
     </div>
   )
 }

@@ -208,7 +208,7 @@ function TransactionForm({
             required
           />
           {amountInvalid && (
-            <p role="alert" className="text-[11px] text-destructive">
+            <p role="alert" className="text-[13px] text-destructive">
               Enter a valid amount, like 12.50.
             </p>
           )}
@@ -418,7 +418,7 @@ function FieldLabel(props: React.ComponentProps<typeof Label>) {
   return (
     <Label
       {...props}
-      className="text-[11px] font-medium text-muted-foreground"
+      className="text-[13px] font-medium text-muted-foreground"
     />
   )
 }

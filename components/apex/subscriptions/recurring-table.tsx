@@ -11,26 +11,19 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
+import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
+import { ConfirmDialog } from "@/components/apex/confirm-dialog"
+import { DueStateBadge, dueState } from "@/components/apex/due-state"
 import { MarkPaidButton } from "@/components/apex/subscriptions/mark-paid-button"
 import { RecurringDrawer } from "@/components/apex/subscriptions/recurring-drawer"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,58 +41,81 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cancelRecurringPayment } from "@/lib/apex/subscriptions/actions"
-import { formatPence } from "@/lib/apex/money"
+import { formatPence, formatPenceShort } from "@/lib/apex/money"
 import type {
   AccountOption,
   CategoryOption,
+  RecurringCadence,
   RecurringKind,
   RecurringPayment,
 } from "@/lib/apex/subscriptions/queries"
 import { cn } from "@/lib/utils"
 
-const headClass = "h-8 text-[11px] font-medium text-muted-foreground"
+const headClass = "h-8 text-[13px] font-medium text-muted-foreground"
 
-/** Icon anchor + tint per kind — client-side so the server page passes only data. */
+/** Per-kind icon chip meta — tints come from the shared anchor vocabulary. */
 const KIND_META: Record<
   RecurringKind,
-  { icon: LucideIcon; iconClassName: string }
+  { icon: LucideIcon; label: string; iconClassName: string }
 > = {
   subscription: {
     icon: Repeat,
-    iconClassName: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+    label: "Subscription",
+    iconClassName: ANCHOR_TINTS.subscription,
   },
   bill: {
     icon: ReceiptText,
-    iconClassName: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
+    label: "Bill",
+    iconClassName: ANCHOR_TINTS.bill,
   },
 }
 
-/** One kind group (subscriptions or bills) as a headed Card around a ui/Table. */
+const CADENCE_SHORT: Record<RecurringCadence, string> = {
+  weekly: "wk",
+  monthly: "mo",
+  quarterly: "qtr",
+  yearly: "yr",
+}
+
+export type RecurringRow = RecurringPayment & {
+  /** Cadence-normalized pence per month, computed server-side */
+  monthly: number
+}
+
+function KindChip({ kind }: { kind: RecurringKind }) {
+  const { icon: Icon, label, iconClassName } = KIND_META[kind]
+  return (
+    <span
+      title={label}
+      className={cn(
+        "flex size-5 shrink-0 items-center justify-center rounded-md [&>svg]:size-3",
+        iconClassName
+      )}
+    >
+      <Icon />
+      <span className="sr-only">{label}</span>
+    </span>
+  )
+}
+
+/** Every subscription and bill in one table, soonest due first across kinds. */
 export function RecurringTable({
-  title,
-  description,
-  kind,
-  monthlyTotal,
   payments,
+  monthlyTotal,
   accounts,
   categories,
   spaceId,
   today,
-  emptyLine,
 }: {
-  title: string
-  /** One muted support line under the title */
-  description: string
-  kind: RecurringKind
-  /** Cadence-normalized pence per month; the footer total */
+  /** Soonest due first — the query's order, kinds interleaved */
+  payments: RecurringRow[]
+  /** Combined cadence-normalized pence per month; the footer total */
   monthlyTotal: number
-  payments: RecurringPayment[]
   accounts: AccountOption[]
   categories: CategoryOption[]
   spaceId: string
   /** yyyy-mm-dd, resolved server-side so SSR and hydration agree */
   today: string
-  emptyLine: string
 }) {
   const router = useRouter()
   const [editing, setEditing] = React.useState<RecurringPayment | null>(null)
@@ -122,48 +138,15 @@ export function RecurringTable({
     })
   }
 
-  const { icon: Icon, iconClassName } = KIND_META[kind]
-
-  const header = (
-    <CardHeader className="border-b">
-      <CardTitle className="flex items-center gap-1.5">
-        <span
-          className={cn(
-            "flex size-5 items-center justify-center rounded-md [&>svg]:size-3",
-            iconClassName
-          )}
-        >
-          <Icon />
-        </span>
-        {title}
-      </CardTitle>
-      <CardDescription className="text-[13px]">{description}</CardDescription>
-      <CardAction>
-        <Badge
-          variant={kind === "subscription" ? "secondary" : "outline"}
-          className="capitalize"
-        >
-          {kind}
-        </Badge>
-      </CardAction>
-    </CardHeader>
-  )
-
-  if (payments.length === 0) {
-    return (
-      <Card size="sm">
-        {header}
-        <CardContent className="text-[13px] text-muted-foreground">
-          {emptyLine}
-        </CardContent>
-      </Card>
-    )
-  }
-
   return (
     <>
       <Card size="sm" className="gap-0 pb-0">
-        {header}
+        <CardHeader className="border-b">
+          <CardTitle>All recurring</CardTitle>
+          <CardDescription className="text-[13px]">
+            Subscriptions and bills together, soonest due first.
+          </CardDescription>
+        </CardHeader>
         <CardContent className="px-0">
           <Table>
             <TableHeader>
@@ -171,9 +154,6 @@ export function RecurringTable({
                 <TableHead className={cn(headClass, "px-3")}>Name</TableHead>
                 <TableHead className={cn(headClass, "hidden md:table-cell")}>
                   Account
-                </TableHead>
-                <TableHead className={cn(headClass, "hidden sm:table-cell")}>
-                  Cadence
                 </TableHead>
                 <TableHead className={headClass}>Next due</TableHead>
                 <TableHead className={cn(headClass, "text-right")}>
@@ -191,6 +171,7 @@ export function RecurringTable({
                   <TableRow key={payment.id}>
                     <TableCell className="w-full max-w-0 px-3 py-1.5 text-[13px]">
                       <span className="flex items-center gap-2">
+                        <KindChip kind={payment.kind} />
                         <span
                           className="size-2 shrink-0 rounded-full"
                           title={payment.categoryName ?? undefined}
@@ -209,29 +190,24 @@ export function RecurringTable({
                     <TableCell className="hidden py-1.5 text-[13px] text-muted-foreground md:table-cell">
                       {payment.accountName ?? "—"}
                     </TableCell>
-                    <TableCell className="hidden py-1.5 text-[13px] text-muted-foreground sm:table-cell">
-                      {payment.cadence}
+                    <TableCell className="py-1.5">
+                      <DueStateBadge state={due} />
                     </TableCell>
-                    <TableCell className="py-1.5 text-[13px] text-muted-foreground">
-                      {due.status === "overdue" ? (
-                        <Badge variant="destructive">{due.label}</Badge>
-                      ) : due.status === "today" ? (
-                        <Badge
-                          variant="secondary"
-                          className="bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                        >
-                          {due.label}
-                        </Badge>
-                      ) : (
-                        due.label
+                    <TableCell className="py-1.5 text-right text-[13px] tabular-nums">
+                      <span className="font-medium">
+                        {payment.cadence === "monthly"
+                          ? formatPenceShort(payment.amount)
+                          : `${formatPenceShort(payment.amount)} / ${CADENCE_SHORT[payment.cadence]}`}
+                      </span>
+                      {payment.cadence !== "monthly" && (
+                        <span className="text-muted-foreground">
+                          {` · ${formatPenceShort(payment.monthly)}/mo`}
+                        </span>
                       )}
-                    </TableCell>
-                    <TableCell className="py-1.5 text-right text-[13px] font-medium tabular-nums">
-                      {formatPence(payment.amount)}
                     </TableCell>
                     <TableCell className="px-3 py-1.5">
                       <span className="flex items-center justify-end gap-1">
-                        {due.isDue && (
+                        {due.actionable && (
                           <MarkPaidButton
                             paymentId={payment.id}
                             accountId={payment.accountId}
@@ -283,7 +259,6 @@ export function RecurringTable({
                   Monthly total
                 </TableCell>
                 <TableCell className="hidden md:table-cell" />
-                <TableCell className="hidden sm:table-cell" />
                 <TableCell />
                 <TableCell className="py-2 text-right text-[13px] tabular-nums">
                   {formatPence(monthlyTotal)}
@@ -309,72 +284,18 @@ export function RecurringTable({
         />
       )}
 
-      <Dialog
+      <ConfirmDialog
         open={cancelling !== null}
         onOpenChange={(open) => {
           if (!open) setCancelling(null)
         }}
-      >
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{`Cancel ${cancelling?.name ?? "this"}?`}</DialogTitle>
-            <DialogDescription>
-              {"It leaves the schedule; payment history stays."}
-            </DialogDescription>
-          </DialogHeader>
-          {cancelError && (
-            <p
-              role="alert"
-              className="rounded-lg bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
-            >
-              {cancelError}
-            </p>
-          )}
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCancelling(null)}
-            >
-              Keep it
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              disabled={cancelPending}
-              onClick={() => cancelling && confirmCancel(cancelling)}
-            >
-              {cancelPending ? "Cancelling…" : "Cancel it"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        title={`Cancel ${cancelling?.name ?? "this"}?`}
+        description="It leaves the schedule; payment history stays."
+        confirmLabel="Cancel it"
+        pending={cancelPending}
+        error={cancelError}
+        onConfirm={() => cancelling && confirmCancel(cancelling)}
+      />
     </>
   )
-}
-
-function dueState(nextDueOn: string, today: string) {
-  const days = Math.round(
-    (Date.parse(nextDueOn) - Date.parse(today)) / 86_400_000
-  )
-  if (days < 0)
-    return { status: "overdue" as const, label: "Overdue", isDue: true }
-  if (days === 0)
-    return { status: "today" as const, label: "Due today", isDue: true }
-  const label =
-    days === 1
-      ? "Tomorrow"
-      : days <= 7
-        ? `In ${days} days`
-        : shortDate(nextDueOn)
-  return { status: "upcoming" as const, label, isDue: false }
-}
-
-const shortDateFormat = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-})
-
-function shortDate(isoDate: string) {
-  return shortDateFormat.format(new Date(`${isoDate}T00:00:00`))
 }

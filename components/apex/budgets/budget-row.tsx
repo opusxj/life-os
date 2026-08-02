@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ConfirmDialog } from "@/components/apex/confirm-dialog"
 import { DataProgress } from "@/components/apex/progress"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -28,20 +29,26 @@ import {
   type BudgetsFormState,
 } from "@/lib/apex/budgets/actions"
 import type { Budget } from "@/lib/apex/budgets/queries"
+import { formatPenceShort } from "@/lib/apex/money"
 
-import { formatPenceShort } from "./format"
-
-export function BudgetRow({ budget }: { budget: Budget }) {
+export function BudgetRow({ budget, tick }: { budget: Budget; tick: number }) {
   const router = useRouter()
   const [editOpen, setEditOpen] = React.useState(false)
-  const [, startTransition] = React.useTransition()
+  const [confirmOpen, setConfirmOpen] = React.useState(false)
+  const [removeError, setRemoveError] = React.useState<string | null>(null)
+  const [removing, startTransition] = React.useTransition()
 
   const over = budget.spent > budget.amount
   const percent = Math.min(100, (budget.spent / budget.amount) * 100)
 
   function remove() {
     startTransition(async () => {
-      await removeBudget(budget.id)
+      const result = await removeBudget(budget.id)
+      if (result.error) {
+        setRemoveError(result.error)
+        return
+      }
+      setConfirmOpen(false)
       router.refresh()
     })
   }
@@ -58,24 +65,25 @@ export function BudgetRow({ budget }: { budget: Budget }) {
           <span className="truncate text-[13px] font-medium">
             {budget.category.name}
           </span>
-          <span className="shrink-0 text-[13px] text-muted-foreground tabular-nums">
-            {`${formatPenceShort(budget.spent)} of ${formatPenceShort(budget.amount)}`}
+          <span className="flex shrink-0 items-baseline gap-2">
+            {over && (
+              <span className="text-[13px] font-medium text-destructive tabular-nums">
+                {`over by ${formatPenceShort(budget.spent - budget.amount)}`}
+              </span>
+            )}
+            <span className="text-[13px] text-muted-foreground tabular-nums">
+              {`${formatPenceShort(budget.spent)} of ${formatPenceShort(budget.amount)}`}
+            </span>
           </span>
         </div>
-        <div className="mt-1.5 flex items-center gap-2">
-          <DataProgress
-            value={percent}
-            color={over ? "var(--destructive)" : budget.category.color}
-            dim={over}
-            aria-label={`${budget.category.name} budget used`}
-            className="min-w-0 flex-1 [&_[data-slot=progress-track]]:h-1.5"
-          />
-          {over && (
-            <span className="shrink-0 text-[11px] text-destructive tabular-nums">
-              {`over by ${formatPenceShort(budget.spent - budget.amount)}`}
-            </span>
-          )}
-        </div>
+        <DataProgress
+          value={percent}
+          color={over ? "var(--destructive)" : budget.category.color}
+          dim={over}
+          tick={tick}
+          aria-label={`${budget.category.name} budget used`}
+          className="mt-1.5 [&_[data-slot=progress-track]]:h-1.5"
+        />
       </div>
 
       <DropdownMenu>
@@ -94,7 +102,13 @@ export function BudgetRow({ budget }: { budget: Budget }) {
           <DropdownMenuItem onClick={() => setEditOpen(true)}>
             <Pencil /> Edit amount
           </DropdownMenuItem>
-          <DropdownMenuItem variant="destructive" onClick={remove}>
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => {
+              setRemoveError(null)
+              setConfirmOpen(true)
+            }}
+          >
             <Trash2 /> Remove budget
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -104,6 +118,16 @@ export function BudgetRow({ budget }: { budget: Budget }) {
         budget={budget}
         open={editOpen}
         onOpenChange={setEditOpen}
+      />
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`Remove ${budget.category.name} budget?`}
+        description="The monthly envelope goes; the category and its transactions stay."
+        confirmLabel="Remove budget"
+        pending={removing}
+        error={removeError}
+        onConfirm={remove}
       />
     </div>
   )

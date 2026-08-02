@@ -12,6 +12,7 @@ export function DataProgress({
   value,
   color,
   dim,
+  tick,
   className,
   ...props
 }: React.ComponentProps<typeof Progress> & {
@@ -19,17 +20,27 @@ export function DataProgress({
   color: string
   /** Soften the fill (e.g. calm over-budget states) */
   dim?: boolean
+  /** 0-100: a thin pace marker on the track (e.g. how far through the month) */
+  tick?: number
 }) {
   return (
     <Progress
       value={value}
       className={cn(
-        "[&_[data-slot=progress-indicator]]:bg-(--data-color)",
+        "relative [&_[data-slot=progress-indicator]]:bg-(--data-color)",
         dim && "[&_[data-slot=progress-indicator]]:opacity-60",
         className
       )}
       style={{ "--data-color": color } as React.CSSProperties}
       {...props}
-    />
+    >
+      {tick !== undefined && tick >= 0 && tick <= 100 && (
+        <span
+          aria-hidden
+          className="absolute top-1/2 z-10 h-2.5 w-px -translate-y-1/2 bg-foreground/40"
+          style={{ left: `${tick}%` }}
+        />
+      )}
+    </Progress>
   )
 }

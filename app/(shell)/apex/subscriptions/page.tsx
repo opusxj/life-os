@@ -1,7 +1,15 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
-import { CalendarClock, CalendarSync, ReceiptText, Repeat } from "lucide-react"
+import {
+  Banknote,
+  CalendarClock,
+  CalendarSync,
+  ReceiptText,
+  Repeat,
+} from "lucide-react"
 
+import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
+import { dueState, todayKey } from "@/components/apex/due-state"
 import { AddRecurringButton } from "@/components/apex/subscriptions/add-recurring-button"
 import { RecurringTable } from "@/components/apex/subscriptions/recurring-table"
 import { ApexCardGrid, ApexPage, ApexPageHeader } from "@/components/apex/page"
@@ -18,7 +26,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
-import { formatPence } from "@/lib/apex/money"
+import { formatPenceShort } from "@/lib/apex/money"
 import {
   getSubscriptionsPageData,
   monthlyPence,
@@ -29,11 +37,6 @@ export const metadata: Metadata = {
   title: "Subscriptions & Bills · Apex · Life OS",
 }
 
-const dueDateFormat = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-})
-
 export default async function SubscriptionsPage() {
   const workspace = await getWorkspace()
   if (!workspace) redirect("/sign-in")
@@ -43,7 +46,7 @@ export default async function SubscriptionsPage() {
   )
 
   const spaceId = workspace.activeSpace.id
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayKey()
   const subscriptions = payments.filter((p) => p.kind === "subscription")
   const bills = payments.filter((p) => p.kind === "bill")
   const subscriptionsMonthly = subscriptions.reduce(
@@ -54,8 +57,13 @@ export default async function SubscriptionsPage() {
     (sum, p) => sum + monthlyPence(p.amount, p.cadence),
     0
   )
+  const totalMonthly = subscriptionsMonthly + billsMonthly
   // Query is ordered by next_due_on, so the soonest is first
   const nextDue = payments[0]
+  const rows = payments.map((payment) => ({
+    ...payment,
+    monthly: monthlyPence(payment.amount, payment.cadence),
+  }))
 
   const addButton = (
     <AddRecurringButton
@@ -86,13 +94,27 @@ export default async function SubscriptionsPage() {
         </Empty>
       ) : (
         <>
-          <ApexCardGrid>
+          <ApexCardGrid className="xl:grid-cols-4">
+            <ApexStatCard
+              label="Outgoings / month"
+              icon={Banknote}
+              iconClassName={ANCHOR_TINTS.primary}
+            >
+              <ApexStatValue>{formatPenceShort(totalMonthly)}</ApexStatValue>
+              <ApexStatHint>
+                {payments.length === 1
+                  ? `1 recurring payment`
+                  : `${payments.length} recurring payments`}
+              </ApexStatHint>
+            </ApexStatCard>
             <ApexStatCard
               label="Subscriptions / month"
               icon={Repeat}
-              iconClassName="bg-violet-500/10 text-violet-600 dark:text-violet-400"
+              iconClassName={ANCHOR_TINTS.subscription}
             >
-              <ApexStatValue>{formatPence(subscriptionsMonthly)}</ApexStatValue>
+              <ApexStatValue>
+                {formatPenceShort(subscriptionsMonthly)}
+              </ApexStatValue>
               <ApexStatHint>
                 {subscriptions.length === 1
                   ? `1 active subscription`
@@ -102,9 +124,9 @@ export default async function SubscriptionsPage() {
             <ApexStatCard
               label="Bills / month"
               icon={ReceiptText}
-              iconClassName="bg-sky-500/10 text-sky-600 dark:text-sky-400"
+              iconClassName={ANCHOR_TINTS.bill}
             >
-              <ApexStatValue>{formatPence(billsMonthly)}</ApexStatValue>
+              <ApexStatValue>{formatPenceShort(billsMonthly)}</ApexStatValue>
               <ApexStatHint>
                 {bills.length === 1
                   ? `1 committed bill`
@@ -114,43 +136,26 @@ export default async function SubscriptionsPage() {
             <ApexStatCard
               label="Next due"
               icon={CalendarClock}
-              iconClassName="bg-amber-500/10 text-amber-600 dark:text-amber-400"
+              iconClassName={ANCHOR_TINTS.due}
             >
               <ApexStatValue>
-                {nextDue ? formatPence(nextDue.amount) : "—"}
+                {nextDue ? formatPenceShort(nextDue.amount) : "—"}
               </ApexStatValue>
               <ApexStatHint className="truncate">
                 {nextDue
-                  ? `${nextDue.name} · ${dueDateFormat.format(new Date(`${nextDue.nextDueOn}T00:00:00`))}`
+                  ? `${nextDue.name} · ${dueState(nextDue.nextDueOn, today).label}`
                   : `Nothing scheduled`}
               </ApexStatHint>
             </ApexStatCard>
           </ApexCardGrid>
 
           <RecurringTable
-            title="Subscriptions"
-            description="Optional recurring spend, soonest due first."
-            kind="subscription"
-            monthlyTotal={subscriptionsMonthly}
-            payments={subscriptions}
+            payments={rows}
+            monthlyTotal={totalMonthly}
             accounts={accounts}
             categories={categories}
             spaceId={spaceId}
             today={today}
-            emptyLine="No subscriptions — just the way your wallet likes it."
-          />
-
-          <RecurringTable
-            title="Bills"
-            description="Committed outgoings, soonest due first."
-            kind="bill"
-            monthlyTotal={billsMonthly}
-            payments={bills}
-            accounts={accounts}
-            categories={categories}
-            spaceId={spaceId}
-            today={today}
-            emptyLine="No committed bills tracked yet."
           />
         </>
       )}

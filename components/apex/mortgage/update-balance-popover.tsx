@@ -47,7 +47,7 @@ export function UpdateBalancePopover({
       <PopoverContent align="start" className="w-60">
         <PopoverHeader>
           <PopoverTitle className="text-[13px]">Update balance</PopoverTitle>
-          <PopoverDescription className="text-[11px]">
+          <PopoverDescription className="text-[13px]">
             {`Straight from your latest statement.`}
           </PopoverDescription>
         </PopoverHeader>

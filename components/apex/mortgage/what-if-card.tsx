@@ -4,27 +4,29 @@ import * as React from "react"
 import { TrendingDown } from "lucide-react"
 import { useMotionValueEvent, useReducedMotion, useSpring } from "motion/react"
 
+import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import {
   ApexStatCard,
   ApexStatHint,
   ApexStatValue,
 } from "@/components/apex/stat-card"
 import { Slider } from "@/components/ui/slider"
+import { formatPenceShort } from "@/lib/apex/money"
 import {
   monthsFromNow,
   overpaymentImpact,
 } from "@/lib/apex/mortgage/amortization"
+import { cn } from "@/lib/utils"
 
-import {
-  EMERALD_ANCHOR,
-  formatMonthYear,
-  formatPounds,
-  pluralMonths,
-} from "./format"
+import { formatMonthYear, pluralMonths } from "./format"
 
 const MAX_EXTRA = 500
 const STEP = 25
 const HOUSE_SPRING = { stiffness: 500, damping: 32 }
+
+/** Faint emerald wash — the one playable card on the page gets its own surface. */
+const PLAY_SURFACE =
+  "bg-emerald-500/[0.04] ring-emerald-500/15 dark:bg-emerald-500/[0.07] dark:ring-emerald-500/25"
 
 /**
  * What would overpaying do? Pure client-side amortization — the slider drives
@@ -34,10 +36,12 @@ export function WhatIfCard({
   balance,
   interestRate,
   monthlyPayment,
+  className,
 }: {
   balance: number
   interestRate: number
   monthlyPayment: number
+  className?: string
 }) {
   const [extra, setExtra] = React.useState(100)
   const impact = React.useMemo(
@@ -50,7 +54,8 @@ export function WhatIfCard({
       <ApexStatCard
         label="Overpayment what-if"
         icon={TrendingDown}
-        iconClassName={EMERALD_ANCHOR}
+        iconClassName={ANCHOR_TINTS.balance}
+        className={cn(PLAY_SURFACE, className)}
       >
         <ApexStatValue className="text-muted-foreground">—</ApexStatValue>
         <ApexStatHint>{`Needs a payment that covers the interest`}</ApexStatHint>
@@ -64,7 +69,8 @@ export function WhatIfCard({
     <ApexStatCard
       label="Overpayment what-if"
       icon={TrendingDown}
-      iconClassName={EMERALD_ANCHOR}
+      iconClassName={ANCHOR_TINTS.balance}
+      className={cn(PLAY_SURFACE, className)}
     >
       <ApexStatValue className="text-emerald-600 dark:text-emerald-400">
         <AnimatedPounds pence={impact.interestSaved} />
@@ -75,6 +81,7 @@ export function WhatIfCard({
           : `Interest saved · paid off ${payoff}, ${pluralMonths(impact.monthsSaved)} sooner`}
       </ApexStatHint>
       <div className="flex items-center gap-2.5 pt-2.5">
+        {/* *:py-2 pads the slider's control — a taller touch target, same track */}
         <Slider
           value={[extra]}
           min={0}
@@ -83,9 +90,10 @@ export function WhatIfCard({
           onValueChange={(value) =>
             setExtra(Array.isArray(value) ? value[0] : value)
           }
+          className="*:py-2"
           aria-label="Extra monthly overpayment"
         />
-        <span className="w-20 shrink-0 text-right text-[11px] font-medium text-muted-foreground tabular-nums">
+        <span className="w-20 shrink-0 text-right text-[13px] font-semibold text-foreground tabular-nums">
           {`+£${extra}/mo`}
         </span>
       </div>
@@ -104,7 +112,9 @@ function AnimatedPounds({ pence }: { pence: number }) {
     else spring.set(pence)
   }, [pence, reducedMotion, spring])
 
-  useMotionValueEvent(spring, "change", (latest) => setDisplay(latest))
+  useMotionValueEvent(spring, "change", (latest) =>
+    setDisplay(Math.round(latest))
+  )
 
-  return <span className="tabular-nums">{formatPounds(display)}</span>
+  return <span className="tabular-nums">{formatPenceShort(display)}</span>
 }
