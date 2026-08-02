@@ -1,0 +1,37 @@
+import { formatPence } from "@/lib/apex/money"
+import type { Mortgage } from "@/lib/apex/mortgage/queries"
+
+import { StatCard, StatValue } from "./stat-card"
+
+/** What does this cost every month, all in? */
+export function MonthlyCostCard({ mortgage }: { mortgage: Mortgage }) {
+  const parts: { label: string; amount: number }[] = [
+    { label: "Mortgage payment", amount: mortgage.monthlyPayment },
+  ]
+  if (mortgage.rentMonthly !== null) {
+    parts.push({ label: "Rent", amount: mortgage.rentMonthly })
+  }
+  for (const extra of mortgage.extras) {
+    parts.push({ label: extra.label, amount: extra.monthly })
+  }
+  const total = parts.reduce((sum, part) => sum + part.amount, 0)
+
+  return (
+    <StatCard label="Monthly cost">
+      <StatValue>{formatPence(total)}</StatValue>
+      {parts.length > 1 && (
+        <div className="space-y-0.5">
+          {parts.map((part) => (
+            <div
+              key={part.label}
+              className="flex items-center justify-between text-[11px] text-muted-foreground"
+            >
+              <span>{part.label}</span>
+              <span className="tabular-nums">{formatPence(part.amount)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </StatCard>
+  )
+}
