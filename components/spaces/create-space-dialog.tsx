@@ -14,17 +14,11 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  ColorSwatches,
+  SWATCH_COLORS,
+} from "@/components/shared/color-swatches"
 import { createSpace, type SpaceFormState } from "@/lib/spaces/actions"
-import { cn } from "@/lib/utils"
-
-const SPACE_COLORS = [
-  "#8b5cf6",
-  "#10b981",
-  "#f59e0b",
-  "#f43f5e",
-  "#0ea5e9",
-  "#6b7280",
-]
 
 export function CreateSpaceDialog({
   open,
@@ -34,7 +28,7 @@ export function CreateSpaceDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const router = useRouter()
-  const [color, setColor] = React.useState(SPACE_COLORS[0])
+  const [color, setColor] = React.useState(SWATCH_COLORS[0])
   const [state, action, pending] = React.useActionState<SpaceFormState, FormData>(
     async (prev, formData) => {
       const result = await createSpace(prev, formData)
@@ -73,25 +67,7 @@ export function CreateSpaceDialog({
 
           <div className="space-y-1.5">
             <Label className="text-[13px]">Color</Label>
-            <input type="hidden" name="color" value={color} />
-            <div className="flex gap-2">
-              {SPACE_COLORS.map((swatch) => (
-                <button
-                  key={swatch}
-                  type="button"
-                  aria-label={`Color ${swatch}`}
-                  aria-pressed={color === swatch}
-                  onClick={() => setColor(swatch)}
-                  className={cn(
-                    "size-6 rounded-full border-2 transition-transform",
-                    color === swatch
-                      ? "scale-110 border-foreground"
-                      : "border-transparent hover:scale-105"
-                  )}
-                  style={{ backgroundColor: swatch }}
-                />
-              ))}
-            </div>
+            <ColorSwatches value={color} onChange={setColor} />
           </div>
 
           {state?.error && (

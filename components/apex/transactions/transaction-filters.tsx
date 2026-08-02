@@ -5,10 +5,14 @@ import { ListFilter, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
-  NativeSelect,
-  NativeSelectOptGroup,
-  NativeSelectOption,
-} from "@/components/ui/native-select"
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import type {
   TransactionFilters,
   TransactionOptions,
@@ -57,10 +61,10 @@ export function TransactionFilterBar({
 
   const isFiltered = Boolean(
     filters.account ||
-    filters.card ||
-    filters.category ||
-    filters.kind ||
-    filters.month !== defaultMonth
+      filters.card ||
+      filters.category ||
+      filters.kind ||
+      filters.month !== defaultMonth
   )
 
   const expenseCategories = options.categories.filter(
@@ -70,119 +74,160 @@ export function TransactionFilterBar({
     (category) => category.kind === "income"
   )
 
+  const monthItems = {
+    ...Object.fromEntries(months.map((month) => [month, formatMonth(month)])),
+    all: "All time",
+  }
+  const accountItems = {
+    all: "All accounts",
+    ...Object.fromEntries(
+      options.accounts.map((account) => [account.id, account.name])
+    ),
+  }
+  const cardItems = {
+    all: "All cards",
+    ...Object.fromEntries(
+      options.cards.map((card) => [
+        card.id,
+        card.last4 ? `${card.name} ·${card.last4}` : card.name,
+      ])
+    ),
+  }
+  const categoryItems = {
+    all: "All categories",
+    ...Object.fromEntries(
+      options.categories.map((category) => [category.id, category.name])
+    ),
+  }
+  const kindItems = {
+    all: "All kinds",
+    ...Object.fromEntries(KINDS),
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <ListFilter
         aria-hidden
         className="size-4 shrink-0 text-muted-foreground"
       />
-      <NativeSelect
-        size="sm"
-        aria-label="Filter by month"
-        value={filters.month ?? "all"}
-        onChange={(event) =>
-          apply({
-            month:
-              event.target.value === "all" ? undefined : event.target.value,
-          })
-        }
-      >
-        {months.map((month) => (
-          <NativeSelectOption key={month} value={month}>
-            {formatMonth(month)}
-          </NativeSelectOption>
-        ))}
-        <NativeSelectOption value="all">All time</NativeSelectOption>
-      </NativeSelect>
 
-      <NativeSelect
-        size="sm"
-        aria-label="Filter by account"
-        value={filters.account ?? "all"}
-        onChange={(event) =>
-          apply({
-            account:
-              event.target.value === "all" ? undefined : event.target.value,
-          })
+      <Select
+        items={monthItems}
+        value={filters.month ?? "all"}
+        onValueChange={(value) =>
+          apply({ month: value === "all" ? undefined : (value as string) })
         }
       >
-        <NativeSelectOption value="all">All accounts</NativeSelectOption>
-        {options.accounts.map((account) => (
-          <NativeSelectOption key={account.id} value={account.id}>
-            {account.name}
-          </NativeSelectOption>
-        ))}
-      </NativeSelect>
+        <SelectTrigger size="sm" aria-label="Filter by month">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {months.map((month) => (
+            <SelectItem key={month} value={month}>
+              {formatMonth(month)}
+            </SelectItem>
+          ))}
+          <SelectItem value="all">All time</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select
+        items={accountItems}
+        value={filters.account ?? "all"}
+        onValueChange={(value) =>
+          apply({ account: value === "all" ? undefined : (value as string) })
+        }
+      >
+        <SelectTrigger size="sm" aria-label="Filter by account">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All accounts</SelectItem>
+          {options.accounts.map((account) => (
+            <SelectItem key={account.id} value={account.id}>
+              {account.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       {options.cards.length > 0 && (
-        <NativeSelect
-          size="sm"
-          aria-label="Filter by card"
+        <Select
+          items={cardItems}
           value={filters.card ?? "all"}
-          onChange={(event) =>
-            apply({
-              card:
-                event.target.value === "all" ? undefined : event.target.value,
-            })
+          onValueChange={(value) =>
+            apply({ card: value === "all" ? undefined : (value as string) })
           }
         >
-          <NativeSelectOption value="all">All cards</NativeSelectOption>
-          {options.cards.map((card) => (
-            <NativeSelectOption key={card.id} value={card.id}>
-              {card.last4 ? `${card.name} ·${card.last4}` : card.name}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
+          <SelectTrigger size="sm" aria-label="Filter by card">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All cards</SelectItem>
+            {options.cards.map((card) => (
+              <SelectItem key={card.id} value={card.id}>
+                {card.last4 ? `${card.name} ·${card.last4}` : card.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )}
 
-      <NativeSelect
-        size="sm"
-        aria-label="Filter by category"
+      <Select
+        items={categoryItems}
         value={filters.category ?? "all"}
-        onChange={(event) =>
-          apply({
-            category:
-              event.target.value === "all" ? undefined : event.target.value,
-          })
+        onValueChange={(value) =>
+          apply({ category: value === "all" ? undefined : (value as string) })
         }
       >
-        <NativeSelectOption value="all">All categories</NativeSelectOption>
-        <NativeSelectOptGroup label="Expense">
-          {expenseCategories.map((category) => (
-            <NativeSelectOption key={category.id} value={category.id}>
-              {category.name}
-            </NativeSelectOption>
-          ))}
-        </NativeSelectOptGroup>
-        <NativeSelectOptGroup label="Income">
-          {incomeCategories.map((category) => (
-            <NativeSelectOption key={category.id} value={category.id}>
-              {category.name}
-            </NativeSelectOption>
-          ))}
-        </NativeSelectOptGroup>
-      </NativeSelect>
+        <SelectTrigger size="sm" aria-label="Filter by category">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All categories</SelectItem>
+          <SelectGroup>
+            <SelectLabel>Expense</SelectLabel>
+            {expenseCategories.map((category) => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+          <SelectGroup>
+            <SelectLabel>Income</SelectLabel>
+            {incomeCategories.map((category) => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
 
-      <NativeSelect
-        size="sm"
-        aria-label="Filter by kind"
+      <Select
+        items={kindItems}
         value={filters.kind ?? "all"}
-        onChange={(event) =>
+        onValueChange={(value) =>
           apply({
             kind:
-              event.target.value === "all"
+              value === "all"
                 ? undefined
-                : (event.target.value as TransactionFilters["kind"]),
+                : (value as TransactionFilters["kind"]),
           })
         }
       >
-        <NativeSelectOption value="all">All kinds</NativeSelectOption>
-        {KINDS.map(([value, label]) => (
-          <NativeSelectOption key={value} value={value}>
-            {label}
-          </NativeSelectOption>
-        ))}
-      </NativeSelect>
+        <SelectTrigger size="sm" aria-label="Filter by kind">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All kinds</SelectItem>
+          {KINDS.map(([value, label]) => (
+            <SelectItem key={value} value={value}>
+              {label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       {isFiltered && (
         <Button

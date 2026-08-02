@@ -7,13 +7,17 @@ import {
   APEX_COLORS,
   CARD_BRANDS,
 } from "@/components/apex/accounts/meta"
+import { ColorSwatches } from "@/components/shared/color-swatches"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Sheet,
   SheetContent,
@@ -24,7 +28,15 @@ import {
 } from "@/components/ui/sheet"
 import { saveCard, type ApexFormState } from "@/lib/apex/accounts/actions"
 import type { Account } from "@/lib/apex/accounts/queries"
-import { cn } from "@/lib/utils"
+
+/** Sentinel for the optional brand — Base UI Select item values must be real
+ *  strings; the hidden input maps it back to "" for FormData. */
+const NO_BRAND = "none"
+
+const BRAND_ITEMS = {
+  [NO_BRAND]: "—",
+  ...Object.fromEntries(CARD_BRANDS.map((brand) => [brand.value, brand.label])),
+}
 
 export function CardFormSheet({
   open,
@@ -42,6 +54,11 @@ export function CardFormSheet({
     accounts.find((account) => account.id === defaultAccountId) ?? accounts[0]
   const [color, setColor] = React.useState(
     defaultAccount?.color ?? APEX_COLORS[1]
+  )
+  const [accountId, setAccountId] = React.useState(defaultAccount?.id ?? "")
+  const [brand, setBrand] = React.useState(NO_BRAND)
+  const accountItems = Object.fromEntries(
+    accounts.map((account) => [account.id, account.name])
   )
   const [state, action, pending] = React.useActionState<ApexFormState, FormData>(
     async (prev, formData) => {
@@ -71,18 +88,23 @@ export function CardFormSheet({
               <Label htmlFor="card-account" className="text-[13px]">
                 Account
               </Label>
-              <NativeSelect
-                id="card-account"
-                name="accountId"
-                defaultValue={defaultAccount?.id}
-                className="w-full"
+              <input type="hidden" name="accountId" value={accountId} />
+              <Select
+                items={accountItems}
+                value={accountId}
+                onValueChange={(value) => setAccountId(value as string)}
               >
-                {accounts.map((account) => (
-                  <NativeSelectOption key={account.id} value={account.id}>
-                    {account.name}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                <SelectTrigger id="card-account" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
@@ -104,19 +126,28 @@ export function CardFormSheet({
                 <Label htmlFor="card-brand" className="text-[13px]">
                   Brand
                 </Label>
-                <NativeSelect
-                  id="card-brand"
+                <input
+                  type="hidden"
                   name="brand"
-                  defaultValue=""
-                  className="w-full"
+                  value={brand === NO_BRAND ? "" : brand}
+                />
+                <Select
+                  items={BRAND_ITEMS}
+                  value={brand}
+                  onValueChange={(value) => setBrand(value as string)}
                 >
-                  <NativeSelectOption value="">—</NativeSelectOption>
-                  {CARD_BRANDS.map((brand) => (
-                    <NativeSelectOption key={brand.value} value={brand.value}>
-                      {brand.label}
-                    </NativeSelectOption>
-                  ))}
-                </NativeSelect>
+                  <SelectTrigger id="card-brand" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_BRAND}>—</SelectItem>
+                    {CARD_BRANDS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="card-last4" className="text-[13px]">
@@ -143,25 +174,7 @@ export function CardFormSheet({
 
             <div className="space-y-1.5">
               <Label className="text-[13px]">Color</Label>
-              <input type="hidden" name="color" value={color} />
-              <div className="flex gap-2">
-                {APEX_COLORS.map((swatch) => (
-                  <button
-                    key={swatch}
-                    type="button"
-                    aria-label={`Color ${swatch}`}
-                    aria-pressed={color === swatch}
-                    onClick={() => setColor(swatch)}
-                    className={cn(
-                      "size-6 rounded-full border-2 transition-transform",
-                      color === swatch
-                        ? "scale-110 border-foreground"
-                        : "border-transparent hover:scale-105"
-                    )}
-                    style={{ backgroundColor: swatch }}
-                  />
-                ))}
-              </div>
+              <ColorSwatches value={color} onChange={setColor} />
             </div>
 
             {state?.error && (

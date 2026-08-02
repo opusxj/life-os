@@ -27,18 +27,13 @@ import {
   updateSavingGoal,
   type BudgetsFormState,
 } from "@/lib/apex/budgets/actions"
+import {
+  ColorSwatches,
+  SWATCH_COLORS,
+} from "@/components/shared/color-swatches"
 import type { AccountOption, SavingGoal } from "@/lib/apex/budgets/queries"
-import { cn } from "@/lib/utils"
 
-// The six space swatches — the house palette for user-colored things
-const GOAL_COLORS = [
-  "#8b5cf6",
-  "#10b981",
-  "#f59e0b",
-  "#f43f5e",
-  "#0ea5e9",
-  "#6b7280",
-]
+const GOAL_COLORS = SWATCH_COLORS
 
 const UNLINKED = "unlinked"
 
@@ -59,6 +54,13 @@ export function GoalDrawer({
   const [accountId, setAccountId] = React.useState<string>(
     goal?.account?.id ?? UNLINKED
   )
+  // Without `items`, Base UI's SelectValue renders the raw id in the trigger
+  const accountItems = {
+    [UNLINKED]: "Not linked",
+    ...Object.fromEntries(
+      savingsAccounts.map((account) => [account.id, account.name])
+    ),
+  }
   const [state, action, pending] = React.useActionState<
     BudgetsFormState,
     FormData
@@ -95,7 +97,6 @@ export function GoalDrawer({
             name="accountId"
             value={accountId === UNLINKED ? "" : accountId}
           />
-          <input type="hidden" name="color" value={color} />
 
           <div className="space-y-1.5">
             <Label htmlFor="goal-name" className="text-[13px]">
@@ -129,6 +130,7 @@ export function GoalDrawer({
           <div className="space-y-1.5">
             <Label className="text-[13px]">Linked savings account</Label>
             <Select
+              items={accountItems}
               value={accountId}
               onValueChange={(value) => setAccountId(value as string)}
             >
@@ -164,24 +166,7 @@ export function GoalDrawer({
 
           <div className="space-y-1.5">
             <Label className="text-[13px]">Color</Label>
-            <div className="flex gap-2">
-              {GOAL_COLORS.map((swatch) => (
-                <button
-                  key={swatch}
-                  type="button"
-                  aria-label={`Color ${swatch}`}
-                  aria-pressed={color === swatch}
-                  onClick={() => setColor(swatch)}
-                  className={cn(
-                    "size-6 rounded-full border-2 transition-transform",
-                    color === swatch
-                      ? "scale-110 border-foreground"
-                      : "border-transparent hover:scale-105"
-                  )}
-                  style={{ backgroundColor: swatch }}
-                />
-              ))}
-            </div>
+            <ColorSwatches value={color} onChange={setColor} />
           </div>
 
           {state?.error && (

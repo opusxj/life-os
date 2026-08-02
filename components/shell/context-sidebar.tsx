@@ -8,10 +8,23 @@ import { Check, Plus, UserPlus, type LucideIcon } from "lucide-react"
 import { CreateSpaceDialog } from "@/components/spaces/create-space-dialog"
 import { ManageSpaceDialog } from "@/components/spaces/manage-space-dialog"
 import { Button } from "@/components/ui/button"
+import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+} from "@/components/ui/sidebar"
 import type { Workspace } from "@/lib/data/workspace"
 import { moduleForPath, type ModuleNavSection } from "@/lib/modules"
 import { setActiveSpace } from "@/lib/spaces/actions"
 import { cn } from "@/lib/utils"
+
+/** House density on top of the stock shadcn menu button. */
+const ROW_CLASS =
+  "h-7.5 gap-2 px-1.5 text-[13px] text-sidebar-foreground/90 [&>svg]:text-muted-foreground data-active:[&>svg]:text-sidebar-accent-foreground"
 
 export function ContextSidebar({ workspace }: { workspace: Workspace }) {
   const pathname = usePathname()
@@ -20,31 +33,35 @@ export function ContextSidebar({ workspace }: { workspace: Workspace }) {
 
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r bg-sidebar">
-      <div className="flex h-11 shrink-0 items-center justify-between pr-2 pl-3.5">
-        <h2 className="text-sm font-semibold text-sidebar-foreground">
-          {mod.name}
-        </h2>
-        <Button size="xs">
-          <Plus /> Create
-        </Button>
-      </div>
+      {/* Provider only supplies context for the menu primitives — the shell's
+          floating geometry stays ours, so its wrapper renders as `contents`. */}
+      <SidebarProvider className="contents">
+        <div className="flex h-11 shrink-0 items-center justify-between pr-2 pl-3.5">
+          <h2 className="text-sm font-semibold text-sidebar-foreground">
+            {mod.name}
+          </h2>
+          <Button size="xs">
+            <Plus /> Create
+          </Button>
+        </div>
 
-      <div className="flex-1 space-y-5 overflow-y-auto px-1.5 pt-0.5 pb-3">
-        {mod.nav.map((section, sectionIndex) => (
-          <NavSection
-            key={section.label ?? sectionIndex}
-            section={section}
-            isPrimary={sectionIndex === 0}
-          />
-        ))}
+        <div className="flex-1 space-y-5 overflow-y-auto px-1.5 pt-0.5 pb-3">
+          {mod.nav.map((section, sectionIndex) => (
+            <NavSection
+              key={section.label ?? sectionIndex}
+              section={section}
+              isPrimary={sectionIndex === 0}
+            />
+          ))}
 
-        {isHome && (
-          <>
-            <SpacesSection workspace={workspace} />
-            <MembersSection workspace={workspace} />
-          </>
-        )}
-      </div>
+          {isHome && (
+            <>
+              <SpacesSection workspace={workspace} />
+              <MembersSection workspace={workspace} />
+            </>
+          )}
+        </div>
+      </SidebarProvider>
     </aside>
   )
 }
@@ -59,23 +76,38 @@ function NavSection({
   const pathname = usePathname()
 
   return (
-    <div className="space-y-px">
+    <SidebarGroup className="p-0">
       {section.label && <SectionLabel>{section.label}</SectionLabel>}
-      {section.items.map((item, itemIndex) => (
-        <SidebarItem
-          key={item.label}
-          icon={item.icon}
-          label={item.label}
-          href={item.href}
-          active={
-            item.href
+      <SidebarGroupContent>
+        <SidebarMenu className="gap-px">
+          {section.items.map((item, itemIndex) => {
+            const active = item.href
               ? isNavItemActive(item.href, pathname)
               : isPrimary && itemIndex === 0
-          }
-        />
-      ))}
-      {section.placeholder && <GhostItem label={section.placeholder} />}
-    </div>
+            return (
+              <SidebarMenuItem key={item.label}>
+                <SidebarMenuButton
+                  isActive={active}
+                  className={ROW_CLASS}
+                  render={
+                    item.href ? (
+                      <Link
+                        href={item.href}
+                        aria-current={active ? "page" : undefined}
+                      />
+                    ) : undefined
+                  }
+                >
+                  <item.icon />
+                  <span className="truncate">{item.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )
+          })}
+          {section.placeholder && <GhostItem label={section.placeholder} />}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   )
 }
 
@@ -99,39 +131,41 @@ function SpacesSection({ workspace }: { workspace: Workspace }) {
   }
 
   return (
-    <div className="space-y-px">
+    <SidebarGroup className="p-0">
       <SectionLabel>Spaces</SectionLabel>
-      {workspace.spaces.map((space) => {
-        const active = space.id === workspace.activeSpace.id
-        return (
-          <button
-            key={space.id}
-            type="button"
-            data-space-item={space.name}
-            aria-current={active ? "true" : undefined}
-            disabled={isPending}
-            onClick={() => selectSpace(space.id)}
-            className={cn(
-              "flex h-7.5 w-full items-center gap-2 rounded-md px-1.5 text-[13px] outline-none focus-visible:bg-sidebar-accent",
-              active
-                ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                : "text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-            )}
-          >
-            <span
-              className="flex size-4.5 items-center justify-center rounded text-[9px] font-semibold text-white"
-              style={{ backgroundColor: space.color }}
-            >
-              {space.initial}
-            </span>
-            <span className="truncate">{space.name}</span>
-            {active && <Check className="ml-auto size-3.5 text-muted-foreground" />}
-          </button>
-        )
-      })}
-      <GhostItem label="New space" onClick={() => setCreateOpen(true)} />
+      <SidebarGroupContent>
+        <SidebarMenu className="gap-px">
+          {workspace.spaces.map((space) => {
+            const active = space.id === workspace.activeSpace.id
+            return (
+              <SidebarMenuItem key={space.id}>
+                <SidebarMenuButton
+                  isActive={active}
+                  disabled={isPending}
+                  onClick={() => selectSpace(space.id)}
+                  data-space-item={space.name}
+                  aria-current={active ? "true" : undefined}
+                  className={ROW_CLASS}
+                >
+                  <span
+                    className="flex size-4.5 shrink-0 items-center justify-center rounded text-[9px] font-semibold text-white"
+                    style={{ backgroundColor: space.color }}
+                  >
+                    {space.initial}
+                  </span>
+                  <span className="truncate">{space.name}</span>
+                  {active && (
+                    <Check className="ml-auto size-3.5 text-muted-foreground" />
+                  )}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )
+          })}
+          <GhostItem label="New space" onClick={() => setCreateOpen(true)} />
+        </SidebarMenu>
+      </SidebarGroupContent>
       <CreateSpaceDialog open={createOpen} onOpenChange={setCreateOpen} />
-    </div>
+    </SidebarGroup>
   )
 }
 
@@ -139,98 +173,55 @@ function MembersSection({ workspace }: { workspace: Workspace }) {
   const [manageOpen, setManageOpen] = React.useState(false)
 
   return (
-    <div className="space-y-px">
+    <SidebarGroup className="p-0">
       <SectionLabel>Members</SectionLabel>
-      {workspace.members.map((member) => (
-        <div
-          key={member.membershipId}
-          data-member-item={member.name}
-          className="flex h-7.5 w-full items-center gap-2 rounded-md px-1.5 text-[13px] text-sidebar-foreground/90"
-        >
-          <span className="flex size-4.5 items-center justify-center rounded-full bg-foreground text-[9px] font-semibold text-background">
-            {member.initials}
-          </span>
-          <span className="truncate">{member.name}</span>
-          {member.isCurrentUser && (
-            <span className="text-[11px] text-muted-foreground">— you</span>
-          )}
-          {member.role !== "member" && (
-            <span className="ml-auto text-[11px] text-muted-foreground capitalize">
-              {member.role}
-            </span>
-          )}
-        </div>
-      ))}
-      <GhostItem
-        label="Invite people"
-        icon={UserPlus}
-        onClick={() => setManageOpen(true)}
-      />
+      <SidebarGroupContent>
+        <SidebarMenu className="gap-px">
+          {workspace.members.map((member) => (
+            <SidebarMenuItem key={member.membershipId}>
+              {/* Data row, not an action — deliberately not a menu button */}
+              <div
+                data-member-item={member.name}
+                className="flex h-7.5 w-full items-center gap-2 rounded-md px-1.5 text-[13px] text-sidebar-foreground/90"
+              >
+                <span className="flex size-4.5 items-center justify-center rounded-full bg-foreground text-[9px] font-semibold text-background">
+                  {member.initials}
+                </span>
+                <span className="truncate">{member.name}</span>
+                {member.isCurrentUser && (
+                  <span className="text-[11px] text-muted-foreground">
+                    — you
+                  </span>
+                )}
+                {member.role !== "member" && (
+                  <span className="ml-auto text-[11px] text-muted-foreground capitalize">
+                    {member.role}
+                  </span>
+                )}
+              </div>
+            </SidebarMenuItem>
+          ))}
+          <GhostItem
+            label="Invite people"
+            icon={UserPlus}
+            onClick={() => setManageOpen(true)}
+          />
+        </SidebarMenu>
+      </SidebarGroupContent>
       <ManageSpaceDialog
         open={manageOpen}
         onOpenChange={setManageOpen}
         workspace={workspace}
       />
-    </div>
+    </SidebarGroup>
   )
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="px-1.5 pb-1 text-[11px] font-medium text-muted-foreground">
+    <SidebarGroupLabel className="h-auto px-1.5 pb-1 text-[11px] font-medium text-muted-foreground">
       {children}
-    </div>
-  )
-}
-
-function SidebarItem({
-  icon: Icon,
-  label,
-  href,
-  active,
-}: {
-  icon: LucideIcon
-  label: string
-  href?: string
-  active?: boolean
-}) {
-  const className = cn(
-    "flex h-7.5 w-full items-center gap-2 rounded-md px-1.5 text-[13px] outline-none focus-visible:bg-sidebar-accent",
-    active
-      ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-      : "text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-  )
-  const content = (
-    <>
-      <Icon
-        className={cn(
-          "size-4",
-          active ? "text-sidebar-accent-foreground" : "text-muted-foreground"
-        )}
-      />
-      <span className="truncate">{label}</span>
-    </>
-  )
-
-  if (href) {
-    return (
-      <Link
-        href={href}
-        aria-current={active ? "page" : undefined}
-        className={className}
-      >
-        {content}
-      </Link>
-    )
-  }
-  return (
-    <button
-      type="button"
-      aria-current={active ? "page" : undefined}
-      className={className}
-    >
-      {content}
-    </button>
+    </SidebarGroupLabel>
   )
 }
 
@@ -244,13 +235,14 @@ function GhostItem({
   onClick?: () => void
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex h-7.5 w-full items-center gap-2 rounded-md px-1.5 text-[13px] text-muted-foreground outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:bg-sidebar-accent"
-    >
-      <Icon className="size-4" />
-      <span className="truncate">{label}</span>
-    </button>
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        onClick={onClick}
+        className={cn(ROW_CLASS, "text-muted-foreground")}
+      >
+        <Icon />
+        <span className="truncate">{label}</span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
   )
 }

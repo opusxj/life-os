@@ -8,9 +8,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Sheet,
   SheetContent,
@@ -49,6 +52,15 @@ export function TransferSheet({
 
   const defaultFrom = fromId ?? accounts[0]?.id
   const defaultTo = accounts.find((account) => account.id !== defaultFrom)?.id
+  // Both selects list every account; the server action rejects from === to.
+  const [from, setFrom] = React.useState(defaultFrom ?? "")
+  const [to, setTo] = React.useState(defaultTo ?? "")
+  const accountItems = Object.fromEntries(
+    accounts.map((account) => [
+      account.id,
+      `${account.name} · ${formatPence(account.balance)}`,
+    ])
+  )
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -66,36 +78,46 @@ export function TransferSheet({
               <Label htmlFor="transfer-from" className="text-[13px]">
                 From
               </Label>
-              <NativeSelect
-                id="transfer-from"
-                name="fromId"
-                defaultValue={defaultFrom}
-                className="w-full"
+              <input type="hidden" name="fromId" value={from} />
+              <Select
+                items={accountItems}
+                value={from}
+                onValueChange={(value) => setFrom(value as string)}
               >
-                {accounts.map((account) => (
-                  <NativeSelectOption key={account.id} value={account.id}>
-                    {`${account.name} · ${formatPence(account.balance)}`}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                <SelectTrigger id="transfer-from" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {`${account.name} · ${formatPence(account.balance)}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="transfer-to" className="text-[13px]">
                 To
               </Label>
-              <NativeSelect
-                id="transfer-to"
-                name="toId"
-                defaultValue={defaultTo}
-                className="w-full"
+              <input type="hidden" name="toId" value={to} />
+              <Select
+                items={accountItems}
+                value={to}
+                onValueChange={(value) => setTo(value as string)}
               >
-                {accounts.map((account) => (
-                  <NativeSelectOption key={account.id} value={account.id}>
-                    {`${account.name} · ${formatPence(account.balance)}`}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                <SelectTrigger id="transfer-to" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {`${account.name} · ${formatPence(account.balance)}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">

@@ -4,13 +4,17 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 
 import { ACCOUNT_KINDS, APEX_COLORS } from "@/components/apex/accounts/meta"
+import { ColorSwatches } from "@/components/shared/color-swatches"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Sheet,
   SheetContent,
@@ -21,7 +25,10 @@ import {
 } from "@/components/ui/sheet"
 import { saveAccount, type ApexFormState } from "@/lib/apex/accounts/actions"
 import type { Account } from "@/lib/apex/accounts/queries"
-import { cn } from "@/lib/utils"
+
+const KIND_ITEMS = Object.fromEntries(
+  ACCOUNT_KINDS.map((kind) => [kind.value, kind.label])
+)
 
 export function AccountFormSheet({
   open,
@@ -37,6 +44,7 @@ export function AccountFormSheet({
 }) {
   const router = useRouter()
   const [color, setColor] = React.useState(account?.color ?? APEX_COLORS[1])
+  const [kind, setKind] = React.useState(account?.kind ?? "current")
   const [state, action, pending] = React.useActionState<ApexFormState, FormData>(
     async (prev, formData) => {
       const result = await saveAccount(prev, formData)
@@ -87,18 +95,23 @@ export function AccountFormSheet({
               <Label htmlFor="account-kind" className="text-[13px]">
                 Type
               </Label>
-              <NativeSelect
-                id="account-kind"
-                name="kind"
-                defaultValue={account?.kind ?? "current"}
-                className="w-full"
+              <input type="hidden" name="kind" value={kind} />
+              <Select
+                items={KIND_ITEMS}
+                value={kind}
+                onValueChange={(value) => setKind(value as string)}
               >
-                {ACCOUNT_KINDS.map((kind) => (
-                  <NativeSelectOption key={kind.value} value={kind.value}>
-                    {kind.label}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                <SelectTrigger id="account-kind" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACCOUNT_KINDS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
@@ -117,25 +130,7 @@ export function AccountFormSheet({
 
             <div className="space-y-1.5">
               <Label className="text-[13px]">Color</Label>
-              <input type="hidden" name="color" value={color} />
-              <div className="flex gap-2">
-                {APEX_COLORS.map((swatch) => (
-                  <button
-                    key={swatch}
-                    type="button"
-                    aria-label={`Color ${swatch}`}
-                    aria-pressed={color === swatch}
-                    onClick={() => setColor(swatch)}
-                    className={cn(
-                      "size-6 rounded-full border-2 transition-transform",
-                      color === swatch
-                        ? "scale-110 border-foreground"
-                        : "border-transparent hover:scale-105"
-                    )}
-                    style={{ backgroundColor: swatch }}
-                  />
-                ))}
-              </div>
+              <ColorSwatches value={color} onChange={setColor} />
             </div>
 
             {!account && (
