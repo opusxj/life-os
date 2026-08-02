@@ -1,14 +1,18 @@
 "use client"
 
-import { usePathname } from "next/navigation"
-import { Plus, UserPlus, type LucideIcon } from "lucide-react"
+import * as React from "react"
+import { usePathname, useRouter } from "next/navigation"
+import { Check, Plus, UserPlus, type LucideIcon } from "lucide-react"
 
+import { CreateSpaceDialog } from "@/components/spaces/create-space-dialog"
+import { ManageSpaceDialog } from "@/components/spaces/manage-space-dialog"
 import { Button } from "@/components/ui/button"
+import type { Workspace } from "@/lib/data/workspace"
 import { moduleForPath, type ModuleNavSection } from "@/lib/modules"
-import { members, spaces } from "@/lib/workspace"
+import { setActiveSpace } from "@/lib/spaces/actions"
 import { cn } from "@/lib/utils"
 
-export function ContextSidebar() {
+export function ContextSidebar({ workspace }: { workspace: Workspace }) {
   const pathname = usePathname()
   const mod = moduleForPath(pathname)
   const isHome = mod.slug === ""
@@ -35,8 +39,8 @@ export function ContextSidebar() {
 
         {isHome && (
           <>
-            <SpacesSection />
-            <MembersSection />
+            <SpacesSection workspace={workspace} />
+            <MembersSection workspace={workspace} />
           </>
         )}
       </div>
@@ -67,55 +71,92 @@ function NavSection({
   )
 }
 
-function SpacesSection() {
+function SpacesSection({ workspace }: { workspace: Workspace }) {
+  const router = useRouter()
+  const [isPending, startTransition] = React.useTransition()
+  const [createOpen, setCreateOpen] = React.useState(false)
+
+  function selectSpace(id: string) {
+    if (id === workspace.activeSpace.id) return
+    startTransition(async () => {
+      await setActiveSpace(id)
+      router.refresh()
+    })
+  }
+
   return (
     <div className="space-y-px">
       <SectionLabel>Spaces</SectionLabel>
-      {spaces.map((space) => (
-        <button
-          key={space.id}
-          type="button"
-          className="flex h-7.5 w-full items-center gap-2 rounded-md px-1.5 text-[13px] text-sidebar-foreground/90 outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:bg-sidebar-accent"
-        >
-          <span
+      {workspace.spaces.map((space) => {
+        const active = space.id === workspace.activeSpace.id
+        return (
+          <button
+            key={space.id}
+            type="button"
+            data-space-item={space.name}
+            aria-current={active ? "true" : undefined}
+            disabled={isPending}
+            onClick={() => selectSpace(space.id)}
             className={cn(
-              "flex size-4.5 items-center justify-center rounded text-[9px] font-semibold text-white",
-              space.color
+              "flex h-7.5 w-full items-center gap-2 rounded-md px-1.5 text-[13px] outline-none focus-visible:bg-sidebar-accent",
+              active
+                ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                : "text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             )}
           >
-            {space.initial}
-          </span>
-          <span className="truncate">{space.name}</span>
-        </button>
-      ))}
-      <GhostItem label="New space" />
+            <span
+              className="flex size-4.5 items-center justify-center rounded text-[9px] font-semibold text-white"
+              style={{ backgroundColor: space.color }}
+            >
+              {space.initial}
+            </span>
+            <span className="truncate">{space.name}</span>
+            {active && <Check className="ml-auto size-3.5 text-muted-foreground" />}
+          </button>
+        )
+      })}
+      <GhostItem label="New space" onClick={() => setCreateOpen(true)} />
+      <CreateSpaceDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   )
 }
 
-function MembersSection() {
+function MembersSection({ workspace }: { workspace: Workspace }) {
+  const [manageOpen, setManageOpen] = React.useState(false)
+
   return (
     <div className="space-y-px">
       <SectionLabel>Members</SectionLabel>
-      {members.map((member) => (
-        <button
-          key={member.id}
-          type="button"
-          className="flex h-7.5 w-full items-center gap-2 rounded-md px-1.5 text-[13px] text-sidebar-foreground/90 outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:bg-sidebar-accent"
+      {workspace.members.map((member) => (
+        <div
+          key={member.membershipId}
+          data-member-item={member.name}
+          className="flex h-7.5 w-full items-center gap-2 rounded-md px-1.5 text-[13px] text-sidebar-foreground/90"
         >
-          <span className="relative flex size-4.5 items-center justify-center rounded-full bg-foreground text-[9px] font-semibold text-background">
+          <span className="flex size-4.5 items-center justify-center rounded-full bg-foreground text-[9px] font-semibold text-background">
             {member.initials}
-            {member.online && (
-              <span className="absolute -right-px -bottom-px size-1.5 rounded-full border border-sidebar bg-emerald-500" />
-            )}
           </span>
           <span className="truncate">{member.name}</span>
           {member.isCurrentUser && (
-            <span className="text-[11px] text-muted-foreground">— You</span>
+            <span className="text-[11px] text-muted-foreground">— you</span>
           )}
-        </button>
+          {member.role !== "member" && (
+            <span className="ml-auto text-[11px] text-muted-foreground capitalize">
+              {member.role}
+            </span>
+          )}
+        </div>
       ))}
-      <GhostItem label="Invite people" icon={UserPlus} />
+      <GhostItem
+        label="Invite people"
+        icon={UserPlus}
+        onClick={() => setManageOpen(true)}
+      />
+      <ManageSpaceDialog
+        open={manageOpen}
+        onOpenChange={setManageOpen}
+        workspace={workspace}
+      />
     </div>
   )
 }
@@ -162,13 +203,16 @@ function SidebarItem({
 function GhostItem({
   label,
   icon: Icon = Plus,
+  onClick,
 }: {
   label: string
   icon?: LucideIcon
+  onClick?: () => void
 }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="flex h-7.5 w-full items-center gap-2 rounded-md px-1.5 text-[13px] text-muted-foreground outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:bg-sidebar-accent"
     >
       <Icon className="size-4" />

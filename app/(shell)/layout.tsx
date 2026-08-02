@@ -21,7 +21,7 @@ export default async function ShellLayout({
         <Rail />
         {/* Sidebar and body share one floating panel, joined by a border */}
         <div className="flex min-w-0 flex-1 overflow-hidden rounded-xl border bg-background dark:bg-card">
-          <ContextSidebar />
+          <ContextSidebar workspace={workspace} />
           <div className="flex min-w-0 flex-1 flex-col">
             <main className="flex min-w-0 flex-1 overflow-y-auto">
               {children}
