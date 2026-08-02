@@ -4,9 +4,19 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { motion, MotionConfig } from "motion/react"
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react"
 
+import { ApexStatHint } from "@/components/apex/stat-card"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
   Drawer,
   DrawerContent,
@@ -59,6 +69,7 @@ export function GoalCard({
   const [, startTransition] = React.useTransition()
 
   const fraction = Math.min(1, goal.saved / goal.targetAmount)
+  const percent = Math.floor(fraction * 100)
   const hint = [onTrackHint(goal), goal.account && `via ${goal.account.name}`]
     .filter(Boolean)
     .join(" · ")
@@ -71,74 +82,75 @@ export function GoalCard({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border p-3">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
+    <Card size="sm">
+      <CardHeader>
+        <CardTitle className="flex min-w-0 items-center gap-2">
           <span
             aria-hidden
             className="size-2.5 shrink-0 rounded-full"
             style={{ backgroundColor: goal.color }}
           />
-          <span className="truncate text-[13px] font-medium">{goal.name}</span>
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                aria-label={`Actions for ${goal.name}`}
-              />
-            }
-          >
-            <MoreHorizontal />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
-            <DropdownMenuItem
-              onClick={() => {
-                setEditKey((key) => key + 1)
-                setEditOpen(true)
-              }}
+          <span className="truncate">{goal.name}</span>
+        </CardTitle>
+        <CardAction className="flex items-center gap-1">
+          <Badge
+            variant="secondary"
+            className="tabular-nums"
+          >{`${percent}%`}</Badge>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={`Actions for ${goal.name}`}
+                />
+              }
             >
-              <Pencil /> Edit goal
-            </DropdownMenuItem>
-            <DropdownMenuItem variant="destructive" onClick={remove}>
-              <Trash2 /> Delete goal
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+              <MoreHorizontal />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem
+                onClick={() => {
+                  setEditKey((key) => key + 1)
+                  setEditOpen(true)
+                }}
+              >
+                <Pencil /> Edit goal
+              </DropdownMenuItem>
+              <DropdownMenuItem variant="destructive" onClick={remove}>
+                <Trash2 /> Delete goal
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </CardAction>
+      </CardHeader>
 
-      <ProgressGrid
-        target={goal.targetAmount}
-        fraction={fraction}
-        color={goal.color}
-      />
-
-      <div className="space-y-0.5">
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-lg font-semibold tracking-tight tabular-nums">
-            {formatPenceShort(goal.saved)}
-          </span>
-          <span className="text-[13px] text-muted-foreground">
-            {`of ${formatPenceShort(goal.targetAmount)}`}
-          </span>
+      <CardContent className="flex flex-1 flex-col gap-3">
+        <ProgressGrid
+          target={goal.targetAmount}
+          fraction={fraction}
+          color={goal.color}
+        />
+        <div className="mt-auto">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg font-semibold tracking-tight tabular-nums">
+              {formatPenceShort(goal.saved)}
+            </span>
+            <span className="text-[13px] text-muted-foreground">
+              {`of ${formatPenceShort(goal.targetAmount)}`}
+            </span>
+          </div>
+          {hint && <ApexStatHint>{hint}</ApexStatHint>}
         </div>
-        {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
-      </div>
+      </CardContent>
 
-      <div className="mt-auto flex items-center justify-between">
-        <span className="text-[11px] text-muted-foreground tabular-nums">
-          {`${Math.floor(fraction * 100)}% saved`}
-        </span>
-        <Button
-          variant="secondary"
-          size="xs"
-          onClick={() => setTopUpOpen(true)}
-        >
+      <CardFooter className="gap-1 px-2 py-1.5">
+        <Button variant="ghost" size="xs" onClick={() => setTopUpOpen(true)}>
+          <Plus data-icon="inline-start" />
           Top up
         </Button>
-      </div>
+      </CardFooter>
 
       <TopUpDrawer
         goal={goal}
@@ -153,7 +165,7 @@ export function GoalCard({
         open={editOpen}
         onOpenChange={setEditOpen}
       />
-    </div>
+    </Card>
   )
 }
 
