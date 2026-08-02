@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 
 import { ACCOUNT_KINDS, APEX_COLORS } from "@/components/apex/accounts/meta"
+import { ColorSwatches } from "@/components/shared/color-swatches"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -24,7 +25,6 @@ import {
 } from "@/components/ui/sheet"
 import { saveAccount, type ApexFormState } from "@/lib/apex/accounts/actions"
 import type { Account } from "@/lib/apex/accounts/queries"
-import { cn } from "@/lib/utils"
 
 const KIND_ITEMS = Object.fromEntries(
   ACCOUNT_KINDS.map((kind) => [kind.value, kind.label])
@@ -130,25 +130,7 @@ export function AccountFormSheet({
 
             <div className="space-y-1.5">
               <Label className="text-[13px]">Color</Label>
-              <input type="hidden" name="color" value={color} />
-              <div className="flex gap-2">
-                {APEX_COLORS.map((swatch) => (
-                  <button
-                    key={swatch}
-                    type="button"
-                    aria-label={`Color ${swatch}`}
-                    aria-pressed={color === swatch}
-                    onClick={() => setColor(swatch)}
-                    className={cn(
-                      "size-6 rounded-full border-2 transition-transform",
-                      color === swatch
-                        ? "scale-110 border-foreground"
-                        : "border-transparent hover:scale-105"
-                    )}
-                    style={{ backgroundColor: swatch }}
-                  />
-                ))}
-              </div>
+              <ColorSwatches value={color} onChange={setColor} />
             </div>
 
             {!account && (

@@ -7,6 +7,7 @@ import {
   APEX_COLORS,
   CARD_BRANDS,
 } from "@/components/apex/accounts/meta"
+import { ColorSwatches } from "@/components/shared/color-swatches"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -27,7 +28,6 @@ import {
 } from "@/components/ui/sheet"
 import { saveCard, type ApexFormState } from "@/lib/apex/accounts/actions"
 import type { Account } from "@/lib/apex/accounts/queries"
-import { cn } from "@/lib/utils"
 
 /** Sentinel for the optional brand — Base UI Select item values must be real
  *  strings; the hidden input maps it back to "" for FormData. */
@@ -174,25 +174,7 @@ export function CardFormSheet({
 
             <div className="space-y-1.5">
               <Label className="text-[13px]">Color</Label>
-              <input type="hidden" name="color" value={color} />
-              <div className="flex gap-2">
-                {APEX_COLORS.map((swatch) => (
-                  <button
-                    key={swatch}
-                    type="button"
-                    aria-label={`Color ${swatch}`}
-                    aria-pressed={color === swatch}
-                    onClick={() => setColor(swatch)}
-                    className={cn(
-                      "size-6 rounded-full border-2 transition-transform",
-                      color === swatch
-                        ? "scale-110 border-foreground"
-                        : "border-transparent hover:scale-105"
-                    )}
-                    style={{ backgroundColor: swatch }}
-                  />
-                ))}
-              </div>
+              <ColorSwatches value={color} onChange={setColor} />
             </div>
 
             {state?.error && (

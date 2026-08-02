@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
   Sheet,
   SheetContent,
@@ -32,7 +33,6 @@ import type {
   RecurringKind,
   RecurringPayment,
 } from "@/lib/apex/subscriptions/queries"
-import { cn } from "@/lib/utils"
 
 const KIND_OPTIONS: { value: RecurringKind; label: string }[] = [
   { value: "subscription", label: "Subscription" },
@@ -134,24 +134,29 @@ export function RecurringDrawer({
 
             <div className="space-y-1.5">
               <Label className="text-[13px]">Kind</Label>
-              <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
+              <ToggleGroup
+                aria-label="Kind"
+                value={[kind]}
+                onValueChange={(value) => {
+                  if (value.length > 0) {
+                    setKind(value[0] as (typeof KIND_OPTIONS)[number]["value"])
+                  }
+                }}
+                variant="outline"
+                size="sm"
+                spacing={0}
+                className="w-full"
+              >
                 {KIND_OPTIONS.map((option) => (
-                  <button
+                  <ToggleGroupItem
                     key={option.value}
-                    type="button"
-                    aria-pressed={kind === option.value}
-                    onClick={() => setKind(option.value)}
-                    className={cn(
-                      "h-6 rounded-md text-[13px] font-medium transition-colors",
-                      kind === option.value
-                        ? "bg-background text-foreground shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
+                    value={option.value}
+                    className="flex-1 text-[13px]"
                   >
                     {option.label}
-                  </button>
+                  </ToggleGroupItem>
                 ))}
-              </div>
+              </ToggleGroup>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
