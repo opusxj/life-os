@@ -7,6 +7,7 @@ import { Check, Plus, UserPlus, type LucideIcon } from "lucide-react"
 
 import { CreateSpaceDialog } from "@/components/spaces/create-space-dialog"
 import { ManageSpaceDialog } from "@/components/spaces/manage-space-dialog"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   SidebarGroup,
@@ -26,10 +27,27 @@ import { cn } from "@/lib/utils"
 const ROW_CLASS =
   "h-7.5 gap-2 px-1.5 text-[13px] text-sidebar-foreground/90 [&>svg]:text-muted-foreground data-active:[&>svg]:text-sidebar-accent-foreground"
 
-export function ContextSidebar({ workspace }: { workspace: Workspace }) {
+/** Per-module live sidebar content, server-rendered by the shell layout.
+ *  The module's slot only mounts while that module is active. */
+export type ModuleSidebarSlot = {
+  headerAction?: React.ReactNode
+  panel?: React.ReactNode
+  footer?: React.ReactNode
+  /** Keyed by nav item href */
+  navBadges?: Record<string, { count: number; tone: "destructive" | "amber" }>
+}
+
+export function ContextSidebar({
+  workspace,
+  apex,
+}: {
+  workspace: Workspace
+  apex?: ModuleSidebarSlot
+}) {
   const pathname = usePathname()
   const mod = moduleForPath(pathname)
   const isHome = mod.slug === ""
+  const slot = mod.slug === "apex" ? apex : undefined
 
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r bg-sidebar">
@@ -40,9 +58,11 @@ export function ContextSidebar({ workspace }: { workspace: Workspace }) {
           <h2 className="text-sm font-semibold text-sidebar-foreground">
             {mod.name}
           </h2>
-          <Button size="xs">
-            <Plus /> Create
-          </Button>
+          {slot?.headerAction ?? (
+            <Button size="xs">
+              <Plus /> Create
+            </Button>
+          )}
         </div>
 
         <div className="flex-1 space-y-5 overflow-y-auto px-1.5 pt-0.5 pb-3">
@@ -51,8 +71,11 @@ export function ContextSidebar({ workspace }: { workspace: Workspace }) {
               key={section.label ?? sectionIndex}
               section={section}
               isPrimary={sectionIndex === 0}
+              navBadges={slot?.navBadges}
             />
           ))}
+
+          {slot?.panel}
 
           {isHome && (
             <>
@@ -61,6 +84,8 @@ export function ContextSidebar({ workspace }: { workspace: Workspace }) {
             </>
           )}
         </div>
+
+        {slot?.footer}
       </SidebarProvider>
     </aside>
   )
@@ -69,9 +94,11 @@ export function ContextSidebar({ workspace }: { workspace: Workspace }) {
 function NavSection({
   section,
   isPrimary,
+  navBadges,
 }: {
   section: ModuleNavSection
   isPrimary: boolean
+  navBadges?: ModuleSidebarSlot["navBadges"]
 }) {
   const pathname = usePathname()
 
@@ -84,6 +111,7 @@ function NavSection({
             const active = item.href
               ? isNavItemActive(item.href, pathname)
               : isPrimary && itemIndex === 0
+            const badge = item.href ? navBadges?.[item.href] : undefined
             return (
               <SidebarMenuItem key={item.label}>
                 <SidebarMenuButton
@@ -100,6 +128,20 @@ function NavSection({
                 >
                   <item.icon />
                   <span className="truncate">{item.label}</span>
+                  {badge && (
+                    <Badge
+                      variant={
+                        badge.tone === "destructive" ? "destructive" : "secondary"
+                      }
+                      className={cn(
+                        "ml-auto h-4 min-w-4 px-1 text-[10px] tabular-nums",
+                        badge.tone === "amber" &&
+                          "bg-amber-500/15 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400"
+                      )}
+                    >
+                      {badge.count}
+                    </Badge>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )
