@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Check, Plus, UserPlus, type LucideIcon } from "lucide-react"
 
@@ -55,6 +56,8 @@ function NavSection({
   section: ModuleNavSection
   isPrimary: boolean
 }) {
+  const pathname = usePathname()
+
   return (
     <div className="space-y-px">
       {section.label && <SectionLabel>{section.label}</SectionLabel>}
@@ -63,12 +66,23 @@ function NavSection({
           key={item.label}
           icon={item.icon}
           label={item.label}
-          active={isPrimary && itemIndex === 0}
+          href={item.href}
+          active={
+            item.href
+              ? isNavItemActive(item.href, pathname)
+              : isPrimary && itemIndex === 0
+          }
         />
       ))}
       {section.placeholder && <GhostItem label={section.placeholder} />}
     </div>
   )
+}
+
+/** Module roots ("/apex") match exactly; deeper routes own their subtree. */
+function isNavItemActive(href: string, pathname: string) {
+  if (pathname === href) return true
+  return href.split("/").length > 2 && pathname.startsWith(`${href}/`)
 }
 
 function SpacesSection({ workspace }: { workspace: Workspace }) {
@@ -172,23 +186,22 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function SidebarItem({
   icon: Icon,
   label,
+  href,
   active,
 }: {
   icon: LucideIcon
   label: string
+  href?: string
   active?: boolean
 }) {
-  return (
-    <button
-      type="button"
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "flex h-7.5 w-full items-center gap-2 rounded-md px-1.5 text-[13px] outline-none focus-visible:bg-sidebar-accent",
-        active
-          ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-          : "text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-      )}
-    >
+  const className = cn(
+    "flex h-7.5 w-full items-center gap-2 rounded-md px-1.5 text-[13px] outline-none focus-visible:bg-sidebar-accent",
+    active
+      ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+      : "text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+  )
+  const content = (
+    <>
       <Icon
         className={cn(
           "size-4",
@@ -196,6 +209,27 @@ function SidebarItem({
         )}
       />
       <span className="truncate">{label}</span>
+    </>
+  )
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        aria-current={active ? "page" : undefined}
+        className={className}
+      >
+        {content}
+      </Link>
+    )
+  }
+  return (
+    <button
+      type="button"
+      aria-current={active ? "page" : undefined}
+      className={className}
+    >
+      {content}
     </button>
   )
 }
