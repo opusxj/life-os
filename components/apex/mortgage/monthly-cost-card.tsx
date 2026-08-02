@@ -1,7 +1,11 @@
+import { Coins } from "lucide-react"
+
+import { ApexStatCard, ApexStatValue } from "@/components/apex/stat-card"
+import { Separator } from "@/components/ui/separator"
 import { formatPence } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 
-import { StatCard, StatValue } from "./stat-card"
+import { EMERALD_ANCHOR } from "./format"
 
 /** What does this cost every month, all in? */
 export function MonthlyCostCard({ mortgage }: { mortgage: Mortgage }) {
@@ -17,21 +21,28 @@ export function MonthlyCostCard({ mortgage }: { mortgage: Mortgage }) {
   const total = parts.reduce((sum, part) => sum + part.amount, 0)
 
   return (
-    <StatCard label="Monthly cost">
-      <StatValue>{formatPence(total)}</StatValue>
+    <ApexStatCard
+      label="Monthly cost"
+      icon={Coins}
+      iconClassName={EMERALD_ANCHOR}
+    >
+      <ApexStatValue>{formatPence(total)}</ApexStatValue>
       {parts.length > 1 && (
-        <div className="space-y-0.5">
-          {parts.map((part) => (
-            <div
-              key={part.label}
-              className="flex items-center justify-between text-[11px] text-muted-foreground"
-            >
-              <span>{part.label}</span>
-              <span className="tabular-nums">{formatPence(part.amount)}</span>
-            </div>
-          ))}
-        </div>
+        <>
+          <Separator className="my-2" />
+          <div className="space-y-1">
+            {parts.map((part) => (
+              <div
+                key={part.label}
+                className="flex items-center justify-between text-[11px] text-muted-foreground"
+              >
+                <span>{part.label}</span>
+                <span className="tabular-nums">{formatPence(part.amount)}</span>
+              </div>
+            ))}
+          </div>
+        </>
       )}
-    </StatCard>
+    </ApexStatCard>
   )
 }

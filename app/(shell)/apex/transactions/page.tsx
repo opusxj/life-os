@@ -3,8 +3,7 @@ import { redirect } from "next/navigation"
 
 import { ApexPage, ApexPageHeader } from "@/components/apex/page"
 import { AddTransactionDrawer } from "@/components/apex/transactions/transaction-drawer"
-import { TransactionFilterBar } from "@/components/apex/transactions/transaction-filters"
-import { TransactionsTable } from "@/components/apex/transactions/transactions-table"
+import { TransactionsCard } from "@/components/apex/transactions/transactions-table"
 import {
   currentMonth,
   getTransactionOptions,
@@ -33,10 +32,10 @@ export default async function TransactionsPage({
   const defaultMonth = currentMonth()
   const filtered = Boolean(
     filters.account ||
-      filters.card ||
-      filters.category ||
-      filters.kind ||
-      filters.month !== defaultMonth
+    filters.card ||
+    filters.category ||
+    filters.kind ||
+    filters.month !== defaultMonth
   )
 
   return (
@@ -44,19 +43,14 @@ export default async function TransactionsPage({
       <ApexPageHeader title="Transactions">
         <AddTransactionDrawer spaceId={spaceId} options={options} />
       </ApexPageHeader>
-      <div className="space-y-2.5">
-        <TransactionFilterBar
-          options={options}
-          filters={filters}
-          defaultMonth={defaultMonth}
-        />
-        <TransactionsTable
-          spaceId={spaceId}
-          options={options}
-          rows={rows}
-          filtered={filtered}
-        />
-      </div>
+      <TransactionsCard
+        spaceId={spaceId}
+        options={options}
+        filters={filters}
+        defaultMonth={defaultMonth}
+        rows={rows}
+        filtered={filtered}
+      />
     </ApexPage>
   )
 }

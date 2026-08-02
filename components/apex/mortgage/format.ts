@@ -33,3 +33,7 @@ export function pluralMonths(count: number): string {
 export function formatShare(pct: number): string {
   return String(Number(pct.toFixed(2)))
 }
+
+/** Subtle Apex-emerald tint for the stat-card icon anchors on this page. */
+export const EMERALD_ANCHOR =
+  "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"

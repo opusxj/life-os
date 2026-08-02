@@ -10,6 +10,8 @@ The shell's look and feel is the approved standard ("continue like this"). Every
 - **Accents:** each module has an identity color in the registry (`lib/modules.ts` → `accent`). New module surfaces inherit their accent from the registry — never hardcode a color.
 - **Motion:** Motion (`motion/react`) springs — the house spring is `{ type: "spring", stiffness: 500, damping: 32 }`. Layout changes morph (`layoutId`), interactions get `whileHover`/`whileTap`. Always inside `MotionConfig reducedMotion="user"`. No CSS `transition-*` on transform properties of motion elements.
 - **Components:** use `components/ui` (shadcn base-nova / Base UI) before writing custom. Base UI composes via the `render` prop, not `asChild`.
+- **Module surfaces compose the primitives, not raw markup** (LIFE-32): cards are `ui/Card` (via the shared `components/apex/stat-card.tsx` family for stat-style cards), tables are `ui/Table`, status/kind chips are `ui/Badge`, linear progress is `ui/Progress`, breakdowns use `ui/Separator`, charts use `ui/chart` + recharts. Hand-rolled equivalents don't merge — the one exemption is genuine art (e.g. the bank-card visuals). Cards should feel purposeful, not sparse: icon anchors in headers, quick actions in `CardFooter` strips, totals in `TableFooter` rows.
+- **Module bodies are full-width** — no centered max-width container; grids absorb the space with responsive columns.
 - **Both themes:** verify light and dark (press `d`).
 
 ## Code conventions

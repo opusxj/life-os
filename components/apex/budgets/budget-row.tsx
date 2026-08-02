@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { motion, MotionConfig } from "motion/react"
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -20,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { DataProgress } from "@/components/apex/progress"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -30,8 +30,6 @@ import {
 import type { Budget } from "@/lib/apex/budgets/queries"
 
 import { formatPenceShort } from "./format"
-
-const spring = { type: "spring", stiffness: 500, damping: 32 } as const
 
 export function BudgetRow({ budget }: { budget: Budget }) {
   const router = useRouter()
@@ -49,7 +47,7 @@ export function BudgetRow({ budget }: { budget: Budget }) {
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border px-3 py-2">
+    <div className="flex items-center gap-3 px-3 py-2.5">
       <span
         aria-hidden
         className="size-2.5 shrink-0 rounded-full"
@@ -65,23 +63,13 @@ export function BudgetRow({ budget }: { budget: Budget }) {
           </span>
         </div>
         <div className="mt-1.5 flex items-center gap-2">
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-            <MotionConfig reducedMotion="user">
-              <motion.div
-                className={
-                  over
-                    ? "h-full rounded-full bg-destructive/60"
-                    : "h-full rounded-full"
-                }
-                style={
-                  over ? undefined : { backgroundColor: budget.category.color }
-                }
-                initial={{ width: 0 }}
-                animate={{ width: `${percent}%` }}
-                transition={spring}
-              />
-            </MotionConfig>
-          </div>
+          <DataProgress
+            value={percent}
+            color={over ? "var(--destructive)" : budget.category.color}
+            dim={over}
+            aria-label={`${budget.category.name} budget used`}
+            className="min-w-0 flex-1 [&_[data-slot=progress-track]]:h-1.5"
+          />
           {over && (
             <span className="shrink-0 text-[11px] text-destructive tabular-nums">
               {`over by ${formatPenceShort(budget.spent - budget.amount)}`}
