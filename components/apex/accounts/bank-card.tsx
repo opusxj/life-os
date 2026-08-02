@@ -51,11 +51,19 @@ export function BankCard({
       whileHover={{ y: -3, rotate: -0.4 }}
       transition={spring}
       data-bank-card={card.name}
-      className="group relative flex aspect-[1.586/1] w-full flex-col overflow-hidden rounded-xl p-4 text-white shadow-md"
+      className="group relative isolate flex aspect-[1.586/1] w-full flex-col overflow-hidden rounded-xl p-4 text-white shadow-lg shadow-black/15"
       style={{
         background: `linear-gradient(135deg, ${card.color}, color-mix(in srgb, ${card.color} 55%, #000))`,
       }}
     >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          background:
+            "radial-gradient(130% 100% at 18% -10%, rgba(255,255,255,0.22), rgba(255,255,255,0.04) 45%, transparent 70%)",
+        }}
+      />
       <div className="flex items-start justify-between gap-2">
         <span className="truncate text-[11px] text-white/70">
           {accountName}
