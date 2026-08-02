@@ -1,16 +1,5 @@
 // Display helpers local to the Mortgage cards. Amounts stay integer pence
-// (lib/apex/money.ts); these only shape how the cards read.
-
-const gbpWhole = new Intl.NumberFormat("en-GB", {
-  style: "currency",
-  currency: "GBP",
-  maximumFractionDigits: 0,
-})
-
-/** 14235000 → "£142,350" — headline figures drop the pennies */
-export function formatPounds(pence: number): string {
-  return gbpWhole.format(Math.round(pence / 100))
-}
+// and format through lib/apex/money; these only shape dates and shares.
 
 const monthYear = new Intl.DateTimeFormat("en-GB", {
   month: "short",
@@ -33,7 +22,3 @@ export function pluralMonths(count: number): string {
 export function formatShare(pct: number): string {
   return String(Number(pct.toFixed(2)))
 }
-
-/** Subtle Apex-emerald tint for the stat-card icon anchors on this page. */
-export const EMERALD_ANCHOR =
-  "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"

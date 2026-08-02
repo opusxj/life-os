@@ -13,7 +13,7 @@ import {
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import { cn } from "@/lib/utils"
 
-import { EMERALD_ANCHOR, formatMonthYear, pluralMonths } from "./format"
+import { formatMonthYear, pluralMonths } from "./format"
 
 /** When is this actually paid off, versus the term on paper? */
 export function PayoffCard({ mortgage }: { mortgage: Mortgage }) {
@@ -25,11 +25,7 @@ export function PayoffCard({ mortgage }: { mortgage: Mortgage }) {
 
   if (!projection) {
     return (
-      <ApexStatCard
-        label="Payoff trajectory"
-        icon={CalendarRange}
-        iconClassName={EMERALD_ANCHOR}
-      >
+      <ApexStatCard label="Payoff trajectory" icon={CalendarRange}>
         <ApexStatValue className="text-muted-foreground">—</ApexStatValue>
         <ApexStatHint className="font-medium text-destructive">
           {`The payment doesn't cover the interest`}
@@ -46,11 +42,7 @@ export function PayoffCard({ mortgage }: { mortgage: Mortgage }) {
   const termEnd = formatMonthYear(mortgage.termEndsOn)
 
   return (
-    <ApexStatCard
-      label="Payoff trajectory"
-      icon={CalendarRange}
-      iconClassName={EMERALD_ANCHOR}
-    >
+    <ApexStatCard label="Payoff trajectory" icon={CalendarRange}>
       <ApexStatValue>{formatMonthYear(projected)}</ApexStatValue>
       <ApexStatHint
         className={cn(
