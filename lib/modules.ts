@@ -29,6 +29,15 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
+export type ModuleAccent = {
+  /** Rail active tile: background + glow */
+  tile: string
+  /** Icon color while the module is active on the rail */
+  activeIcon: string
+  /** Rail label tint while active */
+  label: string
+}
+
 export type ModuleNavItem = {
   label: string
   icon: LucideIcon
@@ -50,6 +59,7 @@ export type LifeModule = {
   domain: string
   description: string
   icon: LucideIcon
+  accent: ModuleAccent
   nav: ModuleNavSection[]
 }
 
@@ -59,6 +69,11 @@ export const homeModule: LifeModule = {
   domain: "Everything",
   description: "Your day across every area of life.",
   icon: House,
+  accent: {
+    tile: "bg-white shadow-lg shadow-white/20",
+    activeIcon: "text-neutral-950",
+    label: "text-white",
+  },
   nav: [
     {
       items: [
@@ -77,6 +92,11 @@ export const modules: LifeModule[] = [
     domain: "Finances",
     description: "Accounts, budgets and goals for the household.",
     icon: Wallet,
+    accent: {
+      tile: "bg-emerald-500 shadow-lg shadow-emerald-500/30",
+      activeIcon: "text-white",
+      label: "text-emerald-300",
+    },
     nav: [
       {
         items: [
@@ -96,6 +116,11 @@ export const modules: LifeModule[] = [
     domain: "Food",
     description: "Recipes, meal plans and the shopping list.",
     icon: ChefHat,
+    accent: {
+      tile: "bg-amber-500 shadow-lg shadow-amber-500/30",
+      activeIcon: "text-white",
+      label: "text-amber-300",
+    },
     nav: [
       {
         items: [
@@ -114,6 +139,11 @@ export const modules: LifeModule[] = [
     domain: "People",
     description: "Keep up with the people who matter.",
     icon: HeartHandshake,
+    accent: {
+      tile: "bg-rose-500 shadow-lg shadow-rose-500/30",
+      activeIcon: "text-white",
+      label: "text-rose-300",
+    },
     nav: [
       {
         items: [
@@ -132,6 +162,11 @@ export const modules: LifeModule[] = [
     domain: "Media",
     description: "Library, watch lists and the game backlog.",
     icon: Library,
+    accent: {
+      tile: "bg-violet-500 shadow-lg shadow-violet-500/30",
+      activeIcon: "text-white",
+      label: "text-violet-300",
+    },
     nav: [
       {
         items: [
@@ -150,6 +185,11 @@ export const modules: LifeModule[] = [
     domain: "Time",
     description: "Calendar, tasks, reminders and habits.",
     icon: CalendarDays,
+    accent: {
+      tile: "bg-sky-500 shadow-lg shadow-sky-500/30",
+      activeIcon: "text-white",
+      label: "text-sky-300",
+    },
     nav: [
       {
         items: [
