@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { formatPence } from "@/lib/apex/money"
+import { formatPence, formatPenceShort } from "@/lib/apex/money"
 import type {
   TransactionFilters,
   TransactionOptions,
@@ -27,7 +27,7 @@ import type {
 import { cn } from "@/lib/utils"
 import { AddTransactionDrawer } from "./transaction-drawer"
 import { TransactionFilterBar } from "./transaction-filters"
-import { TransactionRowActions } from "./transaction-row-actions"
+import { TransactionTableRow } from "./transaction-row"
 
 /** The page's one composed surface: filter toolbar in the header, ledger below. */
 export function TransactionsCard({
@@ -53,7 +53,9 @@ export function TransactionsCard({
           options={options}
           filters={filters}
           defaultMonth={defaultMonth}
-        />
+        >
+          {rows.length > 0 && <HeaderTotals rows={rows} />}
+        </TransactionFilterBar>
       </CardHeader>
       <CardContent className="px-0">
         {rows.length === 0 ? (
@@ -105,45 +107,46 @@ function TransactionsTable({
       </TableHeader>
       <TableBody>
         {rows.map((row) => (
-          <TableRow key={row.id} className="group/row">
-            <TableCell className="w-24 px-4 whitespace-nowrap text-muted-foreground">
-              {formatDay(row.occurredOn)}
-            </TableCell>
-            <TableCell className="w-full max-w-0 truncate font-medium">
-              {row.description}
-            </TableCell>
-            <TableCell className="whitespace-nowrap">
-              <CategoryCell row={row} />
-            </TableCell>
-            <TableCell className="whitespace-nowrap text-muted-foreground">
-              {row.accountName}
-            </TableCell>
-            <TableCell
-              className="whitespace-nowrap text-muted-foreground"
-              title={row.cardName ?? undefined}
-            >
-              {row.cardLast4 ? `·${row.cardLast4}` : null}
-            </TableCell>
-            <TableCell
-              className={cn(
-                "px-4 text-right font-medium whitespace-nowrap tabular-nums",
-                amountClass(row.kind)
-              )}
-            >
-              {amountText(row)}
-            </TableCell>
-            <TableCell className="w-10 py-0 text-right">
-              <TransactionRowActions
-                spaceId={spaceId}
-                options={options}
-                transaction={row}
-              />
-            </TableCell>
-          </TableRow>
+          <TransactionTableRow
+            key={row.id}
+            spaceId={spaceId}
+            options={options}
+            transaction={row}
+          />
         ))}
       </TableBody>
       <TotalsFooter rows={rows} />
     </Table>
+  )
+}
+
+/**
+ * The filter row's live answer: In / Out / Net for the visible rows (house
+ * short format — the exact-pence versions live in the footer). Income and
+ * expense sums only; transfers and adjustments count in neither.
+ */
+function HeaderTotals({ rows }: { rows: TransactionRow[] }) {
+  const incomeTotal = sumByKind(rows, "income")
+  const expenseTotal = sumByKind(rows, "expense")
+  const net = incomeTotal - expenseTotal
+
+  return (
+    <div className="ml-auto flex items-center gap-3 text-[13px] whitespace-nowrap tabular-nums">
+      <span className="text-emerald-600 dark:text-emerald-400">
+        {`In +${formatPenceShort(incomeTotal)}`}
+      </span>
+      <span>{`Out −${formatPenceShort(expenseTotal)}`}</span>
+      <span
+        className={cn(
+          "rounded-full px-2 py-0.5 font-medium",
+          net < 0
+            ? "bg-destructive/10 text-destructive dark:bg-destructive/15"
+            : "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
+        )}
+      >
+        {`Net ${net < 0 ? "−" : "+"}${formatPenceShort(Math.abs(net))}`}
+      </span>
+    </div>
   )
 }
 
@@ -193,62 +196,4 @@ function sumByKind(rows: TransactionRow[], kind: TransactionRow["kind"]) {
     (total, row) => (row.kind === kind ? total + row.amount : total),
     0
   )
-}
-
-function CategoryCell({ row }: { row: TransactionRow }) {
-  if (row.kind === "transfer") {
-    return (
-      <span className="text-muted-foreground">{`→ ${row.transferAccountName ?? "another account"}`}</span>
-    )
-  }
-  if (row.kind === "adjustment") {
-    return <span className="text-muted-foreground italic">sync</span>
-  }
-  if (!row.categoryName) return null
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span
-        aria-hidden
-        className="size-2 shrink-0 rounded-full"
-        style={{ backgroundColor: row.categoryColor ?? undefined }}
-      />
-      {row.categoryName}
-    </span>
-  )
-}
-
-function amountClass(kind: TransactionRow["kind"]): string {
-  switch (kind) {
-    case "income":
-      return "text-emerald-600 dark:text-emerald-400"
-    case "transfer":
-      return "text-muted-foreground"
-    case "adjustment":
-      return "font-normal text-muted-foreground italic"
-    default:
-      return ""
-  }
-}
-
-function amountText(row: TransactionRow): string {
-  return row.kind === "income"
-    ? `+${formatPence(row.amount)}`
-    : formatPence(row.amount)
-}
-
-const DAY_FORMAT = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-})
-const DAY_YEAR_FORMAT = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-})
-
-function formatDay(isoDate: string): string {
-  const date = new Date(`${isoDate}T00:00:00`)
-  return date.getFullYear() === new Date().getFullYear()
-    ? DAY_FORMAT.format(date)
-    : DAY_YEAR_FORMAT.format(date)
 }
