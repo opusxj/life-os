@@ -19,6 +19,7 @@ import { useTheme } from "next-themes"
 import { NotificationsMenu } from "@/components/shell/notifications-menu"
 import { CreateSpaceDialog } from "@/components/spaces/create-space-dialog"
 import { ManageSpaceDialog } from "@/components/spaces/manage-space-dialog"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -77,12 +78,14 @@ function SpaceSwitcher({ workspace }: { workspace: Workspace }) {
             />
           }
         >
-          <span
-            className="flex size-5.5 items-center justify-center rounded-md text-[10px] font-semibold text-white"
-            style={{ backgroundColor: activeSpace.color }}
-          >
-            {activeSpace.initial}
-          </span>
+          <Avatar size="sm" className="size-5.5 rounded-md after:rounded-md">
+            <AvatarFallback
+              className="rounded-md text-[10px] font-semibold text-white"
+              style={{ backgroundColor: activeSpace.color }}
+            >
+              {activeSpace.initial}
+            </AvatarFallback>
+          </Avatar>
           {activeSpace.name}
           <ChevronDown className="size-3 text-muted-foreground" />
         </DropdownMenuTrigger>
@@ -91,12 +94,14 @@ function SpaceSwitcher({ workspace }: { workspace: Workspace }) {
             <DropdownMenuLabel>Spaces</DropdownMenuLabel>
             {spaces.map((space) => (
               <DropdownMenuItem key={space.id} onClick={() => selectSpace(space.id)}>
-                <span
-                  className="flex size-5 items-center justify-center rounded text-[10px] font-semibold text-white"
-                  style={{ backgroundColor: space.color }}
-                >
-                  {space.initial}
-                </span>
+                <Avatar size="sm" className="size-5 rounded-md after:rounded-md">
+                  <AvatarFallback
+                    className="rounded-md text-[10px] font-semibold text-white"
+                    style={{ backgroundColor: space.color }}
+                  >
+                    {space.initial}
+                  </AvatarFallback>
+                </Avatar>
                 {space.name}
                 {space.id === activeSpace.id && <Check className="ml-auto size-4" />}
               </DropdownMenuItem>
@@ -124,9 +129,9 @@ function SpaceSwitcher({ workspace }: { workspace: Workspace }) {
 
 function SearchButton() {
   return (
-    <button
-      type="button"
-      className="absolute top-1/2 left-1/2 hidden h-7.5 w-72 max-w-[38vw] -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full border bg-muted/40 px-3 text-[13px] text-muted-foreground transition-colors outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:flex"
+    <Button
+      variant="outline"
+      className="absolute top-1/2 left-1/2 hidden h-7.5 w-72 max-w-[38vw] -translate-x-1/2 -translate-y-1/2 justify-start gap-2 rounded-full bg-muted/40 px-3 text-[13px] font-normal text-muted-foreground hover:bg-muted hover:text-muted-foreground md:flex"
     >
       <Search className="size-3.5" />
       <span className="flex-1 text-left">Search</span>
@@ -134,7 +139,7 @@ function SearchButton() {
         <Kbd>Ctrl</Kbd>
         <Kbd>K</Kbd>
       </KbdGroup>
-    </button>
+    </Button>
   )
 }
 
@@ -167,9 +172,11 @@ function UserMenu({ user }: { user: CurrentUser }) {
           />
         }
       >
-        <span className="flex size-6 items-center justify-center rounded-full bg-foreground text-[10px] font-semibold text-background">
-          {user.initials}
-        </span>
+        <Avatar size="sm">
+          <AvatarFallback className="bg-foreground text-[10px] font-semibold text-background">
+            {user.initials}
+          </AvatarFallback>
+        </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>

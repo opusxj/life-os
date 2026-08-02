@@ -86,15 +86,17 @@ export function SignInForm({ linkError }: { linkError?: boolean }) {
       )}
 
       <div className="mt-4 space-y-2 text-center text-[13px] text-muted-foreground">
-        <button
+        <Button
           type="button"
-          className="underline-offset-4 hover:text-foreground hover:underline"
+          variant="link"
+          size="sm"
+          className="h-auto p-0 text-[13px] font-normal text-muted-foreground hover:text-foreground"
           onClick={() => setMode(mode === "password" ? "magic" : "password")}
         >
           {mode === "password"
             ? "Use a magic link instead"
             : "Use a password instead"}
-        </button>
+        </Button>
         <p>
           No account?{" "}
           <Link

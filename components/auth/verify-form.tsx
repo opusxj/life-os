@@ -70,13 +70,15 @@ export function VerifyForm({
           {resendState?.success ? (
             <AuthNote kind="success">A new code is on its way.</AuthNote>
           ) : (
-            <button
+            <Button
               type="submit"
+              variant="link"
+              size="sm"
               disabled={resendPending}
-              className="text-[13px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline disabled:opacity-50"
+              className="h-auto p-0 text-[13px] font-normal text-muted-foreground hover:text-foreground"
             >
               {resendPending ? "Sending…" : "Resend code"}
-            </button>
+            </Button>
           )}
           {resendState?.error && (
             <AuthNote kind="error" className="mt-2">
