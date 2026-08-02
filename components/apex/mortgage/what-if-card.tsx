@@ -1,16 +1,26 @@
 "use client"
 
 import * as React from "react"
+import { TrendingDown } from "lucide-react"
 import { useMotionValueEvent, useReducedMotion, useSpring } from "motion/react"
 
+import {
+  ApexStatCard,
+  ApexStatHint,
+  ApexStatValue,
+} from "@/components/apex/stat-card"
 import { Slider } from "@/components/ui/slider"
 import {
   monthsFromNow,
   overpaymentImpact,
 } from "@/lib/apex/mortgage/amortization"
 
-import { formatMonthYear, formatPounds, pluralMonths } from "./format"
-import { StatCard, StatSupport, StatValue } from "./stat-card"
+import {
+  EMERALD_ANCHOR,
+  formatMonthYear,
+  formatPounds,
+  pluralMonths,
+} from "./format"
 
 const MAX_EXTRA = 500
 const STEP = 25
@@ -37,26 +47,34 @@ export function WhatIfCard({
 
   if (!impact) {
     return (
-      <StatCard label="Overpayment what-if">
-        <StatValue className="text-muted-foreground">—</StatValue>
-        <StatSupport>{`Needs a payment that covers the interest`}</StatSupport>
-      </StatCard>
+      <ApexStatCard
+        label="Overpayment what-if"
+        icon={TrendingDown}
+        iconClassName={EMERALD_ANCHOR}
+      >
+        <ApexStatValue className="text-muted-foreground">—</ApexStatValue>
+        <ApexStatHint>{`Needs a payment that covers the interest`}</ApexStatHint>
+      </ApexStatCard>
     )
   }
 
   const payoff = formatMonthYear(monthsFromNow(impact.accelerated.months))
 
   return (
-    <StatCard label="Overpayment what-if">
-      <StatValue className="text-emerald-600 dark:text-emerald-400">
+    <ApexStatCard
+      label="Overpayment what-if"
+      icon={TrendingDown}
+      iconClassName={EMERALD_ANCHOR}
+    >
+      <ApexStatValue className="text-emerald-600 dark:text-emerald-400">
         <AnimatedPounds pence={impact.interestSaved} />
-      </StatValue>
-      <StatSupport>
+      </ApexStatValue>
+      <ApexStatHint>
         {extra === 0
           ? `Drag the slider to try an overpayment`
           : `Interest saved · paid off ${payoff}, ${pluralMonths(impact.monthsSaved)} sooner`}
-      </StatSupport>
-      <div className="flex items-center gap-2.5 pt-1">
+      </ApexStatHint>
+      <div className="flex items-center gap-2.5 pt-2.5">
         <Slider
           value={[extra]}
           min={0}
@@ -71,7 +89,7 @@ export function WhatIfCard({
           {`+£${extra}/mo`}
         </span>
       </div>
-    </StatCard>
+    </ApexStatCard>
   )
 }
 

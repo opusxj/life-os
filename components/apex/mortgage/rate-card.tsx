@@ -1,24 +1,40 @@
+import { Percent } from "lucide-react"
+
+import {
+  ApexStatCard,
+  ApexStatHint,
+  ApexStatValue,
+} from "@/components/apex/stat-card"
 import { Badge } from "@/components/ui/badge"
 import { monthsBetween } from "@/lib/apex/mortgage/amortization"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import { cn } from "@/lib/utils"
 
-import { formatMonthYear, pluralMonths } from "./format"
-import { StatCard, StatSupport, StatValue } from "./stat-card"
+import { EMERALD_ANCHOR, formatMonthYear, pluralMonths } from "./format"
 
 /** What rate am I on, and when does the deal end? The remortgage alarm. */
 export function RateCard({ mortgage }: { mortgage: Mortgage }) {
   const countdown = rateCountdown(mortgage.rateEndsOn)
 
   return (
-    <StatCard label="Rate">
+    <ApexStatCard
+      label="Rate"
+      icon={Percent}
+      iconClassName={cn(
+        EMERALD_ANCHOR,
+        countdown.state === "soon" &&
+          "bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400",
+        countdown.state === "past" &&
+          "bg-destructive/10 text-destructive dark:bg-destructive/20"
+      )}
+    >
       <div className="flex items-baseline gap-2">
-        <StatValue>{`${mortgage.interestRate.toFixed(2)}%`}</StatValue>
-        <Badge variant="secondary" className="capitalize">
+        <ApexStatValue>{`${mortgage.interestRate.toFixed(2)}%`}</ApexStatValue>
+        <Badge variant="outline" className="capitalize">
           {mortgage.rateType}
         </Badge>
       </div>
-      <StatSupport
+      <ApexStatHint
         className={cn(
           countdown.state === "soon" &&
             "font-medium text-amber-600 dark:text-amber-400",
@@ -26,8 +42,8 @@ export function RateCard({ mortgage }: { mortgage: Mortgage }) {
         )}
       >
         {countdown.text}
-      </StatSupport>
-    </StatCard>
+      </ApexStatHint>
+    </ApexStatCard>
   )
 }
 

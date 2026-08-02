@@ -1,3 +1,10 @@
+import { CalendarRange } from "lucide-react"
+
+import {
+  ApexStatCard,
+  ApexStatHint,
+  ApexStatValue,
+} from "@/components/apex/stat-card"
 import {
   monthsBetween,
   monthsFromNow,
@@ -6,8 +13,7 @@ import {
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import { cn } from "@/lib/utils"
 
-import { formatMonthYear, pluralMonths } from "./format"
-import { StatCard, StatSupport, StatValue } from "./stat-card"
+import { EMERALD_ANCHOR, formatMonthYear, pluralMonths } from "./format"
 
 /** When is this actually paid off, versus the term on paper? */
 export function PayoffCard({ mortgage }: { mortgage: Mortgage }) {
@@ -19,12 +25,16 @@ export function PayoffCard({ mortgage }: { mortgage: Mortgage }) {
 
   if (!projection) {
     return (
-      <StatCard label="Payoff trajectory">
-        <StatValue className="text-muted-foreground">—</StatValue>
-        <StatSupport className="font-medium text-destructive">
+      <ApexStatCard
+        label="Payoff trajectory"
+        icon={CalendarRange}
+        iconClassName={EMERALD_ANCHOR}
+      >
+        <ApexStatValue className="text-muted-foreground">—</ApexStatValue>
+        <ApexStatHint className="font-medium text-destructive">
           {`The payment doesn't cover the interest`}
-        </StatSupport>
-      </StatCard>
+        </ApexStatHint>
+      </ApexStatCard>
     )
   }
 
@@ -36,9 +46,13 @@ export function PayoffCard({ mortgage }: { mortgage: Mortgage }) {
   const termEnd = formatMonthYear(mortgage.termEndsOn)
 
   return (
-    <StatCard label="Payoff trajectory">
-      <StatValue>{formatMonthYear(projected)}</StatValue>
-      <StatSupport
+    <ApexStatCard
+      label="Payoff trajectory"
+      icon={CalendarRange}
+      iconClassName={EMERALD_ANCHOR}
+    >
+      <ApexStatValue>{formatMonthYear(projected)}</ApexStatValue>
+      <ApexStatHint
         className={cn(
           delta > 0 && "font-medium text-emerald-600 dark:text-emerald-400",
           delta < 0 && "font-medium text-amber-600 dark:text-amber-400"
@@ -49,7 +63,7 @@ export function PayoffCard({ mortgage }: { mortgage: Mortgage }) {
           : delta > 0
             ? `${pluralMonths(delta)} ahead of the ${termEnd} term end`
             : `${pluralMonths(-delta)} behind the ${termEnd} term end`}
-      </StatSupport>
-    </StatCard>
+      </ApexStatHint>
+    </ApexStatCard>
   )
 }

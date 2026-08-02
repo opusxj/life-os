@@ -41,10 +41,10 @@ export function UpdateBalancePopover({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button variant="outline" size="xs" />}>
+      <PopoverTrigger render={<Button variant="ghost" size="xs" />}>
         Update balance
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-60">
+      <PopoverContent align="start" className="w-60">
         <PopoverHeader>
           <PopoverTitle className="text-[13px]">Update balance</PopoverTitle>
           <PopoverDescription className="text-[11px]">
