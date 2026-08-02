@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
 import {
+  CashflowCard,
   DueSoonCard,
   MonthCard,
   MortgageSnapshot,
@@ -32,12 +33,28 @@ export default async function ApexOverviewPage() {
       {empty ? (
         <OverviewEmpty />
       ) : (
-        <div className="grid gap-3 lg:grid-cols-3">
-          <TotalBalanceCard accounts={data.accounts} total={data.totalBalance} />
-          <DueSoonCard payments={data.dueSoon} payAccounts={data.payAccounts} />
-          <MonthCard monthLabel={data.monthLabel} budgets={data.topBudgets} />
+        <div className="grid gap-3.5 lg:grid-cols-3 2xl:grid-cols-4">
+          <TotalBalanceCard
+            accounts={data.accounts}
+            total={data.totalBalance}
+            className="lg:col-span-2"
+          />
+          <DueSoonCard
+            payments={data.dueSoon}
+            payAccounts={data.payAccounts}
+            className="2xl:col-span-2"
+          />
+          <CashflowCard months={data.cashflow} className="lg:col-span-2" />
+          <MonthCard
+            monthLabel={data.monthLabel}
+            budgets={data.topBudgets}
+            className="2xl:col-span-2"
+          />
           <MortgageSnapshot mortgages={data.mortgages} />
-          <SavingsStrip goals={data.goals} />
+          <SavingsStrip
+            goals={data.goals}
+            className="lg:col-span-2 2xl:col-span-3"
+          />
         </div>
       )}
     </ApexPage>
