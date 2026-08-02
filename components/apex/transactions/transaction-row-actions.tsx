@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 
+import { ConfirmDialog } from "@/components/apex/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -13,44 +14,33 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { softDeleteTransaction } from "@/lib/apex/transactions/actions"
-import type {
-  TransactionOptions,
-  TransactionRow,
-} from "@/lib/apex/transactions/queries"
-import { TransactionDrawer } from "./transaction-drawer"
+import type { TransactionRow } from "@/lib/apex/transactions/queries"
 
 export function TransactionRowActions({
-  spaceId,
-  options,
   transaction,
+  canEdit,
+  onEdit,
 }: {
-  spaceId: string
-  options: TransactionOptions
   transaction: TransactionRow
+  /** Adjustments are Sync-balance audit rows — editing one would corrupt history */
+  canEdit: boolean
+  onEdit: () => void
 }) {
   const router = useRouter()
   const [isPending, startTransition] = React.useTransition()
-  const [editOpen, setEditOpen] = React.useState(false)
+  const [confirmOpen, setConfirmOpen] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
-
-  // Adjustments are Sync-balance audit rows — editing one would corrupt history
-  const canEdit = transaction.kind !== "adjustment"
 
   function handleDelete() {
     setError(null)
     startTransition(async () => {
       const result = await softDeleteTransaction(transaction.id)
       if (result.error) setError(result.error)
-      else router.refresh()
+      else {
+        setConfirmOpen(false)
+        router.refresh()
+      }
     })
-  }
-
-  if (error) {
-    return (
-      <span role="alert" className="text-[11px] whitespace-nowrap text-destructive">
-        {error}
-      </span>
-    )
   }
 
   return (
@@ -63,7 +53,7 @@ export function TransactionRowActions({
               size="icon-xs"
               disabled={isPending}
               aria-label={`Actions for ${transaction.description}`}
-              className="text-muted-foreground opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100"
+              className="text-muted-foreground/60"
             />
           }
         >
@@ -72,27 +62,37 @@ export function TransactionRowActions({
         <DropdownMenuContent align="end" className="min-w-36">
           <DropdownMenuGroup>
             {canEdit && (
-              <DropdownMenuItem onClick={() => setEditOpen(true)}>
+              <DropdownMenuItem onClick={onEdit}>
                 <Pencil />
                 Edit
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem variant="destructive" onClick={handleDelete}>
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => {
+                setError(null)
+                setConfirmOpen(true)
+              }}
+            >
               <Trash2 />
               Delete
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
-      {canEdit && (
-        <TransactionDrawer
-          open={editOpen}
-          onOpenChange={setEditOpen}
-          spaceId={spaceId}
-          options={options}
-          transaction={transaction}
-        />
-      )}
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={(open) => {
+          setConfirmOpen(open)
+          if (!open) setError(null)
+        }}
+        title="Delete this transaction?"
+        description="The account balance re-adjusts as if it had never been logged."
+        confirmLabel="Delete"
+        pending={isPending}
+        error={error}
+        onConfirm={handleDelete}
+      />
     </>
   )
 }
