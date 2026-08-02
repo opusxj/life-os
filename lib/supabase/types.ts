@@ -94,6 +94,77 @@ export type Database = {
           },
         ]
       }
+      budgets: {
+        Row: {
+          amount: number
+          category_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          metadata: Json
+          notes: string | null
+          space_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category_id: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          space_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          space_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_category_id_space_id_fkey"
+            columns: ["category_id", "space_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id", "space_id"]
+          },
+          {
+            foreignKeyName: "budgets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cards: {
         Row: {
           account_id: string
@@ -247,6 +318,100 @@ export type Database = {
           },
         ]
       }
+      mortgages: {
+        Row: {
+          balance: number
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          equity_share_pct: number | null
+          id: string
+          interest_rate: number
+          lender: string
+          metadata: Json
+          monthly_payment: number
+          name: string
+          notes: string | null
+          original_amount: number
+          property_value: number | null
+          rate_ends_on: string | null
+          rate_type: string
+          rent_monthly: number | null
+          space_id: string
+          term_ends_on: string
+          updated_at: string
+        }
+        Insert: {
+          balance: number
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          equity_share_pct?: number | null
+          id?: string
+          interest_rate: number
+          lender: string
+          metadata?: Json
+          monthly_payment: number
+          name: string
+          notes?: string | null
+          original_amount: number
+          property_value?: number | null
+          rate_ends_on?: string | null
+          rate_type: string
+          rent_monthly?: number | null
+          space_id: string
+          term_ends_on: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          equity_share_pct?: number | null
+          id?: string
+          interest_rate?: number
+          lender?: string
+          metadata?: Json
+          monthly_payment?: number
+          name?: string
+          notes?: string | null
+          original_amount?: number
+          property_value?: number | null
+          rate_ends_on?: string | null
+          rate_type?: string
+          rent_monthly?: number | null
+          space_id?: string
+          term_ends_on?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mortgages_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mortgages_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mortgages_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -308,6 +473,182 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      recurring_payments: {
+        Row: {
+          account_id: string | null
+          amount: number
+          cadence: string
+          category_id: string | null
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          kind: string
+          metadata: Json
+          name: string
+          next_due_on: string
+          notes: string | null
+          space_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          cadence: string
+          category_id?: string | null
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          name: string
+          next_due_on: string
+          notes?: string | null
+          space_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          cadence?: string
+          category_id?: string | null
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          name?: string
+          next_due_on?: string
+          notes?: string | null
+          space_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_payments_account_id_space_id_fkey"
+            columns: ["account_id", "space_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id", "space_id"]
+          },
+          {
+            foreignKeyName: "recurring_payments_category_id_space_id_fkey"
+            columns: ["category_id", "space_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id", "space_id"]
+          },
+          {
+            foreignKeyName: "recurring_payments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_payments_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_payments_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saving_goals: {
+        Row: {
+          account_id: string | null
+          color: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          metadata: Json
+          name: string
+          notes: string | null
+          saved_amount: number
+          space_id: string
+          target_amount: number
+          target_on: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          color: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          notes?: string | null
+          saved_amount?: number
+          space_id: string
+          target_amount: number
+          target_on?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          color?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          notes?: string | null
+          saved_amount?: number
+          space_id?: string
+          target_amount?: number
+          target_on?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saving_goals_account_id_space_id_fkey"
+            columns: ["account_id", "space_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id", "space_id"]
+          },
+          {
+            foreignKeyName: "saving_goals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saving_goals_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saving_goals_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       space_invites: {
         Row: {
@@ -472,6 +813,7 @@ export type Database = {
           metadata: Json
           notes: string | null
           occurred_on: string
+          recurring_payment_id: string | null
           space_id: string
           transfer_account_id: string | null
           updated_at: string
@@ -491,6 +833,7 @@ export type Database = {
           metadata?: Json
           notes?: string | null
           occurred_on?: string
+          recurring_payment_id?: string | null
           space_id: string
           transfer_account_id?: string | null
           updated_at?: string
@@ -510,6 +853,7 @@ export type Database = {
           metadata?: Json
           notes?: string | null
           occurred_on?: string
+          recurring_payment_id?: string | null
           space_id?: string
           transfer_account_id?: string | null
           updated_at?: string
@@ -551,6 +895,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_recurring_payment_id_space_id_fkey"
+            columns: ["recurring_payment_id", "space_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_payments"
+            referencedColumns: ["id", "space_id"]
+          },
+          {
             foreignKeyName: "transactions_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
@@ -573,6 +924,10 @@ export type Database = {
     Functions: {
       accept_space_invite: { Args: { invite_id: string }; Returns: undefined }
       is_space_member: { Args: { target_space: string }; Returns: boolean }
+      mark_recurring_paid: {
+        Args: { pay_account?: string; payment_id: string }
+        Returns: undefined
+      }
       my_pending_invites: {
         Args: never
         Returns: {
