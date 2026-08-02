@@ -3,9 +3,9 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { motion, MotionConfig } from "motion/react"
 import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react"
 
+import { ProgressGrid } from "@/components/apex/progress-grid"
 import { ApexStatHint } from "@/components/apex/stat-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -49,8 +49,6 @@ import type { AccountOption, SavingGoal } from "@/lib/apex/budgets/queries"
 
 import { formatPenceShort } from "./format"
 import { GoalDrawer } from "./goal-drawer"
-
-const spring = { type: "spring", stiffness: 500, damping: 32 } as const
 
 export function GoalCard({
   goal,
@@ -169,59 +167,7 @@ export function GoalCard({
   )
 }
 
-/**
- * The hero: the target cut into cells that fill as savings grow.
- * 1% cells for big targets, chunkier cells for small ones.
- */
-function ProgressGrid({
-  target,
-  fraction,
-  color,
-}: {
-  target: number
-  fraction: number
-  color: string
-}) {
-  const cells = target >= 1_000_000 ? 100 : target >= 100_000 ? 50 : 20
-  const exact = fraction * cells
-  const full = Math.floor(exact)
-  const hasPartial = full < cells && exact - full > 0.02
-
-  return (
-    <MotionConfig reducedMotion="user">
-      <div
-        role="img"
-        aria-label={`${Math.floor(fraction * 100)}% of target saved`}
-        className="grid grid-cols-10 gap-1"
-      >
-        {Array.from({ length: cells }, (_, index) => {
-          const isFull = index < full
-          const isPartial = index === full && hasPartial
-          if (!isFull && !isPartial) {
-            return (
-              <span
-                key={index}
-                className="aspect-square rounded-[3px] bg-muted"
-              />
-            )
-          }
-          return (
-            <motion.span
-              key={index}
-              className="aspect-square rounded-[3px]"
-              style={{ backgroundColor: color }}
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: isPartial ? 0.45 : 1, scale: 1 }}
-              transition={{ ...spring, delay: Math.min(index * 0.006, 0.45) }}
-            />
-          )
-        })}
-      </div>
-    </MotionConfig>
-  )
-}
-
-function TopUpDrawer({
+export function TopUpDrawer({
   goal,
   accounts,
   open,
