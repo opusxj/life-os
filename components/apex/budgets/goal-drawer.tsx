@@ -59,6 +59,13 @@ export function GoalDrawer({
   const [accountId, setAccountId] = React.useState<string>(
     goal?.account?.id ?? UNLINKED
   )
+  // Without `items`, Base UI's SelectValue renders the raw id in the trigger
+  const accountItems = {
+    [UNLINKED]: "Not linked",
+    ...Object.fromEntries(
+      savingsAccounts.map((account) => [account.id, account.name])
+    ),
+  }
   const [state, action, pending] = React.useActionState<
     BudgetsFormState,
     FormData
@@ -129,6 +136,7 @@ export function GoalDrawer({
           <div className="space-y-1.5">
             <Label className="text-[13px]">Linked savings account</Label>
             <Select
+              items={accountItems}
               value={accountId}
               onValueChange={(value) => setAccountId(value as string)}
             >

@@ -6,9 +6,12 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Popover,
   PopoverContent,
@@ -36,6 +39,9 @@ export function MarkPaidButton({
   const [pickerOpen, setPickerOpen] = React.useState(false)
   const [pickedAccount, setPickedAccount] = React.useState(
     accounts[0]?.id ?? ""
+  )
+  const accountItems = Object.fromEntries(
+    accounts.map((account) => [account.id, account.name])
   )
 
   function pay(payAccount?: string) {
@@ -76,18 +82,22 @@ export function MarkPaidButton({
         <Label htmlFor={`pay-account-${paymentId}`} className="text-[13px]">
           Pay from which account?
         </Label>
-        <NativeSelect
-          id={`pay-account-${paymentId}`}
+        <Select
+          items={accountItems}
           value={pickedAccount}
-          onChange={(event) => setPickedAccount(event.target.value)}
-          className="w-full"
+          onValueChange={(value) => setPickedAccount(value as string)}
         >
-          {accounts.map((account) => (
-            <NativeSelectOption key={account.id} value={account.id}>
-              {account.name}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
+          <SelectTrigger id={`pay-account-${paymentId}`} className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {accounts.map((account) => (
+              <SelectItem key={account.id} value={account.id}>
+                {account.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {error && (
           <p role="alert" className="text-[13px] text-destructive">
             {error}

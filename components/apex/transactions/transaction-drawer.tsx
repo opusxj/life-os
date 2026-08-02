@@ -15,9 +15,12 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { parsePoundsToPence } from "@/lib/apex/money"
 import {
@@ -31,6 +34,10 @@ import type {
 } from "@/lib/apex/transactions/queries"
 
 type EntryKind = "income" | "expense" | "transfer"
+
+/** Sentinel for the optional "None" choices — Base UI Select item values must
+ *  be real strings; the hidden inputs map it back to "" for FormData. */
+const NONE = "none"
 
 /** Header/empty-state CTA owning its own drawer instance. */
 export function AddTransactionDrawer({
@@ -143,6 +150,40 @@ function TransactionForm({
     (account) => account.id !== accountId
   )
 
+  // Defaults for the dependent selects; recomputed when their `key` remounts
+  // them (account or kind change), exactly like the native defaultValues did.
+  const destinationDefault =
+    transaction?.transferAccountId &&
+    transaction.transferAccountId !== accountId
+      ? transaction.transferAccountId
+      : (destinations[0]?.id ?? "")
+  const categoryDefault =
+    transaction?.kind === kind ? (transaction.categoryId ?? NONE) : NONE
+  const cardDefault =
+    transaction?.accountId === accountId ? (transaction.cardId ?? NONE) : NONE
+
+  const accountItems = Object.fromEntries(
+    options.accounts.map((account) => [account.id, account.name])
+  )
+  const destinationItems = Object.fromEntries(
+    destinations.map((account) => [account.id, account.name])
+  )
+  const categoryItems = {
+    [NONE]: "None",
+    ...Object.fromEntries(
+      categories.map((category) => [category.id, category.name])
+    ),
+  }
+  const cardItems = {
+    [NONE]: "None",
+    ...Object.fromEntries(
+      cards.map((card) => [
+        card.id,
+        card.last4 ? `${card.name} ·${card.last4}` : card.name,
+      ])
+    ),
+  }
+
   return (
     <form action={action} className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 space-y-3.5 overflow-y-auto px-4 py-1">
@@ -202,44 +243,41 @@ function TransactionForm({
           <FieldLabel htmlFor="txn-account">
             {isTransfer ? "From account" : "Account"}
           </FieldLabel>
-          <NativeSelect
-            className="w-full"
-            id="txn-account"
-            name="accountId"
+          <input type="hidden" name="accountId" value={accountId} />
+          <Select
+            items={accountItems}
             value={accountId}
-            onChange={(event) => setAccountId(event.target.value)}
-            required
+            onValueChange={(value) => setAccountId(value as string)}
           >
-            {options.accounts.map((account) => (
-              <NativeSelectOption key={account.id} value={account.id}>
-                {account.name}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
+            <SelectTrigger id="txn-account" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {options.accounts.map((account) => (
+                <SelectItem key={account.id} value={account.id}>
+                  {account.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {isTransfer && (
           <div className="space-y-1.5">
             <FieldLabel htmlFor="txn-destination">To account</FieldLabel>
-            <NativeSelect
-              className="w-full"
+            <FormSelect
               key={accountId}
               id="txn-destination"
               name="transferAccountId"
-              defaultValue={
-                transaction?.transferAccountId &&
-                transaction.transferAccountId !== accountId
-                  ? transaction.transferAccountId
-                  : (destinations[0]?.id ?? "")
-              }
-              required
+              defaultValue={destinationDefault}
+              items={destinationItems}
             >
               {destinations.map((account) => (
-                <NativeSelectOption key={account.id} value={account.id}>
+                <SelectItem key={account.id} value={account.id}>
                   {account.name}
-                </NativeSelectOption>
+                </SelectItem>
               ))}
-            </NativeSelect>
+            </FormSelect>
           </div>
         )}
 
@@ -258,46 +296,40 @@ function TransactionForm({
         {!isTransfer && (
           <div className="space-y-1.5">
             <FieldLabel htmlFor="txn-category">Category</FieldLabel>
-            <NativeSelect
-              className="w-full"
+            <FormSelect
               key={kind}
               id="txn-category"
               name="categoryId"
-              defaultValue={
-                transaction?.kind === kind ? (transaction?.categoryId ?? "") : ""
-              }
+              defaultValue={categoryDefault}
+              items={categoryItems}
             >
-              <NativeSelectOption value="">None</NativeSelectOption>
+              <SelectItem value={NONE}>None</SelectItem>
               {categories.map((category) => (
-                <NativeSelectOption key={category.id} value={category.id}>
+                <SelectItem key={category.id} value={category.id}>
                   {category.name}
-                </NativeSelectOption>
+                </SelectItem>
               ))}
-            </NativeSelect>
+            </FormSelect>
           </div>
         )}
 
         {!isTransfer && cards.length > 0 && (
           <div className="space-y-1.5">
             <FieldLabel htmlFor="txn-card">Card</FieldLabel>
-            <NativeSelect
-              className="w-full"
+            <FormSelect
               key={accountId}
               id="txn-card"
               name="cardId"
-              defaultValue={
-                transaction?.accountId === accountId
-                  ? (transaction?.cardId ?? "")
-                  : ""
-              }
+              defaultValue={cardDefault}
+              items={cardItems}
             >
-              <NativeSelectOption value="">None</NativeSelectOption>
+              <SelectItem value={NONE}>None</SelectItem>
               {cards.map((card) => (
-                <NativeSelectOption key={card.id} value={card.id}>
+                <SelectItem key={card.id} value={card.id}>
                   {card.last4 ? `${card.name} ·${card.last4}` : card.name}
-                </NativeSelectOption>
+                </SelectItem>
               ))}
-            </NativeSelect>
+            </FormSelect>
           </div>
         )}
 
@@ -342,6 +374,43 @@ function TransactionForm({
         </Button>
       </DrawerFooter>
     </form>
+  )
+}
+
+/**
+ * Controlled Select serialized through a hidden input (Base UI's own form
+ * serialization is not relied on). Parents reset it exactly like the native
+ * selects it replaced: a `key` change or conditional remount re-initializes
+ * state from `defaultValue`. NONE maps back to "" for FormData.
+ */
+function FormSelect({
+  id,
+  name,
+  defaultValue,
+  items,
+  children,
+}: {
+  id: string
+  name: string
+  defaultValue: string
+  items: Record<string, React.ReactNode>
+  children: React.ReactNode
+}) {
+  const [value, setValue] = React.useState(defaultValue)
+  return (
+    <>
+      <input type="hidden" name={name} value={value === NONE ? "" : value} />
+      <Select
+        items={items}
+        value={value}
+        onValueChange={(next) => setValue(next as string)}
+      >
+        <SelectTrigger id={id} className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>{children}</SelectContent>
+      </Select>
+    </>
   )
 }
 
