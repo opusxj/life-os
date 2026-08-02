@@ -31,5 +31,5 @@ export const members: Member[] = [
   },
 ]
 
-export const defaultSpace = spaces[0]
-export const currentUser = members[0]
+// NOTE: mock data — remaining consumers (Home sidebar sections, space
+// switcher) are replaced by live data in LIFE-20 and LIFE-24.

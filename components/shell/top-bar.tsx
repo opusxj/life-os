@@ -26,10 +26,11 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import { signOut } from "@/lib/auth/actions"
-import { currentUser, spaces } from "@/lib/workspace"
+import type { CurrentUser } from "@/lib/data/workspace"
+import { spaces } from "@/lib/workspace"
 import { cn } from "@/lib/utils"
 
-export function TopBar() {
+export function TopBar({ user }: { user: CurrentUser }) {
   return (
     <header className="relative flex h-11 shrink-0 items-center justify-between gap-2 rounded-xl border bg-background px-1.5 dark:bg-card">
       <SpaceSwitcher />
@@ -39,7 +40,7 @@ export function TopBar() {
           <Bell />
         </Button>
         <ThemeToggle />
-        <UserMenu />
+        <UserMenu user={user} />
       </div>
     </header>
   )
@@ -124,7 +125,7 @@ function ThemeToggle() {
   )
 }
 
-function UserMenu() {
+function UserMenu({ user }: { user: CurrentUser }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -137,19 +138,16 @@ function UserMenu() {
           />
         }
       >
-        <span className="relative flex size-6 items-center justify-center rounded-full bg-foreground text-[10px] font-semibold text-background">
-          {currentUser.initials}
-          {currentUser.online && (
-            <span className="absolute -right-px -bottom-px size-2 rounded-full border-2 border-background bg-emerald-500" />
-          )}
+        <span className="flex size-6 items-center justify-center rounded-full bg-foreground text-[10px] font-semibold text-background">
+          {user.initials}
         </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
           <div className="flex flex-col">
-            {currentUser.name}
+            {user.name}
             <span className="text-xs font-normal text-muted-foreground">
-              {currentUser.email}
+              {user.email}
             </span>
           </div>
         </DropdownMenuLabel>
