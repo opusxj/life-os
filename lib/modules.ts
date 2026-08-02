@@ -8,22 +8,22 @@ import {
   CalendarRange,
   ChefHat,
   Contact,
+  CreditCard,
   Film,
   Gamepad2,
   HeartHandshake,
   House,
   Inbox,
-  Landmark,
   LayoutDashboard,
   Library,
   ListTodo,
   MessagesSquare,
   Package,
   PiggyBank,
+  ReceiptText,
   Repeat,
   ShoppingCart,
   SquareCheck,
-  Target,
   Users,
   Wallet,
   type LucideIcon,
@@ -41,6 +41,8 @@ export type ModuleAccent = {
 export type ModuleNavItem = {
   label: string
   icon: LucideIcon
+  /** Real route; items without one render as inert placeholders */
+  href?: string
 }
 
 export type ModuleNavSection = {
@@ -100,14 +102,14 @@ export const modules: LifeModule[] = [
     nav: [
       {
         items: [
-          { label: "Overview", icon: LayoutDashboard },
-          { label: "Accounts", icon: Landmark },
-          { label: "Transactions", icon: ArrowLeftRight },
-          { label: "Budgets", icon: PiggyBank },
-          { label: "Goals", icon: Target },
+          { label: "Overview", icon: LayoutDashboard, href: "/apex" },
+          { label: "Transactions", icon: ArrowLeftRight, href: "/apex/transactions" },
+          { label: "Accounts & Cards", icon: CreditCard, href: "/apex/accounts" },
+          { label: "Subscriptions & Bills", icon: ReceiptText, href: "/apex/subscriptions" },
+          { label: "Budgets & Savings", icon: PiggyBank, href: "/apex/budgets" },
+          { label: "Mortgage", icon: House, href: "/apex/mortgage" },
         ],
       },
-      { label: "Accounts", items: [], placeholder: "Add account" },
     ],
   },
   {
