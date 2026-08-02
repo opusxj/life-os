@@ -1,5 +1,6 @@
 import Link from "next/link"
 
+import { dueState, DueStateBadge, todayKey } from "@/components/apex/due-state"
 import { MarkPaidButton } from "@/components/apex/subscriptions/mark-paid-button"
 import {
   SidebarGroup,
@@ -9,12 +10,15 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { formatPence } from "@/lib/apex/money"
+import { formatPenceShort } from "@/lib/apex/money"
 import type { ApexSidebarData } from "@/lib/apex/sidebar/queries"
 import { cn } from "@/lib/utils"
 
 /** Live sections under the Apex nav: always-visible balances + the next bill. */
 export function ApexSidebarPanel({ data }: { data: ApexSidebarData }) {
+  // This is a server component, so it resolves today itself (shared rule:
+  // the server decides the date, clients only render it)
+  const today = todayKey()
   return (
     <>
       {data.accounts.length > 0 && (
@@ -43,11 +47,11 @@ export function ApexSidebarPanel({ data }: { data: ApexSidebarData }) {
                     <span className="truncate">{account.name}</span>
                     <span
                       className={cn(
-                        "ml-auto text-[11px] text-muted-foreground tabular-nums",
+                        "ml-auto text-[13px] text-muted-foreground tabular-nums",
                         account.balance < 0 && "text-destructive"
                       )}
                     >
-                      {formatPence(account.balance)}
+                      {formatPenceShort(account.balance)}
                     </span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -67,20 +71,13 @@ export function ApexSidebarPanel({ data }: { data: ApexSidebarData }) {
               <div className="flex items-baseline justify-between gap-2 text-[13px]">
                 <span className="truncate">{data.nextDue.name}</span>
                 <span className="shrink-0 tabular-nums">
-                  {formatPence(data.nextDue.amount)}
+                  {formatPenceShort(data.nextDue.amount)}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-2">
-                <span
-                  className={cn(
-                    "text-[11px]",
-                    dueTone(data.nextDue.nextDueOn) === "overdue"
-                      ? "text-destructive"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {dueLabel(data.nextDue.nextDueOn)}
-                </span>
+                <DueStateBadge
+                  state={dueState(data.nextDue.nextDueOn, today)}
+                />
                 <MarkPaidButton
                   paymentId={data.nextDue.id}
                   accountId={data.nextDue.accountId}
@@ -114,11 +111,11 @@ export function ApexSidebarFooter({
           totalBalance < 0 && "text-destructive"
         )}
       >
-        {formatPence(totalBalance)}
+        {formatPenceShort(totalBalance)}
       </p>
       <p
         className={cn(
-          "text-[11px] tabular-nums",
+          "text-[13px] tabular-nums",
           monthNet > 0
             ? "text-emerald-600 dark:text-emerald-400"
             : monthNet < 0
@@ -126,30 +123,8 @@ export function ApexSidebarFooter({
               : "text-muted-foreground"
         )}
       >
-        {`${monthNet > 0 ? "+" : ""}${formatPence(monthNet)} this month`}
+        {`${monthNet > 0 ? "+" : ""}${formatPenceShort(monthNet)} this month`}
       </p>
     </div>
   )
-}
-
-function dueTone(dateKey: string): "overdue" | "upcoming" {
-  return dateKey < todayKey() ? "overdue" : "upcoming"
-}
-
-function dueLabel(dateKey: string): string {
-  const today = todayKey()
-  if (dateKey < today) return "Overdue"
-  if (dateKey === today) return "Due today"
-  const date = new Date(dateKey)
-  return date.toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  })
-}
-
-function todayKey(): string {
-  const now = new Date()
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }

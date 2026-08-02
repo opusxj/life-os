@@ -3,6 +3,7 @@ import {
   ArrowDownUp,
   CalendarClock,
   ChartPie,
+  CircleCheck,
   House,
   Landmark,
   PiggyBank,
@@ -10,7 +11,10 @@ import {
   Wallet,
 } from "lucide-react"
 
+import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
+import { dueState, DueStateBadge } from "@/components/apex/due-state"
 import { CashflowChart } from "@/components/apex/overview/cashflow-chart"
+import { SavingsTile } from "@/components/apex/overview/savings-tile"
 import { DataProgress } from "@/components/apex/progress"
 import {
   ApexStatCard,
@@ -20,7 +24,6 @@ import {
 import { MarkPaidButton } from "@/components/apex/subscriptions/mark-paid-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   Empty,
   EmptyContent,
@@ -30,8 +33,12 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Separator } from "@/components/ui/separator"
-import { formatPence } from "@/lib/apex/money"
-import type { Budget, SavingGoal } from "@/lib/apex/budgets/queries"
+import { formatPenceShort } from "@/lib/apex/money"
+import type {
+  AccountOption as GoalAccountOption,
+  Budget,
+  SavingGoal,
+} from "@/lib/apex/budgets/queries"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import type {
   CashflowMonth,
@@ -43,7 +50,6 @@ import type {
 } from "@/lib/apex/subscriptions/queries"
 import { cn } from "@/lib/utils"
 
-
 export function TotalBalanceCard({
   accounts,
   total,
@@ -54,9 +60,14 @@ export function TotalBalanceCard({
   className?: string
 }) {
   return (
-    <ApexStatCard label="Total balance" icon={Wallet} className={className}>
+    <ApexStatCard
+      label="Total balance"
+      icon={Wallet}
+      iconClassName={ANCHOR_TINTS.balance}
+      className={cn("shadow-2xs", className)}
+    >
       <ApexStatValue className={cn(total < 0 && "text-destructive")}>
-        {formatPence(total)}
+        {formatPenceShort(total)}
       </ApexStatValue>
       <ApexStatHint>
         {`Across ${accounts.length} ${accounts.length === 1 ? "account" : "accounts"}.`}
@@ -78,7 +89,7 @@ export function TotalBalanceCard({
                 account.balance < 0 && "text-destructive"
               )}
             >
-              {formatPence(account.balance)}
+              {formatPenceShort(account.balance)}
             </span>
           </div>
         ))}
@@ -89,21 +100,42 @@ export function TotalBalanceCard({
 
 export function DueSoonCard({
   payments,
+  nextUp,
   payAccounts,
+  today,
   className,
 }: {
   payments: RecurringPayment[]
+  /** First payment beyond the 7-day window — shown when the week is clear */
+  nextUp: RecurringPayment | null
   payAccounts: AccountOption[]
+  /** Server-resolved yyyy-mm-dd, so client and server agree on the date */
+  today: string
   className?: string
 }) {
   const totalDue = payments.reduce((sum, payment) => sum + payment.amount, 0)
   return (
-    <ApexStatCard label="Due soon" icon={CalendarClock} className={className}>
-      <ApexStatValue>{formatPence(totalDue)}</ApexStatValue>
+    <ApexStatCard
+      label="Due soon"
+      icon={CalendarClock}
+      iconClassName={ANCHOR_TINTS.due}
+      className={cn("shadow-2xs", className)}
+    >
       {payments.length === 0 ? (
-        <ApexStatHint>{"Nothing due in the next week."}</ApexStatHint>
+        <div className="space-y-1.5">
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-500/10 py-1 pr-2.5 pl-2 text-[13px] font-medium text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
+            <CircleCheck className="size-3.5" />
+            Nothing due this week
+          </span>
+          {nextUp && (
+            <ApexStatHint className="mt-0">
+              {`Next: ${nextUp.name} · ${formatPenceShort(nextUp.amount)} · ${dueState(nextUp.nextDueOn, today).label}`}
+            </ApexStatHint>
+          )}
+        </div>
       ) : (
         <>
+          <ApexStatValue>{formatPenceShort(totalDue)}</ApexStatValue>
           <ApexStatHint>
             {`${payments.length} ${payments.length === 1 ? "payment" : "payments"} in the next week.`}
           </ApexStatHint>
@@ -113,10 +145,10 @@ export function DueSoonCard({
               <div key={payment.id} className="flex items-center gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13px]">{payment.name}</p>
-                  <DueState dateKey={payment.nextDueOn} />
+                  <DueStateBadge state={dueState(payment.nextDueOn, today)} />
                 </div>
                 <span className="text-[13px] tabular-nums">
-                  {formatPence(payment.amount)}
+                  {formatPenceShort(payment.amount)}
                 </span>
                 <MarkPaidButton
                   paymentId={payment.id}
@@ -132,21 +164,6 @@ export function DueSoonCard({
   )
 }
 
-function DueState({ dateKey }: { dateKey: string }) {
-  const today = todayKey()
-  if (dateKey < today) return <Badge variant="destructive">Overdue</Badge>
-  if (dateKey === today) return <Badge variant="secondary">Due today</Badge>
-  return (
-    <p className="text-[11px] text-muted-foreground">
-      {new Date(dateKey).toLocaleDateString("en-GB", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-      })}
-    </p>
-  )
-}
-
 export function CashflowCard({
   months,
   className,
@@ -157,9 +174,14 @@ export function CashflowCard({
   const totalIn = months.reduce((sum, month) => sum + month.inflow, 0)
   const totalOut = months.reduce((sum, month) => sum + month.outflow, 0)
   return (
-    <ApexStatCard label="Cashflow" icon={ArrowDownUp} className={className}>
+    <ApexStatCard
+      label="Cashflow"
+      icon={ArrowDownUp}
+      iconClassName={ANCHOR_TINTS.primary}
+      className={cn("shadow-2xs", className)}
+    >
       <ApexStatHint className="mt-0 mb-3">
-        {`${formatPence(totalIn)} in · ${formatPence(totalOut)} out over the last six months.`}
+        {`${formatPenceShort(totalIn)} in · ${formatPenceShort(totalOut)} out over the last six months.`}
       </ApexStatHint>
       <CashflowChart months={months} />
     </ApexStatCard>
@@ -179,7 +201,8 @@ export function MonthCard({
     <ApexStatCard
       label={`This month · ${monthLabel}`}
       icon={ChartPie}
-      className={className}
+      iconClassName={ANCHOR_TINTS.primary}
+      className={cn("shadow-2xs", className)}
     >
       {budgets.length === 0 ? (
         <ApexStatHint className="mt-0">
@@ -189,7 +212,13 @@ export function MonthCard({
         <div className="space-y-2.5">
           {budgets.map((budget) => {
             const over = budget.spent > budget.amount
-            const pct = Math.min(100, (budget.spent / budget.amount) * 100)
+            // A zero envelope has no meaningful fraction — full when overspent
+            const pct =
+              budget.amount <= 0
+                ? budget.spent > 0
+                  ? 100
+                  : 0
+                : Math.min(100, (budget.spent / budget.amount) * 100)
             return (
               <div key={budget.id}>
                 <div className="flex items-center gap-2 text-[13px]">
@@ -200,13 +229,13 @@ export function MonthCard({
                   <span className="truncate">{budget.category.name}</span>
                   <span
                     className={cn(
-                      "ml-auto text-[11px] tabular-nums",
+                      "ml-auto text-[13px] tabular-nums",
                       over ? "text-destructive" : "text-muted-foreground"
                     )}
                   >
                     {over
-                      ? `over by ${formatPence(budget.spent - budget.amount)}`
-                      : `${formatPence(budget.spent)} of ${formatPence(budget.amount)}`}
+                      ? `over by ${formatPenceShort(budget.spent - budget.amount)}`
+                      : `${formatPenceShort(budget.spent)} of ${formatPenceShort(budget.amount)}`}
                   </span>
                 </div>
                 <DataProgress
@@ -224,43 +253,40 @@ export function MonthCard({
   )
 }
 
+/** Inner tile columns, capped at the goal count so tiles never float in space */
+const SAVINGS_COLS = {
+  1: "grid gap-2.5",
+  2: "grid gap-2.5 sm:grid-cols-2",
+  3: "grid gap-2.5 sm:grid-cols-2 2xl:grid-cols-3",
+  4: "grid gap-2.5 sm:grid-cols-2 2xl:grid-cols-4",
+} as const
+
 export function SavingsStrip({
   goals,
+  accounts,
+  maxColumns,
   className,
 }: {
   goals: SavingGoal[]
+  /** Top up source choices — the same options the Budgets page drawer gets */
+  accounts: GoalAccountOption[]
+  /** Widest the tile grid may go (wider when the strip spans the full row) */
+  maxColumns: 3 | 4
   className?: string
 }) {
   if (goals.length === 0) return null
+  const columns = Math.min(goals.length, maxColumns) as 1 | 2 | 3 | 4
   return (
-    <ApexStatCard label="Savings" icon={PiggyBank} className={className}>
-      <div className="grid gap-2.5 sm:grid-cols-2 2xl:grid-cols-3">
-        {goals.map((goal) => {
-          const pct = Math.min(
-            100,
-            Math.round((goal.saved / goal.targetAmount) * 100)
-          )
-          return (
-            <Card key={goal.id} size="sm" className="gap-0 py-2.5">
-              <CardContent className="px-2.5">
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="truncate text-[13px]">{goal.name}</p>
-                  <span className="text-[13px] font-semibold tabular-nums">
-                    {`${pct}%`}
-                  </span>
-                </div>
-                <DataProgress
-                  value={pct}
-                  color={goal.color}
-                  className="mt-1.5"
-                />
-                <p className="mt-1.5 text-[11px] text-muted-foreground tabular-nums">
-                  {`${formatPence(goal.saved)} of ${formatPence(goal.targetAmount)}`}
-                </p>
-              </CardContent>
-            </Card>
-          )
-        })}
+    <ApexStatCard
+      label="Savings"
+      icon={PiggyBank}
+      iconClassName={ANCHOR_TINTS.balance}
+      className={cn("shadow-2xs", className)}
+    >
+      <div className={SAVINGS_COLS[columns]}>
+        {goals.map((goal) => (
+          <SavingsTile key={goal.id} goal={goal} accounts={accounts} />
+        ))}
       </div>
     </ApexStatCard>
   )
@@ -279,27 +305,33 @@ export function MortgageSnapshot({
   const months = mortgage.rateEndsOn ? monthsUntil(mortgage.rateEndsOn) : null
 
   return (
-    <ApexStatCard label="Mortgage" icon={House} className={className}>
-      <ApexStatValue>{formatPence(mortgage.balance)}</ApexStatValue>
+    <ApexStatCard
+      label="Mortgage"
+      icon={House}
+      iconClassName={ANCHOR_TINTS.balance}
+      className={cn("shadow-2xs", className)}
+    >
+      <ApexStatValue>{formatPenceShort(mortgage.balance)}</ApexStatValue>
       <ApexStatHint>{`${mortgage.name} · ${mortgage.lender}`}</ApexStatHint>
-      {months !== null && (
-        <p
-          className={cn(
-            "mt-2 text-[13px]",
-            months < 0
-              ? "text-destructive"
-              : months < 6
-                ? "text-amber-600 dark:text-amber-400"
-                : "text-muted-foreground"
-          )}
-        >
-          {months < 0
-            ? "Fixed rate has ended"
-            : `Rate ends in ${months} ${months === 1 ? "month" : "months"}`}
-        </p>
-      )}
+      {months !== null &&
+        (months < 0 ? (
+          <Badge variant="destructive" className="mt-2">
+            Fixed rate has ended
+          </Badge>
+        ) : months < 6 ? (
+          <Badge
+            variant="secondary"
+            className="mt-2 bg-amber-500/15 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400"
+          >
+            {`Rate ends in ${months} ${months === 1 ? "month" : "months"}`}
+          </Badge>
+        ) : (
+          <p className="mt-2 text-[13px] text-muted-foreground">
+            {`Rate ends in ${months} ${months === 1 ? "month" : "months"}`}
+          </p>
+        ))}
       {mortgages.length > 1 && (
-        <p className="mt-1 text-[11px] text-muted-foreground">
+        <p className="mt-1 text-[13px] text-muted-foreground">
           {`+${mortgages.length - 1} more on the Mortgage page`}
         </p>
       )}
@@ -326,12 +358,6 @@ export function OverviewEmpty() {
       </EmptyContent>
     </Empty>
   )
-}
-
-function todayKey(): string {
-  const now = new Date()
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
 function monthsUntil(dateKey: string): number {
