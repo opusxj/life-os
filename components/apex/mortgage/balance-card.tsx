@@ -5,7 +5,7 @@ import {
   ApexStatHint,
   ApexStatValue,
 } from "@/components/apex/stat-card"
-import { Progress } from "@/components/ui/progress"
+import { DataProgress } from "@/components/apex/progress"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 
 import { EMERALD_ANCHOR, formatPounds } from "./format"
@@ -35,10 +35,11 @@ export function BalanceCard({ mortgage }: { mortgage: Mortgage }) {
       }
     >
       <ApexStatValue>{formatPounds(mortgage.balance)}</ApexStatValue>
-      <Progress
+      <DataProgress
         value={paidPct}
+        color="#10b981"
         aria-label="Paid off"
-        className="mt-2 **:data-[slot=progress-indicator]:bg-emerald-500"
+        className="mt-2"
       />
       <ApexStatHint className="mt-1.5">
         {`${paidPct.toFixed(0)}% paid off of ${formatPounds(mortgage.originalAmount)}`}

@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Progress as ProgressPrimitive } from "@base-ui/react/progress"
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -20,9 +19,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { DataProgress } from "@/components/apex/progress"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ProgressIndicator, ProgressTrack } from "@/components/ui/progress"
 import {
   removeBudget,
   updateBudgetAmount,
@@ -64,20 +63,13 @@ export function BudgetRow({ budget }: { budget: Budget }) {
           </span>
         </div>
         <div className="mt-1.5 flex items-center gap-2">
-          <ProgressPrimitive.Root
+          <DataProgress
             value={percent}
+            color={over ? "var(--destructive)" : budget.category.color}
+            dim={over}
             aria-label={`${budget.category.name} budget used`}
-            className="min-w-0 flex-1"
-          >
-            <ProgressTrack className="h-1.5">
-              <ProgressIndicator
-                className={over ? "bg-destructive/60" : undefined}
-                style={
-                  over ? undefined : { backgroundColor: budget.category.color }
-                }
-              />
-            </ProgressTrack>
-          </ProgressPrimitive.Root>
+            className="min-w-0 flex-1 [&_[data-slot=progress-track]]:h-1.5"
+          />
           {over && (
             <span className="shrink-0 text-[11px] text-destructive tabular-nums">
               {`over by ${formatPenceShort(budget.spent - budget.amount)}`}

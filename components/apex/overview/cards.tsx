@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 
 import { CashflowChart } from "@/components/apex/overview/cashflow-chart"
+import { DataProgress } from "@/components/apex/progress"
 import {
   ApexStatCard,
   ApexStatHint,
@@ -28,7 +29,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
-import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { formatPence } from "@/lib/apex/money"
 import type { Budget, SavingGoal } from "@/lib/apex/budgets/queries"
@@ -43,30 +43,6 @@ import type {
 } from "@/lib/apex/subscriptions/queries"
 import { cn } from "@/lib/utils"
 
-/** ui/Progress with the indicator taking the data color (category, goal). */
-function DataProgress({
-  value,
-  color,
-  dim,
-  className,
-}: {
-  value: number
-  color: string
-  dim?: boolean
-  className?: string
-}) {
-  return (
-    <Progress
-      value={value}
-      className={cn(
-        "[&_[data-slot=progress-indicator]]:bg-(--data-color)",
-        dim && "[&_[data-slot=progress-indicator]]:opacity-60",
-        className
-      )}
-      style={{ "--data-color": color } as React.CSSProperties}
-    />
-  )
-}
 
 export function TotalBalanceCard({
   accounts,

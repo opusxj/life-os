@@ -139,7 +139,7 @@ export function AccountsView({
           </ApexSection>
 
           <ApexSection label="Cards">
-            <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+            <ApexCardGrid className="lg:grid-cols-3">
               {allCards.map(({ card, accountName }) => (
                 <BankCard
                   key={card.id}
@@ -162,7 +162,7 @@ export function AccountsView({
                 <CreditCard className="size-5" />
                 Add card
               </button>
-            </div>
+            </ApexCardGrid>
           </ApexSection>
         </>
       )}

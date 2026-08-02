@@ -25,7 +25,7 @@ export function RateCard({ mortgage }: { mortgage: Mortgage }) {
         countdown.state === "soon" &&
           "bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400",
         countdown.state === "past" &&
-          "bg-destructive/10 text-destructive dark:bg-destructive/20"
+          "bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-red-400"
       )}
     >
       <div className="flex items-baseline gap-2">

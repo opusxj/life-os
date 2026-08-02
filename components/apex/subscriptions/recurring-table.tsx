@@ -363,9 +363,9 @@ function dueState(nextDueOn: string, today: string) {
     return { status: "today" as const, label: "Due today", isDue: true }
   const label =
     days === 1
-      ? "tomorrow"
+      ? "Tomorrow"
       : days <= 7
-        ? `in ${days} days`
+        ? `In ${days} days`
         : shortDate(nextDueOn)
   return { status: "upcoming" as const, label, isDue: false }
 }
