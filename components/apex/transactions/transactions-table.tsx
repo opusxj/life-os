@@ -1,6 +1,12 @@
 import { ReceiptText } from "lucide-react"
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import {
+  DataChip,
+  TABLE_FOOT,
+  TABLE_PINNED_HEAD,
+  TableCard,
+  TableScroll,
+} from "@/components/apex/table-shell"
 import {
   Empty,
   EmptyContent,
@@ -20,128 +26,43 @@ import {
 } from "@/components/ui/table"
 import { formatPence, formatPenceShort } from "@/lib/apex/money"
 import type {
-  TransactionFilters,
   TransactionOptions,
   TransactionRow,
 } from "@/lib/apex/transactions/queries"
 import { cn } from "@/lib/utils"
-import { AddTransactionDrawer } from "./transaction-drawer"
-import { TransactionFilterBar } from "./transaction-filters"
+import { AddTransactionDialog } from "./transaction-dialog"
 import { TransactionTableRow } from "./transaction-row"
 
-/** The page's one composed surface: filter toolbar in the header, ledger below. */
-export function TransactionsCard({
-  spaceId,
-  options,
-  filters,
-  defaultMonth,
-  rows,
-  filtered,
-}: {
-  spaceId: string
-  options: TransactionOptions
-  filters: TransactionFilters
-  defaultMonth: string
-  rows: TransactionRow[]
-  /** Whether any non-default filter is active (changes the empty-state copy) */
-  filtered: boolean
-}) {
-  return (
-    <Card size="sm" className={cn("gap-0", rows.length > 0 && "pb-0")}>
-      <CardHeader className="border-b">
-        <TransactionFilterBar
-          options={options}
-          filters={filters}
-          defaultMonth={defaultMonth}
-        >
-          {rows.length > 0 && <HeaderTotals rows={rows} />}
-        </TransactionFilterBar>
-      </CardHeader>
-      <CardContent className="px-0">
-        {rows.length === 0 ? (
-          <Empty className="py-10">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <ReceiptText />
-              </EmptyMedia>
-              <EmptyTitle>No transactions</EmptyTitle>
-              <EmptyDescription>
-                {filtered
-                  ? "Nothing matches these filters."
-                  : "Log the first one — it takes ten seconds."}
-              </EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              <AddTransactionDrawer spaceId={spaceId} options={options} />
-            </EmptyContent>
-          </Empty>
-        ) : (
-          <TransactionsTable spaceId={spaceId} options={options} rows={rows} />
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-function TransactionsTable({
-  spaceId,
-  options,
-  rows,
-}: {
-  spaceId: string
-  options: TransactionOptions
-  rows: TransactionRow[]
-}) {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow className="hover:bg-transparent">
-          <TableHead className="px-4">Date</TableHead>
-          <TableHead>Description</TableHead>
-          <TableHead>Category</TableHead>
-          <TableHead>Account</TableHead>
-          <TableHead>Card</TableHead>
-          <TableHead className="px-4 text-right">Amount</TableHead>
-          <TableHead className="w-10" />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((row) => (
-          <TransactionTableRow
-            key={row.id}
-            spaceId={spaceId}
-            options={options}
-            transaction={row}
-          />
-        ))}
-      </TableBody>
-      <TotalsFooter rows={rows} />
-    </Table>
-  )
-}
-
 /**
- * The filter row's live answer: In / Out / Net for the visible rows (house
- * short format — the exact-pence versions live in the footer). Income and
- * expense sums only; transfers and adjustments count in neither.
+ * The page's headline answer, rendered beneath the title: what came in, what
+ * went out, and where that leaves you. Income and expense sums only —
+ * transfers and adjustments count in neither.
  */
-function HeaderTotals({ rows }: { rows: TransactionRow[] }) {
+export function TransactionTotals({ rows }: { rows: TransactionRow[] }) {
   const incomeTotal = sumByKind(rows, "income")
   const expenseTotal = sumByKind(rows, "expense")
   const net = incomeTotal - expenseTotal
 
   return (
-    <div className="ml-auto flex items-center gap-3 text-[13px] whitespace-nowrap tabular-nums">
-      <span className="text-emerald-600 dark:text-emerald-400">
-        {`In +${formatPenceShort(incomeTotal)}`}
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 tabular-nums">
+      <span className="text-muted-foreground">
+        In{" "}
+        <span className="font-medium text-emerald-600 dark:text-emerald-400">
+          {`+${formatPenceShort(incomeTotal)}`}
+        </span>
       </span>
-      <span>{`Out −${formatPenceShort(expenseTotal)}`}</span>
+      <span className="text-muted-foreground">
+        Out{" "}
+        <span className="font-medium text-foreground">
+          {`−${formatPenceShort(expenseTotal)}`}
+        </span>
+      </span>
       <span
         className={cn(
-          "rounded-full px-2 py-0.5 font-medium",
+          "font-medium",
           net < 0
-            ? "bg-destructive/10 text-destructive dark:bg-destructive/15"
-            : "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
+            ? "text-destructive"
+            : "text-emerald-600 dark:text-emerald-400"
         )}
       >
         {`Net ${net < 0 ? "−" : "+"}${formatPenceShort(Math.abs(net))}`}
@@ -150,42 +71,122 @@ function HeaderTotals({ rows }: { rows: TransactionRow[] }) {
   )
 }
 
-/**
- * In/Out totals for the visible rows: income vs expense sums only —
- * transfers count in neither (labelled by count), adjustments excluded.
- */
+/** The ledger: one card, table edge to edge, only the rows scrolling. */
+export function TransactionsCard({
+  spaceId,
+  options,
+  rows,
+  filtered,
+}: {
+  spaceId: string
+  options: TransactionOptions
+  rows: TransactionRow[]
+  /** Whether any non-default filter is active (changes the empty-state copy) */
+  filtered: boolean
+}) {
+  if (rows.length === 0) {
+    return (
+      <TableCard className="min-h-0 flex-1">
+        <Empty className="m-auto">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <ReceiptText />
+            </EmptyMedia>
+            <EmptyTitle>No transactions</EmptyTitle>
+            <EmptyDescription>
+              {filtered
+                ? "Nothing matches these filters."
+                : "Log the first one — it takes ten seconds."}
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <AddTransactionDialog spaceId={spaceId} options={options} />
+          </EmptyContent>
+        </Empty>
+      </TableCard>
+    )
+  }
+
+  return (
+    <TableCard className="min-h-0 flex-1">
+      <TableScroll>
+        <Table>
+          <TableHeader className="[&_tr]:border-b-0">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className={cn(TABLE_PINNED_HEAD, "pl-3")}>
+                Transaction
+              </TableHead>
+              <TableHead
+                className={cn(TABLE_PINNED_HEAD, "hidden md:table-cell")}
+              >
+                Category
+              </TableHead>
+              <TableHead
+                className={cn(TABLE_PINNED_HEAD, "hidden sm:table-cell")}
+              >
+                Date
+              </TableHead>
+              <TableHead className={cn(TABLE_PINNED_HEAD, "pr-2 text-right")}>
+                Amount
+              </TableHead>
+              <TableHead className={cn(TABLE_PINNED_HEAD, "w-10")}>
+                <span className="sr-only">Actions</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <TransactionTableRow
+                key={row.id}
+                spaceId={spaceId}
+                options={options}
+                transaction={row}
+              />
+            ))}
+          </TableBody>
+          <TotalsFooter rows={rows} />
+        </Table>
+      </TableScroll>
+    </TableCard>
+  )
+}
+
+/** Pinned to the bottom of the scroll region: exact pence, always in view. */
 function TotalsFooter({ rows }: { rows: TransactionRow[] }) {
   const incomeTotal = sumByKind(rows, "income")
   const expenseTotal = sumByKind(rows, "expense")
   const transferCount = rows.filter((row) => row.kind === "transfer").length
 
-  const parts = [
-    `${rows.length} ${rows.length === 1 ? "transaction" : "transactions"}`,
-  ]
-  if (transferCount > 0) {
-    parts.push(
-      `${transferCount} ${transferCount === 1 ? "transfer" : "transfers"}`
-    )
-  }
-
   return (
-    <TableFooter>
+    <TableFooter className="border-t-0 bg-transparent font-normal">
       <TableRow className="hover:bg-transparent">
         <TableCell
-          colSpan={5}
-          className="px-4 font-normal whitespace-nowrap text-muted-foreground"
+          colSpan={3}
+          className={cn(TABLE_FOOT, "py-2 pl-3 whitespace-nowrap")}
         >
-          {parts.join(" · ")}
-        </TableCell>
-        <TableCell className="px-4 text-right whitespace-nowrap tabular-nums">
-          <span className="inline-flex items-baseline gap-3">
-            <span className="text-emerald-600 dark:text-emerald-400">
-              {`In +${formatPence(incomeTotal)}`}
-            </span>
-            <span>{`Out −${formatPence(expenseTotal)}`}</span>
+          <span className="flex items-center gap-2 text-muted-foreground">
+            {`${rows.length} ${rows.length === 1 ? "transaction" : "transactions"}`}
+            {transferCount > 0 && (
+              <DataChip color="#0ea5e9">
+                {`${transferCount} ${transferCount === 1 ? "transfer" : "transfers"}`}
+              </DataChip>
+            )}
           </span>
         </TableCell>
-        <TableCell className="w-10" />
+        <TableCell
+          className={cn(
+            TABLE_FOOT,
+            "py-2 pr-2 text-right whitespace-nowrap tabular-nums"
+          )}
+        >
+          <span className="inline-flex items-baseline gap-3">
+            <span className="text-emerald-600 dark:text-emerald-400">
+              {`+${formatPence(incomeTotal)}`}
+            </span>
+            <span>{`−${formatPence(expenseTotal)}`}</span>
+          </span>
+        </TableCell>
+        <TableCell className={cn(TABLE_FOOT, "w-10")} />
       </TableRow>
     </TableFooter>
   )

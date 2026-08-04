@@ -1,10 +1,15 @@
 "use client"
 
-import type * as React from "react"
+import * as React from "react"
 import { useRouter } from "next/navigation"
-import { ListFilter, X } from "lucide-react"
+import { SlidersHorizontal } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import {
   Select,
   SelectContent,
@@ -18,25 +23,30 @@ import type {
   TransactionFilters,
   TransactionOptions,
 } from "@/lib/apex/transactions/queries"
+import { cn } from "@/lib/utils"
 
-const KINDS = [
+/** The kinds worth one tap. Adjustments are system rows — hence "Sync". */
+const KIND_TABS = [
+  [undefined, "All"],
   ["income", "Income"],
   ["expense", "Expense"],
   ["transfer", "Transfer"],
-  ["adjustment", "Adjustment"],
+  ["adjustment", "Sync"],
 ] as const
 
+/**
+ * Filters live inline with the page title: the kinds people switch between
+ * constantly as tabs, everything else folded into a popover that shows how
+ * many are on.
+ */
 export function TransactionFilterBar({
   options,
   filters,
   defaultMonth,
-  children,
 }: {
   options: TransactionOptions
   filters: TransactionFilters
   defaultMonth: string
-  /** Right-aligned extras (the In/Out/Net totals) sharing the filter row */
-  children?: React.ReactNode
 }) {
   const router = useRouter()
 
@@ -63,13 +73,13 @@ export function TransactionFilterBar({
       ? [filters.month, ...options.months]
       : options.months
 
-  const isFiltered = Boolean(
-    filters.account ||
-      filters.card ||
-      filters.category ||
-      filters.kind ||
-      filters.month !== defaultMonth
-  )
+  // The kind tabs carry themselves; the badge counts only what's hidden.
+  const refinedCount = [
+    filters.account,
+    filters.card,
+    filters.category,
+    filters.month !== defaultMonth ? "month" : undefined,
+  ].filter(Boolean).length
 
   const expenseCategories = options.categories.filter(
     (category) => category.kind === "expense"
@@ -103,150 +113,194 @@ export function TransactionFilterBar({
       options.categories.map((category) => [category.id, category.name])
     ),
   }
-  const kindItems = {
-    all: "All kinds",
-    ...Object.fromEntries(KINDS),
-  }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <ListFilter
-        aria-hidden
-        className="size-4 shrink-0 text-muted-foreground"
-      />
-
-      <Select
-        items={monthItems}
-        value={filters.month ?? "all"}
-        onValueChange={(value) =>
-          apply({ month: value === "all" ? undefined : (value as string) })
-        }
-      >
-        <SelectTrigger size="sm" aria-label="Filter by month">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {months.map((month) => (
-            <SelectItem key={month} value={month}>
-              {formatMonth(month)}
-            </SelectItem>
-          ))}
-          <SelectItem value="all">All time</SelectItem>
-        </SelectContent>
-      </Select>
-
-      <Select
-        items={accountItems}
-        value={filters.account ?? "all"}
-        onValueChange={(value) =>
-          apply({ account: value === "all" ? undefined : (value as string) })
-        }
-      >
-        <SelectTrigger size="sm" aria-label="Filter by account">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All accounts</SelectItem>
-          {options.accounts.map((account) => (
-            <SelectItem key={account.id} value={account.id}>
-              {account.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      {options.cards.length > 0 && (
-        <Select
-          items={cardItems}
-          value={filters.card ?? "all"}
-          onValueChange={(value) =>
-            apply({ card: value === "all" ? undefined : (value as string) })
-          }
-        >
-          <SelectTrigger size="sm" aria-label="Filter by card">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All cards</SelectItem>
-            {options.cards.map((card) => (
-              <SelectItem key={card.id} value={card.id}>
-                {card.last4 ? `${card.name} ·${card.last4}` : card.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
-
-      <Select
-        items={categoryItems}
-        value={filters.category ?? "all"}
-        onValueChange={(value) =>
-          apply({ category: value === "all" ? undefined : (value as string) })
-        }
-      >
-        <SelectTrigger size="sm" aria-label="Filter by category">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All categories</SelectItem>
-          <SelectGroup>
-            <SelectLabel>Expense</SelectLabel>
-            {expenseCategories.map((category) => (
-              <SelectItem key={category.id} value={category.id}>
-                {category.name}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-          <SelectGroup>
-            <SelectLabel>Income</SelectLabel>
-            {incomeCategories.map((category) => (
-              <SelectItem key={category.id} value={category.id}>
-                {category.name}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-
-      <Select
-        items={kindItems}
-        value={filters.kind ?? "all"}
-        onValueChange={(value) =>
-          apply({
-            kind:
-              value === "all"
-                ? undefined
-                : (value as TransactionFilters["kind"]),
-          })
-        }
-      >
-        <SelectTrigger size="sm" aria-label="Filter by kind">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All kinds</SelectItem>
-          {KINDS.map(([value, label]) => (
-            <SelectItem key={value} value={value}>
+    <>
+      <div className="flex items-center gap-0.5 rounded-full bg-muted/60 p-0.5">
+        {KIND_TABS.map(([value, label]) => {
+          const active = filters.kind === value
+          return (
+            <button
+              key={label}
+              type="button"
+              aria-pressed={active}
+              onClick={() => apply({ kind: value })}
+              className={cn(
+                "rounded-full px-2.5 py-1 text-[13px] transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                active
+                  ? "bg-foreground font-medium text-background"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
               {label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+            </button>
+          )
+        })}
+      </div>
 
-      {isFiltered && (
-        <Button
-          variant="ghost"
-          size="xs"
-          className="text-muted-foreground"
-          onClick={() =>
-            router.replace("/apex/transactions", { scroll: false })
+      <Popover>
+        <PopoverTrigger
+          render={
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label={`Filters${refinedCount > 0 ? ` (${refinedCount} on)` : ""}`}
+            />
           }
         >
-          <X data-icon="inline-start" />
-          Clear
-        </Button>
-      )}
+          <SlidersHorizontal data-icon="inline-start" />
+          Filters
+          {refinedCount > 0 && (
+            <span className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-foreground text-[10px] font-medium text-background tabular-nums">
+              {refinedCount}
+            </span>
+          )}
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-64">
+          <FilterField label="Month">
+            <Select
+              items={monthItems}
+              value={filters.month ?? "all"}
+              onValueChange={(value) =>
+                apply({
+                  month: value === "all" ? undefined : (value as string),
+                })
+              }
+            >
+              <SelectTrigger size="sm" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((month) => (
+                  <SelectItem key={month} value={month}>
+                    {formatMonth(month)}
+                  </SelectItem>
+                ))}
+                <SelectItem value="all">All time</SelectItem>
+              </SelectContent>
+            </Select>
+          </FilterField>
 
+          <FilterField label="Account">
+            <Select
+              items={accountItems}
+              value={filters.account ?? "all"}
+              onValueChange={(value) =>
+                apply({
+                  account: value === "all" ? undefined : (value as string),
+                })
+              }
+            >
+              <SelectTrigger size="sm" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All accounts</SelectItem>
+                {options.accounts.map((account) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FilterField>
+
+          {options.cards.length > 0 && (
+            <FilterField label="Card">
+              <Select
+                items={cardItems}
+                value={filters.card ?? "all"}
+                onValueChange={(value) =>
+                  apply({
+                    card: value === "all" ? undefined : (value as string),
+                  })
+                }
+              >
+                <SelectTrigger size="sm" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All cards</SelectItem>
+                  {options.cards.map((card) => (
+                    <SelectItem key={card.id} value={card.id}>
+                      {card.last4 ? `${card.name} ·${card.last4}` : card.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FilterField>
+          )}
+
+          <FilterField label="Category">
+            <Select
+              items={categoryItems}
+              value={filters.category ?? "all"}
+              onValueChange={(value) =>
+                apply({
+                  category: value === "all" ? undefined : (value as string),
+                })
+              }
+            >
+              <SelectTrigger size="sm" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                <SelectGroup>
+                  <SelectLabel>Expense</SelectLabel>
+                  {expenseCategories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel>Income</SelectLabel>
+                  {incomeCategories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </FilterField>
+
+          {refinedCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-muted-foreground"
+              onClick={() =>
+                apply({
+                  account: undefined,
+                  card: undefined,
+                  category: undefined,
+                  month: defaultMonth,
+                })
+              }
+            >
+              Reset filters
+            </Button>
+          )}
+        </PopoverContent>
+      </Popover>
+    </>
+  )
+}
+
+function FilterField({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="space-y-1">
+      <span className="text-[12px] font-medium text-muted-foreground">
+        {label}
+      </span>
       {children}
     </div>
   )

@@ -17,10 +17,18 @@ export type RecurringPayment = {
   categoryId: string | null
   categoryName: string | null
   categoryColor: string | null
+  /** Lucide icon name seeded on the category, e.g. "shopping-basket" */
+  categoryIcon: string | null
 }
 
 export type AccountOption = { id: string; name: string }
-export type CategoryOption = { id: string; name: string; color: string }
+export type CategoryOption = {
+  id: string
+  name: string
+  color: string
+  /** Lucide icon name, e.g. "shopping-basket" */
+  icon: string | null
+}
 
 export type SubscriptionsPageData = {
   /** Live items, soonest due first */
@@ -53,7 +61,7 @@ export async function getSubscriptionsPageData(
         .order("created_at", { ascending: true }),
       supabase
         .from("categories")
-        .select("id, name, color")
+        .select("id, name, color, icon")
         .eq("space_id", spaceId)
         .eq("kind", "expense")
         .is("deleted_at", null)
@@ -84,6 +92,7 @@ export async function getSubscriptionsPageData(
       categoryId: row.category_id,
       categoryName: category?.name ?? null,
       categoryColor: category?.color ?? null,
+      categoryIcon: category?.icon ?? null,
     }
   })
 

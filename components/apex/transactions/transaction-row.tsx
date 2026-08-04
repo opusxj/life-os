@@ -1,7 +1,16 @@
 "use client"
 
 import * as React from "react"
+import {
+  ArrowDownLeft,
+  ArrowLeftRight,
+  ArrowUpRight,
+  RefreshCw,
+  type LucideIcon,
+} from "lucide-react"
 
+import { AvatarBadge, EntityAvatar } from "@/components/apex/entity-avatar"
+import { DataChip } from "@/components/apex/table-shell"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { formatPence } from "@/lib/apex/money"
 import type {
@@ -9,14 +18,45 @@ import type {
   TransactionRow as TransactionRowData,
 } from "@/lib/apex/transactions/queries"
 import { cn } from "@/lib/utils"
-import { TransactionDrawer } from "./transaction-drawer"
+import { TransactionDialog } from "./transaction-dialog"
 import { TransactionRowActions } from "./transaction-row-actions"
 
 /**
- * One ledger row. The whole row opens the edit drawer — except adjustment
+ * Direction, as a corner badge on the avatar. The avatar says what the money
+ * was for; the badge says which way it moved — so a row is readable before
+ * the amount is.
+ */
+const KIND_BADGE: Record<
+  TransactionRowData["kind"],
+  { icon: LucideIcon; label: string; className: string }
+> = {
+  income: {
+    icon: ArrowDownLeft,
+    label: "Income",
+    className: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  },
+  expense: {
+    icon: ArrowUpRight,
+    label: "Expense",
+    className: "bg-muted text-muted-foreground",
+  },
+  transfer: {
+    icon: ArrowLeftRight,
+    label: "Transfer",
+    className: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+  },
+  adjustment: {
+    icon: RefreshCw,
+    label: "Balance sync",
+    className: "bg-muted text-muted-foreground",
+  },
+}
+
+/**
+ * One ledger row. The whole row opens the edit dialog — except adjustment
  * rows, which are Sync-balance audit entries and stay view-only. The kebab
  * cell stops propagation so menu clicks never double-trigger the row; the
- * drawer mounts as a sibling of the row so its (portalled) clicks don't
+ * dialog mounts as a sibling of the row so its (portalled) clicks don't
  * bubble back into the row handler through the React tree.
  */
 export function TransactionTableRow({
@@ -30,41 +70,55 @@ export function TransactionTableRow({
 }) {
   const [editOpen, setEditOpen] = React.useState(false)
   const canEdit = transaction.kind !== "adjustment"
+  const badge = KIND_BADGE[transaction.kind]
 
   return (
     <>
       <TableRow
-        className={cn(canEdit && "cursor-pointer")}
+        className={cn("group/row", canEdit && "cursor-pointer")}
         onClick={canEdit ? () => setEditOpen(true) : undefined}
       >
-        <TableCell className="w-24 px-4 whitespace-nowrap text-muted-foreground">
-          {formatDay(transaction.occurredOn)}
+        <TableCell className="w-full max-w-0 py-2 pr-2 pl-3">
+          <span className="flex items-center gap-2.5">
+            <EntityAvatar
+              label={transaction.description}
+              icon={avatarIcon(transaction)}
+              color={avatarColor(transaction)}
+            >
+              <AvatarBadge title={badge.label} className={badge.className}>
+                <badge.icon />
+              </AvatarBadge>
+            </EntityAvatar>
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate font-medium">
+                {transaction.description}
+              </span>
+              <span className="truncate text-[12px] text-muted-foreground">
+                {sourceLine(transaction)}
+              </span>
+            </span>
+          </span>
         </TableCell>
-        <TableCell className="w-full max-w-0 truncate font-medium">
-          {transaction.description}
-        </TableCell>
-        <TableCell className="whitespace-nowrap">
+
+        <TableCell className="hidden py-2 md:table-cell">
           <CategoryCell row={transaction} />
         </TableCell>
-        <TableCell className="whitespace-nowrap text-muted-foreground">
-          {transaction.accountName}
+
+        <TableCell className="hidden py-2 whitespace-nowrap text-muted-foreground sm:table-cell">
+          {formatDay(transaction.occurredOn)}
         </TableCell>
-        <TableCell
-          className="whitespace-nowrap text-muted-foreground"
-          title={transaction.cardName ?? undefined}
-        >
-          {transaction.cardLast4 ? `·${transaction.cardLast4}` : null}
-        </TableCell>
+
         <TableCell
           className={cn(
-            "px-4 text-right font-medium whitespace-nowrap tabular-nums",
+            "py-2 pr-2 text-right font-medium whitespace-nowrap tabular-nums",
             amountClass(transaction.kind)
           )}
         >
           {amountText(transaction)}
         </TableCell>
+
         <TableCell
-          className="w-10 py-0 text-right"
+          className="w-10 py-2 pr-2 text-right"
           onClick={(event) => event.stopPropagation()}
         >
           <TransactionRowActions
@@ -75,7 +129,7 @@ export function TransactionTableRow({
         </TableCell>
       </TableRow>
       {canEdit && (
-        <TransactionDrawer
+        <TransactionDialog
           open={editOpen}
           onOpenChange={setEditOpen}
           spaceId={spaceId}
@@ -87,26 +141,39 @@ export function TransactionTableRow({
   )
 }
 
-function CategoryCell({ row }: { row: TransactionRowData }) {
+/** Transfers and syncs get fixed iconography; everything else its category's. */
+function avatarIcon(row: TransactionRowData): string | null {
+  if (row.kind === "transfer") return "arrow-left-right"
+  if (row.kind === "adjustment") return "refresh-cw"
+  return row.categoryIcon
+}
+
+function avatarColor(row: TransactionRowData): string | null {
+  if (row.kind === "transfer") return "#0ea5e9"
+  if (row.kind === "adjustment") return null
+  return row.categoryColor
+}
+
+/** Where the money sat: the account, plus the card or the transfer target. */
+function sourceLine(row: TransactionRowData): string {
   if (row.kind === "transfer") {
-    return (
-      <span className="text-muted-foreground">{`→ ${row.transferAccountName ?? "another account"}`}</span>
-    )
+    return `${row.accountName} → ${row.transferAccountName ?? "another account"}`
   }
+  if (row.cardLast4) return `${row.accountName} · ·${row.cardLast4}`
+  return row.accountName
+}
+
+function CategoryCell({ row }: { row: TransactionRowData }) {
   if (row.kind === "adjustment") {
-    return <span className="text-muted-foreground italic">sync</span>
+    return <DataChip>Sync</DataChip>
   }
-  if (!row.categoryName) return null
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span
-        aria-hidden
-        className="size-2 shrink-0 rounded-full"
-        style={{ backgroundColor: row.categoryColor ?? undefined }}
-      />
-      {row.categoryName}
-    </span>
-  )
+  if (row.kind === "transfer") {
+    return <DataChip color="#0ea5e9">Transfer</DataChip>
+  }
+  if (!row.categoryName) {
+    return <span className="text-[13px] text-muted-foreground">—</span>
+  }
+  return <DataChip color={row.categoryColor}>{row.categoryName}</DataChip>
 }
 
 function amountClass(kind: TransactionRowData["kind"]): string {

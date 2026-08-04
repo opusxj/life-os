@@ -32,6 +32,8 @@ export type TransactionRow = {
   categoryId: string | null
   categoryName: string | null
   categoryColor: string | null
+  /** Lucide icon name seeded on the category, e.g. "shopping-basket" */
+  categoryIcon: string | null
   cardId: string | null
   cardName: string | null
   cardLast4: string | null
@@ -51,6 +53,8 @@ export type CategoryOption = {
   name: string
   kind: "income" | "expense"
   color: string
+  /** Lucide icon name, e.g. "shopping-basket" */
+  icon: string | null
 }
 
 export type TransactionOptions = {
@@ -113,7 +117,7 @@ export async function getTransactionOptions(
         .order("created_at", { ascending: true }),
       supabase
         .from("categories")
-        .select("id, name, kind, color")
+        .select("id, name, kind, color, icon")
         .eq("space_id", spaceId)
         .is("deleted_at", null)
         .order("name", { ascending: true }),
@@ -139,6 +143,7 @@ export async function getTransactionOptions(
       name: category.name,
       kind: category.kind === "income" ? ("income" as const) : ("expense" as const),
       color: category.color,
+      icon: category.icon,
     })),
     months: monthsSince(oldest?.[0]?.occurred_on),
   }
@@ -158,7 +163,7 @@ export async function getTransactions(
        account_id, card_id, category_id, transfer_account_id,
        account:accounts!transactions_account_id_space_id_fkey ( name ),
        transfer_account:accounts!transactions_transfer_account_id_space_id_fkey ( name ),
-       category:categories!transactions_category_id_space_id_fkey ( name, color ),
+       category:categories!transactions_category_id_space_id_fkey ( name, color, icon ),
        card:cards!transactions_card_id_account_id_fkey ( name, last4 )`
     )
     .eq("space_id", spaceId)
@@ -192,6 +197,7 @@ export async function getTransactions(
     categoryId: row.category_id,
     categoryName: row.category?.name ?? null,
     categoryColor: row.category?.color ?? null,
+    categoryIcon: row.category?.icon ?? null,
     cardId: row.card_id,
     cardName: row.card?.name ?? null,
     cardLast4: row.card?.last4 ?? null,

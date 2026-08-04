@@ -14,16 +14,16 @@ import {
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import { ConfirmDialog } from "@/components/apex/confirm-dialog"
 import { DueStateBadge, dueState } from "@/components/apex/due-state"
+import { AvatarBadge, EntityAvatar } from "@/components/apex/entity-avatar"
 import { MarkPaidButton } from "@/components/apex/subscriptions/mark-paid-button"
 import { RecurringDrawer } from "@/components/apex/subscriptions/recurring-drawer"
-import { Button } from "@/components/ui/button"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+  DataChip,
+  TABLE_HEAD,
+  TableCard,
+  TableCardHeader,
+} from "@/components/apex/table-shell"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +35,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -51,22 +50,20 @@ import type {
 } from "@/lib/apex/subscriptions/queries"
 import { cn } from "@/lib/utils"
 
-const headClass = "h-8 text-[13px] font-medium text-muted-foreground"
-
-/** Per-kind icon chip meta — tints come from the shared anchor vocabulary. */
+/** Per-kind badge meta — tints come from the shared anchor vocabulary. */
 const KIND_META: Record<
   RecurringKind,
-  { icon: LucideIcon; label: string; iconClassName: string }
+  { icon: LucideIcon; label: string; className: string }
 > = {
   subscription: {
     icon: Repeat,
     label: "Subscription",
-    iconClassName: ANCHOR_TINTS.subscription,
+    className: ANCHOR_TINTS.subscription,
   },
   bill: {
     icon: ReceiptText,
     label: "Bill",
-    iconClassName: ANCHOR_TINTS.bill,
+    className: ANCHOR_TINTS.bill,
   },
 }
 
@@ -82,22 +79,6 @@ export type RecurringRow = RecurringPayment & {
   monthly: number
 }
 
-function KindChip({ kind }: { kind: RecurringKind }) {
-  const { icon: Icon, label, iconClassName } = KIND_META[kind]
-  return (
-    <span
-      title={label}
-      className={cn(
-        "flex size-5 shrink-0 items-center justify-center rounded-md [&>svg]:size-3",
-        iconClassName
-      )}
-    >
-      <Icon />
-      <span className="sr-only">{label}</span>
-    </span>
-  )
-}
-
 /** Every subscription and bill in one table, soonest due first across kinds. */
 export function RecurringTable({
   payments,
@@ -109,7 +90,7 @@ export function RecurringTable({
 }: {
   /** Soonest due first — the query's order, kinds interleaved */
   payments: RecurringRow[]
-  /** Combined cadence-normalized pence per month; the footer total */
+  /** Combined cadence-normalized pence per month; the toolbar total */
   monthlyTotal: number
   accounts: AccountOption[]
   categories: CategoryOption[]
@@ -140,135 +121,142 @@ export function RecurringTable({
 
   return (
     <>
-      <Card size="sm" className="gap-0 pb-0">
-        <CardHeader className="border-b">
-          <CardTitle>All recurring</CardTitle>
-          <CardDescription className="text-[13px]">
-            Subscriptions and bills together, soonest due first.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className={cn(headClass, "px-3")}>Name</TableHead>
-                <TableHead className={cn(headClass, "hidden md:table-cell")}>
-                  Account
-                </TableHead>
-                <TableHead className={headClass}>Next due</TableHead>
-                <TableHead className={cn(headClass, "text-right")}>
-                  Amount
-                </TableHead>
-                <TableHead className={cn(headClass, "px-3")}>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payments.map((payment) => {
-                const due = dueState(payment.nextDueOn, today)
-                return (
-                  <TableRow key={payment.id}>
-                    <TableCell className="w-full max-w-0 px-3 py-1.5 text-[13px]">
-                      <span className="flex items-center gap-2">
-                        <KindChip kind={payment.kind} />
-                        <span
-                          className="size-2 shrink-0 rounded-full"
-                          title={payment.categoryName ?? undefined}
-                          style={{
-                            backgroundColor:
-                              payment.categoryColor ??
-                              "var(--color-muted-foreground)",
-                            opacity: payment.categoryColor ? 1 : 0.35,
-                          }}
-                        />
-                        <span className="min-w-0 flex-1 truncate font-medium">
+      <TableCard>
+        <TableCardHeader title="All recurring" count={`(${payments.length})`}>
+          <span className="flex items-center gap-2 text-[13px] whitespace-nowrap">
+            <span className="text-muted-foreground">Monthly total</span>
+            <span className="font-medium tabular-nums">
+              {formatPence(monthlyTotal)}
+            </span>
+          </span>
+        </TableCardHeader>
+
+        <Table>
+          <TableHeader className="[&_tr]:border-b-0">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className={cn(TABLE_HEAD, "pl-3")}>Name</TableHead>
+              <TableHead className={cn(TABLE_HEAD, "hidden md:table-cell")}>
+                Category
+              </TableHead>
+              <TableHead className={TABLE_HEAD}>Next due</TableHead>
+              <TableHead className={cn(TABLE_HEAD, "pr-2 text-right")}>
+                Amount
+              </TableHead>
+              <TableHead className={cn(TABLE_HEAD, "pr-2")}>
+                <span className="sr-only">Actions</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {payments.map((payment) => {
+              const due = dueState(payment.nextDueOn, today)
+              const kind = KIND_META[payment.kind]
+              return (
+                <TableRow key={payment.id}>
+                  <TableCell className="w-full max-w-0 py-2 pr-2 pl-3">
+                    <span className="flex items-center gap-2.5">
+                      <EntityAvatar
+                        label={payment.name}
+                        icon={payment.categoryIcon}
+                        color={payment.categoryColor}
+                      >
+                        <AvatarBadge
+                          title={kind.label}
+                          className={kind.className}
+                        >
+                          <kind.icon />
+                        </AvatarBadge>
+                      </EntityAvatar>
+                      <span className="flex min-w-0 flex-col">
+                        <span className="truncate font-medium">
                           {payment.name}
                         </span>
-                      </span>
-                    </TableCell>
-                    <TableCell className="hidden py-1.5 text-[13px] text-muted-foreground md:table-cell">
-                      {payment.accountName ?? "—"}
-                    </TableCell>
-                    <TableCell className="py-1.5">
-                      <DueStateBadge state={due} />
-                    </TableCell>
-                    <TableCell className="py-1.5 text-right text-[13px] tabular-nums">
-                      <span className="font-medium">
-                        {payment.cadence === "monthly"
-                          ? formatPenceShort(payment.amount)
-                          : `${formatPenceShort(payment.amount)} / ${CADENCE_SHORT[payment.cadence]}`}
-                      </span>
-                      {payment.cadence !== "monthly" && (
-                        <span className="text-muted-foreground">
-                          {` · ${formatPenceShort(payment.monthly)}/mo`}
+                        <span className="truncate text-[12px] text-muted-foreground">
+                          {payment.accountName ?? "No account"}
                         </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="px-3 py-1.5">
-                      <span className="flex items-center justify-end gap-1">
-                        {due.actionable && (
-                          <MarkPaidButton
-                            paymentId={payment.id}
-                            accountId={payment.accountId}
-                            accounts={accounts}
-                          />
-                        )}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            render={
-                              <Button
-                                variant="ghost"
-                                size="icon-xs"
-                                aria-label={`Actions for ${payment.name}`}
-                              />
-                            }
-                          >
-                            <MoreHorizontal />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuGroup>
-                              <DropdownMenuItem
-                                onClick={() => setEditing(payment)}
-                              >
-                                <Pencil />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                variant="destructive"
-                                onClick={() => {
-                                  setCancelError(null)
-                                  setCancelling(payment)
-                                }}
-                              >
-                                <XCircle />
-                                Cancel
-                              </DropdownMenuItem>
-                            </DropdownMenuGroup>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </span>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-            <TableFooter>
-              <TableRow className="hover:bg-transparent">
-                <TableCell className="px-3 py-2 text-[13px]">
-                  Monthly total
-                </TableCell>
-                <TableCell className="hidden md:table-cell" />
-                <TableCell />
-                <TableCell className="py-2 text-right text-[13px] tabular-nums">
-                  {formatPence(monthlyTotal)}
-                </TableCell>
-                <TableCell className="px-3" />
-              </TableRow>
-            </TableFooter>
-          </Table>
-        </CardContent>
-      </Card>
+                    </span>
+                  </TableCell>
+
+                  <TableCell className="hidden py-2 md:table-cell">
+                    {payment.categoryName ? (
+                      <DataChip color={payment.categoryColor}>
+                        {payment.categoryName}
+                      </DataChip>
+                    ) : (
+                      <span className="text-[13px] text-muted-foreground">
+                        —
+                      </span>
+                    )}
+                  </TableCell>
+
+                  <TableCell className="py-2">
+                    <DueStateBadge state={due} />
+                  </TableCell>
+
+                  <TableCell className="py-2 pr-2 text-right whitespace-nowrap tabular-nums">
+                    <span className="font-medium">
+                      {payment.cadence === "monthly"
+                        ? formatPenceShort(payment.amount)
+                        : `${formatPenceShort(payment.amount)} / ${CADENCE_SHORT[payment.cadence]}`}
+                    </span>
+                    {payment.cadence !== "monthly" && (
+                      <span className="block text-[12px] text-muted-foreground">
+                        {`${formatPenceShort(payment.monthly)}/mo`}
+                      </span>
+                    )}
+                  </TableCell>
+
+                  <TableCell className="py-2 pr-2">
+                    <span className="flex items-center justify-end gap-1">
+                      {due.actionable && (
+                        <MarkPaidButton
+                          paymentId={payment.id}
+                          accountId={payment.accountId}
+                          accounts={accounts}
+                        />
+                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              aria-label={`Actions for ${payment.name}`}
+                            />
+                          }
+                        >
+                          <MoreHorizontal />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuGroup>
+                            <DropdownMenuItem
+                              onClick={() => setEditing(payment)}
+                            >
+                              <Pencil />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => {
+                                setCancelError(null)
+                                setCancelling(payment)
+                              }}
+                            >
+                              <XCircle />
+                              Cancel
+                            </DropdownMenuItem>
+                          </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </span>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </TableCard>
 
       {editing && (
         <RecurringDrawer

@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Plus } from "lucide-react"
 
-import { TransactionDrawer } from "@/components/apex/transactions/transaction-drawer"
+import { TransactionDialog } from "@/components/apex/transactions/transaction-dialog"
 import { Button } from "@/components/ui/button"
 import type { TransactionOptions } from "@/lib/apex/transactions/queries"
 
@@ -36,7 +36,7 @@ export function ApexQuickAdd({
       <Button size="xs" title="Add transaction (Alt+N)" onClick={() => setOpen(true)}>
         <Plus /> Create
       </Button>
-      <TransactionDrawer
+      <TransactionDialog
         open={open}
         onOpenChange={setOpen}
         spaceId={spaceId}
