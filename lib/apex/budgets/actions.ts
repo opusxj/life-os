@@ -2,6 +2,7 @@
 
 import { getWorkspace } from "@/lib/data/workspace"
 import { formatPence, parsePoundsToPence } from "@/lib/apex/money"
+import { revalidateApex } from "@/lib/apex/revalidate"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 export type BudgetsFormState = { error?: string; success?: boolean } | undefined
@@ -51,6 +52,7 @@ export async function createBudget(
     }
     return { error: friendlyDbError(error.message) }
   }
+  revalidateApex()
   return { success: true }
 }
 
@@ -72,6 +74,7 @@ export async function updateBudgetAmount(
     .eq("id", budgetId)
     .is("deleted_at", null)
   if (error) return { error: friendlyDbError(error.message) }
+  revalidateApex()
   return { success: true }
 }
 
@@ -91,6 +94,7 @@ export async function removeBudget(
     .eq("id", budgetId)
     .is("deleted_at", null)
   if (error) return { error: friendlyDbError(error.message) }
+  revalidateApex()
   return {}
 }
 
@@ -112,6 +116,7 @@ export async function createSavingGoal(
     ...parsed,
   })
   if (error) return { error: friendlyDbError(error.message) }
+  revalidateApex()
   return { success: true }
 }
 
@@ -133,6 +138,7 @@ export async function updateSavingGoal(
     .eq("id", goalId)
     .is("deleted_at", null)
   if (error) return { error: friendlyDbError(error.message) }
+  revalidateApex()
   return { success: true }
 }
 
@@ -151,6 +157,7 @@ export async function deleteSavingGoal(
     .eq("id", goalId)
     .is("deleted_at", null)
   if (error) return { error: friendlyDbError(error.message) }
+  revalidateApex()
   return {}
 }
 
@@ -219,6 +226,7 @@ export async function topUpGoal(
     .is("deleted_at", null)
   if (error) return { error: friendlyDbError(error.message) }
   if (count === 0) return { error: "That goal was removed — nothing saved." }
+  revalidateApex()
   return { success: true }
 }
 

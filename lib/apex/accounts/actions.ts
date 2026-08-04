@@ -1,6 +1,7 @@
 "use server"
 
 import { formatPence, parsePoundsToPence } from "@/lib/apex/money"
+import { revalidateApex } from "@/lib/apex/revalidate"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 export type ApexFormState = { error?: string; success?: boolean } | undefined
@@ -92,6 +93,7 @@ export async function saveAccount(
     if (txnError) return { error: friendlyDbError(txnError.message) }
   }
 
+  revalidateApex()
   return { success: true }
 }
 
@@ -192,6 +194,7 @@ export async function saveCard(
     created_by: user.id,
   })
   if (error) return { error: friendlyDbError(error.message) }
+  revalidateApex()
   return { success: true }
 }
 
@@ -240,6 +243,7 @@ export async function syncBalance(
     created_by: user.id,
   })
   if (error) return { error: friendlyDbError(error.message) }
+  revalidateApex()
   return { success: true }
 }
 
@@ -299,6 +303,7 @@ export async function transferBetween(
     created_by: user.id,
   })
   if (error) return { error: friendlyDbError(error.message) }
+  revalidateApex()
   return { success: true }
 }
 
@@ -323,6 +328,7 @@ async function softDelete(
     .is("deleted_at", null)
   if (error) return { error: friendlyDbError(error.message) }
   if (count === 0) return { error: "That's already gone." }
+  revalidateApex()
   return {}
 }
 

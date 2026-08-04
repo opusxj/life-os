@@ -72,7 +72,11 @@ export async function verifyEmailOtp(
   }
 
   const supabase = await createServerSupabase()
-  const { error } = await supabase.auth.verifyOtp({ email, token, type: "email" })
+  const { error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: "email",
+  })
   if (error) {
     return { error: error.message }
   }
@@ -116,6 +120,27 @@ export async function sendMagicLink(
   redirect(`/verify?email=${encodeURIComponent(email)}&mode=magic`)
 }
 
+/**
+ * Where email links should point back to. Server Actions are POSTs so the
+ * Origin header is normally present, but a hardcoded localhost fallback in a
+ * deployed app means a silently broken reset link — hence the explicit env
+ * vars ahead of it. Whatever this resolves to must also be in Supabase's
+ * redirect allow-list, or GoTrue discards it and falls back to Site URL.
+ */
+async function siteOrigin(): Promise<string> {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL
+  if (configured) return configured.replace(/\/$/, "")
+
+  const fromRequest = (await headers()).get("origin")
+  if (fromRequest) return fromRequest
+
+  const vercel =
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL
+  if (vercel) return `https://${vercel}`
+
+  return "http://localhost:3000"
+}
+
 export async function sendPasswordReset(
   _prev: AuthFormState,
   formData: FormData
@@ -124,7 +149,7 @@ export async function sendPasswordReset(
 
   if (!email) return { error: "Enter your email." }
 
-  const origin = (await headers()).get("origin") ?? "http://localhost:3000"
+  const origin = await siteOrigin()
   const supabase = await createServerSupabase()
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${origin}/auth/confirm?next=/reset-password`,

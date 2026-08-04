@@ -1,6 +1,7 @@
 "use server"
 
 import { parsePoundsToPence } from "@/lib/apex/money"
+import { revalidateApex } from "@/lib/apex/revalidate"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 export type TransactionFormState =
@@ -103,6 +104,7 @@ export async function createTransaction(
   })
 
   if (error) return { error: friendlyDbError(error.message) }
+  revalidateApex()
   return { success: true }
 }
 
@@ -143,6 +145,7 @@ export async function updateTransaction(
 
   if (error) return { error: friendlyDbError(error.message) }
   if (count === 0) return { error: "Transaction not found." }
+  revalidateApex()
   return { success: true }
 }
 
@@ -173,6 +176,7 @@ export async function softDeleteTransaction(
   if (count === 0) {
     return { error: "Transaction not found, or it's a system balance sync." }
   }
+  revalidateApex()
   return {}
 }
 

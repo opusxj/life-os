@@ -1,6 +1,7 @@
 "use server"
 
 import { parsePoundsToPence } from "@/lib/apex/money"
+import { revalidateApex } from "@/lib/apex/revalidate"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 export type RecurringFormState =
@@ -75,6 +76,7 @@ export async function saveRecurringPayment(
   if (id && count === 0) {
     return { error: "That payment was cancelled or removed — nothing saved." }
   }
+  revalidateApex()
   return { success: true }
 }
 
@@ -93,6 +95,7 @@ export async function markRecurringPaid(
     ...(accountId ? { pay_account: accountId } : {}),
   })
   if (error) return { error: friendlyDbError(error.message) }
+  revalidateApex()
   return {}
 }
 
@@ -117,6 +120,7 @@ export async function cancelRecurringPayment(
     .is("deleted_at", null)
   if (error) return { error: friendlyDbError(error.message) }
   if (count === 0) return { error: "That payment is already cancelled." }
+  revalidateApex()
   return {}
 }
 
