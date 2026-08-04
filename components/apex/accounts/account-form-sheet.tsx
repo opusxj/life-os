@@ -45,17 +45,17 @@ export function AccountFormSheet({
   const router = useRouter()
   const [color, setColor] = React.useState(account?.color ?? APEX_COLORS[1])
   const [kind, setKind] = React.useState(account?.kind ?? "current")
-  const [state, action, pending] = React.useActionState<ApexFormState, FormData>(
-    async (prev, formData) => {
-      const result = await saveAccount(prev, formData)
-      if (result?.success) {
-        onOpenChange(false)
-        router.refresh()
-      }
-      return result
-    },
-    undefined
-  )
+  const [state, action, pending] = React.useActionState<
+    ApexFormState,
+    FormData
+  >(async (prev, formData) => {
+    const result = await saveAccount(prev, formData)
+    if (result?.success) {
+      onOpenChange(false)
+      router.refresh()
+    }
+    return result
+  }, undefined)
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

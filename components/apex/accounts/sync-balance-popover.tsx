@@ -23,22 +23,24 @@ import type { Account } from "@/lib/apex/accounts/queries"
 export function SyncBalancePopover({ account }: { account: Account }) {
   const router = useRouter()
   const [open, setOpen] = React.useState(false)
-  const [state, action, pending] = React.useActionState<ApexFormState, FormData>(
-    async (prev, formData) => {
-      const result = await syncBalance(prev, formData)
-      if (result?.success) {
-        setOpen(false)
-        router.refresh()
-      }
-      return result
-    },
-    undefined
-  )
+  const [state, action, pending] = React.useActionState<
+    ApexFormState,
+    FormData
+  >(async (prev, formData) => {
+    const result = await syncBalance(prev, formData)
+    if (result?.success) {
+      setOpen(false)
+      router.refresh()
+    }
+    return result
+  }, undefined)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
-        render={<Button variant="ghost" size="xs" className="text-muted-foreground" />}
+        render={
+          <Button variant="ghost" size="xs" className="text-muted-foreground" />
+        }
       >
         <RefreshCw /> Sync
       </PopoverTrigger>

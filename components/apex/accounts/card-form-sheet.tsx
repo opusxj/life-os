@@ -3,10 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 
-import {
-  APEX_COLORS,
-  CARD_BRANDS,
-} from "@/components/apex/accounts/meta"
+import { APEX_COLORS, CARD_BRANDS } from "@/components/apex/accounts/meta"
 import { ColorSwatches } from "@/components/shared/color-swatches"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -60,17 +57,17 @@ export function CardFormSheet({
   const accountItems = Object.fromEntries(
     accounts.map((account) => [account.id, account.name])
   )
-  const [state, action, pending] = React.useActionState<ApexFormState, FormData>(
-    async (prev, formData) => {
-      const result = await saveCard(prev, formData)
-      if (result?.success) {
-        onOpenChange(false)
-        router.refresh()
-      }
-      return result
-    },
-    undefined
-  )
+  const [state, action, pending] = React.useActionState<
+    ApexFormState,
+    FormData
+  >(async (prev, formData) => {
+    const result = await saveCard(prev, formData)
+    if (result?.success) {
+      onOpenChange(false)
+      router.refresh()
+    }
+    return result
+  }, undefined)
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -78,7 +75,9 @@ export function CardFormSheet({
         <SheetHeader>
           <SheetTitle>Add card</SheetTitle>
           <SheetDescription>
-            {"The physical or virtual card — we only ever keep the last four digits."}
+            {
+              "The physical or virtual card — we only ever keep the last four digits."
+            }
           </SheetDescription>
         </SheetHeader>
 

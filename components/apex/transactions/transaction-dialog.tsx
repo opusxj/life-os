@@ -237,7 +237,8 @@ function TransactionForm({
           <div
             className={cn(
               "flex items-center gap-2 rounded-xl border bg-muted/40 px-4 py-3 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50",
-              amountInvalid && "border-destructive focus-within:border-destructive focus-within:ring-destructive/20"
+              amountInvalid &&
+                "border-destructive focus-within:border-destructive focus-within:ring-destructive/20"
             )}
           >
             <span className="text-3xl leading-none font-medium text-muted-foreground">
@@ -427,7 +428,11 @@ function CategoryChips({
     <>
       <input type="hidden" name={name} value={value} />
       <MotionConfig reducedMotion="user">
-        <div role="group" aria-label="Category" className="flex flex-wrap gap-1.5">
+        <div
+          role="group"
+          aria-label="Category"
+          className="flex flex-wrap gap-1.5"
+        >
           {categories.map((category) => {
             const selected = value === category.id
             const Icon = category.icon ? ROW_ICONS[category.icon] : undefined

@@ -1,7 +1,7 @@
 "use server"
 
 import { getWorkspace } from "@/lib/data/workspace"
-import { parsePoundsToPence } from "@/lib/apex/money"
+import { formatPence, parsePoundsToPence } from "@/lib/apex/money"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 export type BudgetsFormState = { error?: string; success?: boolean } | undefined
@@ -185,6 +185,20 @@ export async function topUpGoal(
     if (sourceAccountId === goal.account_id) {
       return { error: "Pick a different source account." }
     }
+    // Both ends live, and the source actually holds it. Without this a £5,000
+    // top up from an account holding £100 posted silently.
+    const { data: source } = await context.supabase
+      .from("accounts")
+      .select("balance")
+      .eq("id", sourceAccountId)
+      .is("deleted_at", null)
+      .maybeSingle()
+    if (!source) return { error: "That source account no longer exists." }
+    if (amount > source.balance) {
+      return {
+        error: `${formatPence(source.balance)} available — that top up is larger.`,
+      }
+    }
     const { error } = await context.supabase.from("transactions").insert({
       space_id: context.spaceId,
       account_id: sourceAccountId,
@@ -198,12 +212,13 @@ export async function topUpGoal(
     return { success: true }
   }
 
-  const { error } = await context.supabase
+  const { error, count } = await context.supabase
     .from("saving_goals")
-    .update({ saved_amount: goal.saved_amount + amount })
+    .update({ saved_amount: goal.saved_amount + amount }, { count: "exact" })
     .eq("id", goalId)
     .is("deleted_at", null)
   if (error) return { error: friendlyDbError(error.message) }
+  if (count === 0) return { error: "That goal was removed — nothing saved." }
   return { success: true }
 }
 

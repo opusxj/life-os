@@ -28,6 +28,7 @@ import { formatPence, formatPenceShort } from "@/lib/apex/money"
 import type {
   TransactionOptions,
   TransactionRow,
+  TransactionTotals as Totals,
 } from "@/lib/apex/transactions/queries"
 import { cn } from "@/lib/utils"
 import { AddTransactionDialog } from "./transaction-dialog"
@@ -36,11 +37,13 @@ import { TransactionTableRow } from "./transaction-row"
 /**
  * The page's headline answer, rendered beneath the title: what came in, what
  * went out, and where that leaves you. Income and expense sums only —
- * transfers and adjustments count in neither.
+ * transfers and adjustments count in neither. Figures come from the database
+ * aggregate, so they describe the whole filtered set even when the table below
+ * is showing one page of it.
  */
-export function TransactionTotals({ rows }: { rows: TransactionRow[] }) {
-  const incomeTotal = sumByKind(rows, "income")
-  const expenseTotal = sumByKind(rows, "expense")
+export function TransactionTotals({ totals }: { totals: Totals }) {
+  const incomeTotal = totals.income
+  const expenseTotal = totals.expense
   const net = incomeTotal - expenseTotal
 
   return (
@@ -76,11 +79,14 @@ export function TransactionsCard({
   spaceId,
   options,
   rows,
+  totals,
   filtered,
 }: {
   spaceId: string
   options: TransactionOptions
+  /** One page — `totals.rowCount` is how many actually match */
   rows: TransactionRow[]
+  totals: Totals
   /** Whether any non-default filter is active (changes the empty-state copy) */
   filtered: boolean
 }) {
@@ -144,18 +150,21 @@ export function TransactionsCard({
               />
             ))}
           </TableBody>
-          <TotalsFooter rows={rows} />
+          <TotalsFooter shown={rows.length} totals={totals} />
         </Table>
       </TableScroll>
     </TableCard>
   )
 }
 
-/** Pinned to the bottom of the scroll region: exact pence, always in view. */
-function TotalsFooter({ rows }: { rows: TransactionRow[] }) {
-  const incomeTotal = sumByKind(rows, "income")
-  const expenseTotal = sumByKind(rows, "expense")
-  const transferCount = rows.filter((row) => row.kind === "transfer").length
+/**
+ * Pinned to the bottom of the scroll region: exact pence, always in view.
+ * Says plainly when the rows above are a page rather than everything — the
+ * totals stay correct either way, so silence here would read as "this is all
+ * of it".
+ */
+function TotalsFooter({ shown, totals }: { shown: number; totals: Totals }) {
+  const truncated = shown < totals.rowCount
 
   return (
     <TableFooter className="border-t-0 bg-transparent font-normal">
@@ -165,10 +174,17 @@ function TotalsFooter({ rows }: { rows: TransactionRow[] }) {
           className={cn(TABLE_FOOT, "py-2 pl-3 whitespace-nowrap")}
         >
           <span className="flex items-center gap-2 text-muted-foreground">
-            {`${rows.length} ${rows.length === 1 ? "transaction" : "transactions"}`}
-            {transferCount > 0 && (
+            {truncated
+              ? `Showing ${shown} of ${totals.rowCount} transactions`
+              : `${totals.rowCount} ${totals.rowCount === 1 ? "transaction" : "transactions"}`}
+            {totals.transferCount > 0 && (
               <DataChip color="#0ea5e9">
-                {`${transferCount} ${transferCount === 1 ? "transfer" : "transfers"}`}
+                {`${totals.transferCount} ${totals.transferCount === 1 ? "transfer" : "transfers"}`}
+              </DataChip>
+            )}
+            {truncated && (
+              <DataChip color="#f59e0b">
+                Narrow the filters to see the rest
               </DataChip>
             )}
           </span>
@@ -181,20 +197,13 @@ function TotalsFooter({ rows }: { rows: TransactionRow[] }) {
         >
           <span className="inline-flex items-baseline gap-3">
             <span className="text-emerald-600 dark:text-emerald-400">
-              {`+${formatPence(incomeTotal)}`}
+              {`+${formatPence(totals.income)}`}
             </span>
-            <span>{`−${formatPence(expenseTotal)}`}</span>
+            <span>{`−${formatPence(totals.expense)}`}</span>
           </span>
         </TableCell>
         <TableCell className={cn(TABLE_FOOT, "w-10")} />
       </TableRow>
     </TableFooter>
-  )
-}
-
-function sumByKind(rows: TransactionRow[], kind: TransactionRow["kind"]) {
-  return rows.reduce(
-    (total, row) => (row.kind === kind ? total + row.amount : total),
-    0
   )
 }

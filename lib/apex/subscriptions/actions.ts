@@ -4,8 +4,7 @@ import { parsePoundsToPence } from "@/lib/apex/money"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 export type RecurringFormState =
-  | { error?: string; success?: boolean }
-  | undefined
+  { error?: string; success?: boolean } | undefined
 
 const KINDS = ["subscription", "bill"] as const
 const CADENCES = ["weekly", "monthly", "quarterly", "yearly"] as const
@@ -56,13 +55,23 @@ export async function saveRecurringPayment(
     category_id: categoryId || null,
   }
 
-  const { error } = id
-    ? await supabase.from("recurring_payments").update(values).eq("id", id)
+  // count: "exact" on the update — PostgREST raises no error when RLS or the
+  // deleted_at filter removes the row, so a save that wrote nothing used to
+  // close the drawer reporting success.
+  const { error, count } = id
+    ? await supabase
+        .from("recurring_payments")
+        .update(values, { count: "exact" })
+        .eq("id", id)
+        .is("deleted_at", null)
     : await supabase
         .from("recurring_payments")
         .insert({ ...values, space_id: spaceId, created_by: user.id })
 
   if (error) return { error: friendlyDbError(error.message) }
+  if (id && count === 0) {
+    return { error: "That payment was cancelled or removed — nothing saved." }
+  }
   return { success: true }
 }
 
@@ -95,12 +104,16 @@ export async function cancelRecurringPayment(
   if (!user) return { error: "Not signed in." }
 
   // One UPDATE stamps both columns — RLS rejects an unstamped soft delete
-  const { error } = await supabase
+  const { error, count } = await supabase
     .from("recurring_payments")
-    .update({ deleted_at: new Date().toISOString(), deleted_by: user.id })
+    .update(
+      { deleted_at: new Date().toISOString(), deleted_by: user.id },
+      { count: "exact" }
+    )
     .eq("id", paymentId)
     .is("deleted_at", null)
   if (error) return { error: friendlyDbError(error.message) }
+  if (count === 0) return { error: "That payment is already cancelled." }
   return {}
 }
 

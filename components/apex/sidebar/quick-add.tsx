@@ -33,7 +33,11 @@ export function ApexQuickAdd({
 
   return (
     <>
-      <Button size="xs" title="Add transaction (Alt+N)" onClick={() => setOpen(true)}>
+      <Button
+        size="xs"
+        title="Add transaction (Alt+N)"
+        onClick={() => setOpen(true)}
+      >
         <Plus /> Create
       </Button>
       <TransactionDialog

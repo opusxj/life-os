@@ -48,7 +48,9 @@ export async function getSubscriptionsPageData(
     await Promise.all([
       supabase
         .from("recurring_payments")
-        .select("id, name, kind, amount, cadence, next_due_on, account_id, category_id")
+        .select(
+          "id, name, kind, amount, cadence, next_due_on, account_id, category_id"
+        )
         .eq("space_id", spaceId)
         .is("deleted_at", null)
         .order("next_due_on", { ascending: true })

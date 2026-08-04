@@ -57,6 +57,16 @@ export type CategoryOption = {
   icon: string | null
 }
 
+export type TransactionTotals = {
+  /** Pence */
+  income: number
+  /** Pence */
+  expense: number
+  transferCount: number
+  /** Rows matching the filters — may exceed what `getTransactions` returns */
+  rowCount: number
+}
+
 export type TransactionOptions = {
   accounts: AccountOption[]
   cards: CardOption[]
@@ -101,34 +111,38 @@ export async function getTransactionOptions(
 ): Promise<TransactionOptions> {
   const supabase = await createServerSupabase()
 
-  const [{ data: accounts }, { data: cards }, { data: categories }, { data: oldest }] =
-    await Promise.all([
-      supabase
-        .from("accounts")
-        .select("id, name, color")
-        .eq("space_id", spaceId)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("cards")
-        .select("id, name, last4, account_id")
-        .eq("space_id", spaceId)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("categories")
-        .select("id, name, kind, color, icon")
-        .eq("space_id", spaceId)
-        .is("deleted_at", null)
-        .order("name", { ascending: true }),
-      supabase
-        .from("transactions")
-        .select("occurred_on")
-        .eq("space_id", spaceId)
-        .is("deleted_at", null)
-        .order("occurred_on", { ascending: true })
-        .limit(1),
-    ])
+  const [
+    { data: accounts },
+    { data: cards },
+    { data: categories },
+    { data: oldest },
+  ] = await Promise.all([
+    supabase
+      .from("accounts")
+      .select("id, name, color")
+      .eq("space_id", spaceId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("cards")
+      .select("id, name, last4, account_id")
+      .eq("space_id", spaceId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("categories")
+      .select("id, name, kind, color, icon")
+      .eq("space_id", spaceId)
+      .is("deleted_at", null)
+      .order("name", { ascending: true }),
+    supabase
+      .from("transactions")
+      .select("occurred_on")
+      .eq("space_id", spaceId)
+      .is("deleted_at", null)
+      .order("occurred_on", { ascending: true })
+      .limit(1),
+  ])
 
   return {
     accounts: accounts ?? [],
@@ -141,11 +155,45 @@ export async function getTransactionOptions(
     categories: (categories ?? []).map((category) => ({
       id: category.id,
       name: category.name,
-      kind: category.kind === "income" ? ("income" as const) : ("expense" as const),
+      kind:
+        category.kind === "income" ? ("income" as const) : ("expense" as const),
       color: category.color,
       icon: category.icon,
     })),
     months: monthsSince(oldest?.[0]?.occurred_on),
+  }
+}
+
+/** One page of rows — never the whole set. Totals come from the database. */
+export const TRANSACTION_PAGE_SIZE = 500
+
+/**
+ * In/Out/counts for the whole filtered set, aggregated in the database.
+ * Never derive these from `getTransactions` — that returns at most
+ * TRANSACTION_PAGE_SIZE rows, so summing it understates the totals silently.
+ */
+export async function getTransactionTotals(
+  spaceId: string,
+  filters: TransactionFilters
+): Promise<TransactionTotals> {
+  const supabase = await createServerSupabase()
+
+  const { data } = await supabase.rpc("apex_transaction_totals", {
+    p_space_id: spaceId,
+    p_account: filters.account,
+    p_card: filters.card,
+    p_category: filters.category,
+    p_kind: filters.kind,
+    p_from: filters.month ? `${filters.month}-01` : undefined,
+    p_to: filters.month ? monthEndExclusive(filters.month) : undefined,
+  })
+
+  const row = data?.[0]
+  return {
+    income: row?.income ?? 0,
+    expense: row?.expense ?? 0,
+    transferCount: row?.transfer_count ?? 0,
+    rowCount: row?.row_count ?? 0,
   }
 }
 
@@ -182,7 +230,7 @@ export async function getTransactions(
   const { data } = await query
     .order("occurred_on", { ascending: false })
     .order("created_at", { ascending: false })
-    .limit(500)
+    .limit(TRANSACTION_PAGE_SIZE)
 
   return (data ?? []).map((row) => ({
     id: row.id,
@@ -224,7 +272,9 @@ function monthsSince(earliest: string | undefined): string[] {
   if (earliest && MONTH_RE.test(earliest.slice(0, 7))) {
     const [year, monthNumber] = earliest.slice(0, 7).split("-").map(Number)
     const span =
-      (now.getUTCFullYear() - year) * 12 + (now.getUTCMonth() + 1 - monthNumber) + 1
+      (now.getUTCFullYear() - year) * 12 +
+      (now.getUTCMonth() + 1 - monthNumber) +
+      1
     count = Math.min(24, Math.max(1, span))
   }
   return Array.from({ length: count }, (_, index) =>

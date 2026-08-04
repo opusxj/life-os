@@ -67,16 +67,20 @@ export function TransactionRowActions({
                 Edit
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={() => {
-                setError(null)
-                setConfirmOpen(true)
-              }}
-            >
-              <Trash2 />
-              Delete
-            </DropdownMenuItem>
+            {/* Adjustments are the Sync-balance audit trail — deleting one
+                silently rewrites the balance, so it's gated with Edit. */}
+            {canEdit && (
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => {
+                  setError(null)
+                  setConfirmOpen(true)
+                }}
+              >
+                <Trash2 />
+                Delete
+              </DropdownMenuItem>
+            )}
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>

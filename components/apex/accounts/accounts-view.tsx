@@ -24,10 +24,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
-import {
-  deleteAccount,
-  deleteCard,
-} from "@/lib/apex/accounts/actions"
+import { deleteAccount, deleteCard } from "@/lib/apex/accounts/actions"
 import type { Account, AccountWithCards } from "@/lib/apex/accounts/queries"
 
 type DeleteTarget =
@@ -95,7 +92,9 @@ export function AccountsView({
             </EmptyMedia>
             <EmptyTitle>No accounts yet</EmptyTitle>
             <EmptyDescription>
-              {"Add the accounts you actually use — balances take care of themselves."}
+              {
+                "Add the accounts you actually use — balances take care of themselves."
+              }
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>

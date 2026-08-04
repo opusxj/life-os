@@ -1,6 +1,6 @@
 "use server"
 
-import { parsePoundsToPence } from "@/lib/apex/money"
+import { formatPence, parsePoundsToPence } from "@/lib/apex/money"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 export type ApexFormState = { error?: string; success?: boolean } | undefined
@@ -40,11 +40,18 @@ export async function saveAccount(
   if (!user) return { error: "Not signed in." }
 
   if (accountId) {
-    const { error } = await supabase
+    // count: "exact" — PostgREST raises no error when RLS filters the row
+    // away, so without this a save that wrote nothing reported success.
+    const { error, count } = await supabase
       .from("accounts")
-      .update({ name, kind, institution: institution || null, color })
+      .update(
+        { name, kind, institution: institution || null, color },
+        { count: "exact" }
+      )
       .eq("id", accountId)
+      .is("deleted_at", null)
     if (error) return { error: friendlyDbError(error.message) }
+    if (count === 0) return { error: "That account no longer exists." }
     return { success: true }
   }
 
@@ -88,9 +95,56 @@ export async function saveAccount(
   return { success: true }
 }
 
+/**
+ * Refuses while anything still points at the account. Soft-deleting one used
+ * to strand its money: the balance left the space total but its transactions
+ * stayed in the budgets, its goal read £0 for everyone but the deleter, and
+ * the account's own UPDATE policy requires `deleted_at is null` — so it could
+ * never be undone. Blocking is the honest answer; there is nowhere for a
+ * ledger-backed balance to go.
+ */
 export async function deleteAccount(
   accountId: string
 ): Promise<{ error?: string }> {
+  const supabase = await createServerSupabase()
+
+  const [{ count: txnCount }, { count: cardCount }, { count: goalCount }] =
+    await Promise.all([
+      supabase
+        .from("transactions")
+        .select("id", { count: "exact", head: true })
+        .or(`account_id.eq.${accountId},transfer_account_id.eq.${accountId}`)
+        .is("deleted_at", null),
+      supabase
+        .from("cards")
+        .select("id", { count: "exact", head: true })
+        .eq("account_id", accountId)
+        .is("deleted_at", null),
+      supabase
+        .from("saving_goals")
+        .select("id", { count: "exact", head: true })
+        .eq("account_id", accountId)
+        .is("deleted_at", null),
+    ])
+
+  const blockers: string[] = []
+  if (txnCount) {
+    blockers.push(
+      `${txnCount} ${txnCount === 1 ? "transaction" : "transactions"}`
+    )
+  }
+  if (cardCount) {
+    blockers.push(`${cardCount} ${cardCount === 1 ? "card" : "cards"}`)
+  }
+  if (goalCount) {
+    blockers.push(`${goalCount} saving ${goalCount === 1 ? "goal" : "goals"}`)
+  }
+  if (blockers.length > 0) {
+    return {
+      error: `Still in use by ${blockers.join(", ")}. Move or remove those first — deleting the account would leave their money unaccounted for.`,
+    }
+  }
+
   return softDelete("accounts", accountId)
 }
 
@@ -163,10 +217,14 @@ export async function syncBalance(
   } = await supabase.auth.getUser()
   if (!user) return { error: "Not signed in." }
 
+  // `deleted_at is null` matters: RLS still returns soft-deleted rows to
+  // whoever deleted them, so without this a sync would post into an account
+  // nobody can see — the money would leave every total.
   const { data: account } = await supabase
     .from("accounts")
     .select("space_id, balance")
     .eq("id", accountId)
+    .is("deleted_at", null)
     .maybeSingle()
   if (!account) return { error: "Account not found." }
 
@@ -209,12 +267,27 @@ export async function transferBetween(
   } = await supabase.auth.getUser()
   if (!user) return { error: "Not signed in." }
 
-  const { data: from } = await supabase
+  // Both ends must be live and in the same space. The destination was never
+  // checked, so a transfer into a deleted account was accepted and the money
+  // vanished from every total.
+  const { data: ends } = await supabase
     .from("accounts")
-    .select("space_id")
-    .eq("id", fromId)
-    .maybeSingle()
-  if (!from) return { error: "Account not found." }
+    .select("id, space_id, balance")
+    .in("id", [fromId, toId])
+    .is("deleted_at", null)
+
+  const from = ends?.find((account) => account.id === fromId)
+  const to = ends?.find((account) => account.id === toId)
+  if (!from) return { error: "That source account no longer exists." }
+  if (!to) return { error: "That destination account no longer exists." }
+  if (from.space_id !== to.space_id) {
+    return { error: "Both accounts must be in the same space." }
+  }
+  if (amount > from.balance) {
+    return {
+      error: `${formatPence(from.balance)} available — that transfer is larger.`,
+    }
+  }
 
   const { error } = await supabase.from("transactions").insert({
     space_id: from.space_id,
@@ -240,11 +313,16 @@ async function softDelete(
   if (!user) return { error: "Not signed in." }
 
   // Both stamps in one update — RLS rejects unstamped soft deletes
-  const { error } = await supabase
+  const { error, count } = await supabase
     .from(table)
-    .update({ deleted_at: new Date().toISOString(), deleted_by: user.id })
+    .update(
+      { deleted_at: new Date().toISOString(), deleted_by: user.id },
+      { count: "exact" }
+    )
     .eq("id", id)
+    .is("deleted_at", null)
   if (error) return { error: friendlyDbError(error.message) }
+  if (count === 0) return { error: "That's already gone." }
   return {}
 }
 

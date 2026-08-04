@@ -923,6 +923,23 @@ export type Database = {
     }
     Functions: {
       accept_space_invite: { Args: { invite_id: string }; Returns: undefined }
+      apex_transaction_totals: {
+        Args: {
+          p_account?: string
+          p_card?: string
+          p_category?: string
+          p_from?: string
+          p_kind?: string
+          p_space_id: string
+          p_to?: string
+        }
+        Returns: {
+          expense: number
+          income: number
+          row_count: number
+          transfer_count: number
+        }[]
+      }
       is_space_member: { Args: { target_space: string }; Returns: boolean }
       mark_recurring_paid: {
         Args: { pay_account?: string; payment_id: string }

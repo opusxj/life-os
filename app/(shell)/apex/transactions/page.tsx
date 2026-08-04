@@ -12,6 +12,7 @@ import {
   currentMonth,
   getTransactionOptions,
   getTransactions,
+  getTransactionTotals,
   parseTransactionFilters,
 } from "@/lib/apex/transactions/queries"
 import { getWorkspace } from "@/lib/data/workspace"
@@ -28,9 +29,10 @@ export default async function TransactionsPage({
 
   const spaceId = workspace.activeSpace.id
   const filters = parseTransactionFilters(params)
-  const [options, rows] = await Promise.all([
+  const [options, rows, totals] = await Promise.all([
     getTransactionOptions(spaceId),
     getTransactions(spaceId, filters),
+    getTransactionTotals(spaceId, filters),
   ])
 
   const defaultMonth = currentMonth()
@@ -48,8 +50,10 @@ export default async function TransactionsPage({
     <ApexPage fill>
       <ApexPageHeader
         title="Transactions"
-        count={rows.length}
-        description={rows.length > 0 && <TransactionTotals rows={rows} />}
+        count={totals.rowCount}
+        description={
+          totals.rowCount > 0 && <TransactionTotals totals={totals} />
+        }
       >
         <TransactionFilterBar
           options={options}
@@ -62,6 +66,7 @@ export default async function TransactionsPage({
         spaceId={spaceId}
         options={options}
         rows={rows}
+        totals={totals}
         filtered={filtered}
       />
     </ApexPage>

@@ -22,7 +22,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { transferBetween, type ApexFormState } from "@/lib/apex/accounts/actions"
+import {
+  transferBetween,
+  type ApexFormState,
+} from "@/lib/apex/accounts/actions"
 import { formatPenceShort } from "@/lib/apex/money"
 import type { Account } from "@/lib/apex/accounts/queries"
 
@@ -38,17 +41,17 @@ export function TransferSheet({
   fromId?: string
 }) {
   const router = useRouter()
-  const [state, action, pending] = React.useActionState<ApexFormState, FormData>(
-    async (prev, formData) => {
-      const result = await transferBetween(prev, formData)
-      if (result?.success) {
-        onOpenChange(false)
-        router.refresh()
-      }
-      return result
-    },
-    undefined
-  )
+  const [state, action, pending] = React.useActionState<
+    ApexFormState,
+    FormData
+  >(async (prev, formData) => {
+    const result = await transferBetween(prev, formData)
+    if (result?.success) {
+      onOpenChange(false)
+      router.refresh()
+    }
+    return result
+  }, undefined)
 
   const defaultFrom = fromId ?? accounts[0]?.id
   const defaultTo = accounts.find((account) => account.id !== defaultFrom)?.id
@@ -68,7 +71,9 @@ export function TransferSheet({
         <SheetHeader>
           <SheetTitle>Transfer</SheetTitle>
           <SheetDescription>
-            {"Move money between two accounts — both balances update instantly."}
+            {
+              "Move money between two accounts — both balances update instantly."
+            }
           </SheetDescription>
         </SheetHeader>
 

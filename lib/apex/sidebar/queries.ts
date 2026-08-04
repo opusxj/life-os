@@ -101,7 +101,10 @@ export async function getApexSidebarData(
   return {
     txnOptions,
     accounts: accountRows,
-    totalBalance: accountRows.reduce((sum, account) => sum + account.balance, 0),
+    totalBalance: accountRows.reduce(
+      (sum, account) => sum + account.balance,
+      0
+    ),
     monthNet,
     dueBadge:
       due.length > 0
