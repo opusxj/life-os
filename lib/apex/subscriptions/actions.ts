@@ -51,6 +51,9 @@ export async function saveRecurringPayment(
     amount,
     cadence,
     next_due_on: nextDueOn,
+    // The day the user picked is the intent. Advancing clamps to short months
+    // but rebuilds from this, so a 31st bill doesn't walk back to the 28th.
+    anchor_day: Number(nextDueOn.slice(8, 10)),
     account_id: accountId || null,
     category_id: categoryId || null,
   }

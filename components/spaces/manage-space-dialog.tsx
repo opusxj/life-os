@@ -13,10 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select"
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import type { Workspace } from "@/lib/data/workspace"
 import {
   inviteToSpace,
@@ -139,17 +136,19 @@ export function ManageSpaceDialog({
                   <LogOut />
                 </Button>
               )}
-              {canManage && !member.isCurrentUser && member.role !== "owner" && (
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  aria-label={`Remove ${member.name}`}
-                  disabled={isPending}
-                  onClick={() => run(() => removeMember(member.membershipId))}
-                >
-                  <Trash2 />
-                </Button>
-              )}
+              {canManage &&
+                !member.isCurrentUser &&
+                member.role !== "owner" && (
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label={`Remove ${member.name}`}
+                    disabled={isPending}
+                    onClick={() => run(() => removeMember(member.membershipId))}
+                  >
+                    <Trash2 />
+                  </Button>
+                )}
             </div>
           ))}
         </div>
@@ -185,7 +184,10 @@ export function ManageSpaceDialog({
         )}
 
         {actionError && (
-          <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-[13px] text-destructive">
+          <p
+            role="alert"
+            className="rounded-lg bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
+          >
             {actionError}
           </p>
         )}
@@ -197,17 +199,17 @@ export function ManageSpaceDialog({
 function InviteForm({ spaceId }: { spaceId: string }) {
   const router = useRouter()
   const formRef = React.useRef<HTMLFormElement>(null)
-  const [state, action, pending] = React.useActionState<SpaceFormState, FormData>(
-    async (prev, formData) => {
-      const result = await inviteToSpace(prev, formData)
-      if (result?.success) {
-        formRef.current?.reset()
-        router.refresh()
-      }
-      return result
-    },
-    undefined
-  )
+  const [state, action, pending] = React.useActionState<
+    SpaceFormState,
+    FormData
+  >(async (prev, formData) => {
+    const result = await inviteToSpace(prev, formData)
+    if (result?.success) {
+      formRef.current?.reset()
+      router.refresh()
+    }
+    return result
+  }, undefined)
 
   return (
     <form ref={formRef} action={action} className="space-y-2">
@@ -231,18 +233,37 @@ function InviteForm({ spaceId }: { spaceId: string }) {
           <NativeSelectOption value="member">Member</NativeSelectOption>
           <NativeSelectOption value="guest">Guest</NativeSelectOption>
         </NativeSelect>
-        <Button type="submit" size="icon" aria-label="Send invite" disabled={pending}>
+        <Button
+          type="submit"
+          size="icon"
+          aria-label="Create invite"
+          disabled={pending}
+        >
           <UserPlus />
         </Button>
       </div>
+      {/* No email goes out — the invite surfaces in their notifications, and
+          only once an account exists on that exact address. Saying "Invite
+          sent" left people waiting on an inbox that would never receive it. */}
+      <p className="text-[12px] text-muted-foreground">
+        They need an account on this address first — the invite then appears in
+        their notifications. Nothing is emailed.
+      </p>
       {state?.error && (
-        <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-[13px] text-destructive">
+        <p
+          role="alert"
+          className="rounded-lg bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
+        >
           {state.error}
         </p>
       )}
       {state?.success && (
-        <p role="status" className="text-[13px] text-emerald-600 dark:text-emerald-400">
-          Invite sent.
+        <p
+          role="status"
+          className="text-[13px] text-emerald-600 dark:text-emerald-400"
+        >
+          Invite created. Check the spelling below — it only reaches an exact
+          match.
         </p>
       )}
     </form>
