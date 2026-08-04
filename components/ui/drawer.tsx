@@ -145,6 +145,10 @@ function DrawerContent({
             "data-[swipe-direction=left]:left-0 data-[swipe-direction=left]:origin-left data-[swipe-direction=left]:[--closed-transform:translate3d(calc(-100%-var(--drawer-inset,0px)-2px),0,0)] data-[swipe-direction=left]:[--translate-x:calc(var(--drawer-swipe-movement-x)+var(--stack-peek-offset)+(var(--stack-shrink)*100%))]",
             // Direction: right.
             "data-[swipe-direction=right]:right-0 data-[swipe-direction=right]:origin-right data-[swipe-direction=right]:[--closed-transform:translate3d(calc(100%+var(--drawer-inset,0px)+2px),0,0)] data-[swipe-direction=right]:[--translate-x:calc(var(--drawer-swipe-movement-x)-var(--stack-peek-offset)-(var(--stack-shrink)*100%))]",
+            // Floats 8px inside the viewport rather than sitting on its edge:
+            // inset all round, rounded all round, and no bleed (that strip
+            // fills past the edge and would show in the gutter).
+            "rounded-xl border shadow-lg [--drawer-bleed-background:transparent] [--drawer-inset:0.5rem]",
             className
           )}
           {...props}
