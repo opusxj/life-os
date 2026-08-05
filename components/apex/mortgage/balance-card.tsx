@@ -1,57 +1,84 @@
 import { Landmark } from "lucide-react"
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
-import {
-  ApexStatCard,
-  ApexStatHint,
-  ApexStatValue,
-} from "@/components/apex/stat-card"
-import { DataProgress } from "@/components/apex/progress"
+import { ArcGauge } from "@/components/apex/arc-gauge"
+import { ApexStatCard, ApexStatHint } from "@/components/apex/stat-card"
 import { formatPenceShort } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
+import type { MortgageStatus } from "@/lib/apex/mortgage/status"
 
 import { UpdateBalancePopover } from "./update-balance-popover"
 
-/** How much is left of the mortgage? */
+/** How much is left, and how far through it that puts you. */
 export function BalanceCard({
   mortgage,
+  status,
+  today,
+  quickAction,
   className,
 }: {
   mortgage: Mortgage
+  status: MortgageStatus
+  /** yyyy-mm-dd resolved server-side */
+  today: string
+  /** Only when the page bar can't own the action, which is at two or more
+   *  mortgages: one button up there beats one on every card. */
+  quickAction?: boolean
   className?: string
 }) {
+  const balance = status.balanceToday
   const paidPct = Math.min(
     100,
     Math.max(
       0,
-      ((mortgage.originalAmount - mortgage.balance) / mortgage.originalAmount) *
-        100
+      ((mortgage.originalAmount - balance) / mortgage.originalAmount) * 100
     )
   )
 
   return (
     <ApexStatCard
       label="Balance"
+      description={provenance(mortgage.balanceAsOf, status.monthsSinceBalance)}
       icon={Landmark}
       iconClassName={ANCHOR_TINTS.balance}
       className={className}
       footer={
-        <UpdateBalancePopover
-          mortgageId={mortgage.id}
-          balance={mortgage.balance}
-        />
+        quickAction ? (
+          <UpdateBalancePopover
+            mortgageId={mortgage.id}
+            balance={mortgage.balance}
+            balanceAsOf={mortgage.balanceAsOf}
+            today={today}
+          />
+        ) : undefined
       }
     >
-      <ApexStatValue>{formatPenceShort(mortgage.balance)}</ApexStatValue>
-      <DataProgress
+      <ArcGauge
         value={paidPct}
-        color="#10b981"
-        aria-label="Paid off"
-        className="mt-2"
+        label={formatPenceShort(balance)}
+        caption="still owed"
+        className="mt-1"
       />
-      <ApexStatHint className="mt-1.5">
+      <ApexStatHint className="mt-1 text-center">
         {`${paidPct.toFixed(0)}% paid off of ${formatPenceShort(mortgage.originalAmount)}`}
       </ApexStatHint>
     </ApexStatCard>
   )
 }
+
+/**
+ * Interest-only balances never move, so "projected" would overclaim. For
+ * everything else the figure shown is the statement aged forward, and saying so
+ * is the difference between a number you can trust and one you have to check.
+ */
+function provenance(balanceAsOf: string, monthsSince: number): string {
+  const date = STATEMENT_DATE.format(new Date(`${balanceAsOf}T00:00:00`))
+  return monthsSince > 0
+    ? `Projected from your ${date} statement`
+    : `From your ${date} statement`
+}
+
+const STATEMENT_DATE = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+})

@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
+import type { VariantProps } from "class-variance-authority"
 
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -18,16 +19,32 @@ import {
   type MortgageFormState,
 } from "@/lib/apex/mortgage/actions"
 
+type ButtonLook = VariantProps<typeof buttonVariants>
+
 /**
- * The Balance card's quick action. Mortgages are manually maintained — this
- * writes the new figure straight to the row and never touches accounts.
+ * The one way to correct a balance. Mortgages are manually maintained: this
+ * writes the figure straight to the row and never touches accounts.
+ *
+ * The statement date travels with the amount because every projection on the
+ * page is aged forward from it. Saving an amount alone would leave a figure
+ * that quietly claims to be current for as long as nobody touches it again.
  */
 export function UpdateBalancePopover({
   mortgageId,
   balance,
+  balanceAsOf,
+  today,
+  variant = "ghost",
+  size = "xs",
 }: {
   mortgageId: string
   balance: number
+  /** yyyy-mm-dd the stored balance was last true */
+  balanceAsOf: string
+  /** yyyy-mm-dd resolved server-side, so the date field can't run ahead */
+  today: string
+  variant?: ButtonLook["variant"]
+  size?: ButtonLook["size"]
 }) {
   const [open, setOpen] = React.useState(false)
   const [state, action, pending] = React.useActionState<
@@ -41,10 +58,10 @@ export function UpdateBalancePopover({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button variant="ghost" size="xs" />}>
+      <PopoverTrigger render={<Button variant={variant} size={size} />}>
         Update balance
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-60">
+      <PopoverContent align="end" className="w-68">
         <PopoverHeader>
           <PopoverTitle className="text-[13px]">Update balance</PopoverTitle>
           <PopoverDescription className="text-[13px]">
@@ -55,7 +72,7 @@ export function UpdateBalancePopover({
           <input type="hidden" name="id" value={mortgageId} />
           <div className="space-y-1.5">
             <Label htmlFor={`balance-${mortgageId}`} className="text-[13px]">
-              Current balance
+              Balance
             </Label>
             <Input
               id={`balance-${mortgageId}`}
@@ -63,6 +80,19 @@ export function UpdateBalancePopover({
               inputMode="decimal"
               defaultValue={(balance / 100).toFixed(2)}
               autoFocus
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor={`as-of-${mortgageId}`} className="text-[13px]">
+              Statement date
+            </Label>
+            <Input
+              id={`as-of-${mortgageId}`}
+              name="balanceAsOf"
+              type="date"
+              defaultValue={balanceAsOf}
+              max={today}
               required
             />
           </div>

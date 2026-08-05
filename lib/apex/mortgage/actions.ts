@@ -46,9 +46,24 @@ export async function updateMortgage(
   if ("error" in parsed) return { error: parsed.error }
 
   const supabase = await createServerSupabase()
+
+  // Only re-date the balance when the balance itself moved. Renaming a mortgage
+  // must not make a six-month-old figure start claiming to be today's.
+  const { data: existing } = await supabase
+    .from("mortgages")
+    .select("balance")
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle()
+
+  const values =
+    existing && existing.balance !== parsed.values.balance
+      ? { ...parsed.values, balance_as_of: serverToday() }
+      : parsed.values
+
   const { error, count } = await supabase
     .from("mortgages")
-    .update(parsed.values, { count: "exact" })
+    .update(values, { count: "exact" })
     .eq("id", id)
     .is("deleted_at", null)
 
@@ -59,8 +74,8 @@ export async function updateMortgage(
   return { success: true }
 }
 
-/** The Balance card's quick action — mortgages are manually maintained, so
- *  this is a plain column update; it never touches accounts or transactions. */
+/** The balance quick action. Mortgages are manually maintained, so this is a
+ *  plain column update; it never touches accounts or transactions. */
 export async function updateMortgageBalance(
   _prev: MortgageFormState,
   formData: FormData
@@ -73,10 +88,19 @@ export async function updateMortgageBalance(
     return { error: "Enter the current balance as a positive amount." }
   }
 
+  // Every projection on the page ages this figure forward from its date, so a
+  // balance saved without one keeps insisting it is current. Statements are
+  // dated and usually a few days old, hence the field rather than always today.
+  const today = serverToday()
+  const balanceAsOf = parseDate(formData.get("balanceAsOf")) ?? today
+  if (balanceAsOf > today) {
+    return { error: "A statement can't be dated in the future." }
+  }
+
   const supabase = await createServerSupabase()
   const { error, count } = await supabase
     .from("mortgages")
-    .update({ balance }, { count: "exact" })
+    .update({ balance, balance_as_of: balanceAsOf }, { count: "exact" })
     .eq("id", id)
     .is("deleted_at", null)
 
@@ -226,6 +250,14 @@ function parseMortgageForm(formData: FormData): ParsedMortgage {
 function parseDate(value: FormDataEntryValue | null): string | null {
   const raw = String(value ?? "").trim()
   return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : null
+}
+
+/** yyyy-mm-dd in the server's timezone. These columns are calendar days rather
+ *  than instants, so they never go via toISOString. */
+function serverToday(): string {
+  const now = new Date()
+  const pad = (part: number) => String(part).padStart(2, "0")
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
 function friendlyDbError(message?: string) {

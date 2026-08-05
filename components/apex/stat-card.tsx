@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils"
  */
 export function ApexStatCard({
   label,
+  description,
   icon: Icon,
   iconClassName,
   action,
@@ -25,6 +26,8 @@ export function ApexStatCard({
   children,
 }: {
   label: string
+  /** Where the number came from, in a few words. Provenance, not filler. */
+  description?: string
   icon?: LucideIcon
   iconClassName?: string
   /** Header-corner slot (menu, small button) */
@@ -50,6 +53,11 @@ export function ApexStatCard({
           )}
           {label}
         </CardDescription>
+        {description && (
+          <p className="text-[11px] leading-snug text-muted-foreground/80">
+            {description}
+          </p>
+        )}
         {action && <CardAction>{action}</CardAction>}
       </CardHeader>
       <CardContent className="flex-1">{children}</CardContent>
@@ -69,6 +77,26 @@ export function ApexStatValue({
     <div
       className={cn(
         "font-heading text-2xl font-semibold tracking-tight tabular-nums",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+/**
+ * The trailing half of a figure: "of £812.40", "a month", "/100". Rendered
+ * inside ApexStatValue so the eye lands on the number that matters and the
+ * qualifier reads as a footnote to it rather than as part of the amount.
+ */
+export function ApexStatUnit({
+  className,
+  ...props
+}: React.ComponentProps<"span">) {
+  return (
+    <span
+      className={cn(
+        "text-sm font-normal tracking-normal text-muted-foreground",
         className
       )}
       {...props}

@@ -1,12 +1,13 @@
-import { ArrowRight, CalendarClock } from "lucide-react"
+import { ArrowRight, CalendarClock, House } from "lucide-react"
 
+import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
+import { ApexStatUnit } from "@/components/apex/stat-card"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
   CardAction,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -43,7 +44,17 @@ export function MortgageHeadlineCard({
   return (
     <Card size="sm" className={className}>
       <CardHeader className="border-b">
-        <CardTitle className="text-base">{mortgage.name}</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <span
+            className={cn(
+              "flex size-7 items-center justify-center rounded-lg [&>svg]:size-3.5",
+              ANCHOR_TINTS.primary
+            )}
+          >
+            <House />
+          </span>
+          {mortgage.name}
+        </CardTitle>
         <CardDescription className="text-[13px]">
           {rateSummary(mortgage, status)}
         </CardDescription>
@@ -88,40 +99,7 @@ export function MortgageHeadlineCard({
           </div>
         )}
       </CardContent>
-
-      <CardFooter className="grid grid-cols-2 divide-x divide-border p-0 sm:grid-cols-3">
-        <FooterStat label="Balance" value={formatPence(status.balanceToday)} />
-        <FooterStat
-          label={status.stage === "reverted" ? "Rate ended" : "Rate ends"}
-          value={
-            mortgage.rateEndsOn ? longDate(mortgage.rateEndsOn) : "No end date"
-          }
-        />
-        <FooterStat
-          label={status.lumpSumAtTerm ? "Capital due" : "Term ends"}
-          value={monthYear(mortgage.termEndsOn)}
-          className="col-span-2 border-t sm:col-span-1 sm:border-t-0"
-        />
-      </CardFooter>
     </Card>
-  )
-}
-
-/** Reference pattern: a divided strip of small label over bold value. */
-function FooterStat({
-  label,
-  value,
-  className,
-}: {
-  label: string
-  value: string
-  className?: string
-}) {
-  return (
-    <div className={cn("px-4 py-2.5", className)}>
-      <div className="text-[12px] text-muted-foreground">{label}</div>
-      <div className="text-[15px] font-medium tabular-nums">{value}</div>
-    </div>
   )
 }
 
@@ -214,7 +192,7 @@ function PaymentColumn({
     <div className="space-y-1.5">
       <div className="text-[12px] text-muted-foreground">{label}</div>
       <div className="font-heading text-2xl font-semibold tabular-nums">
-        {formatPence(amount)}
+        {formatPence(amount)} <ApexStatUnit>a month</ApexStatUnit>
       </div>
       <div aria-hidden className="h-1.5 overflow-hidden rounded-full bg-muted">
         <div
@@ -288,8 +266,4 @@ function monthAfter(dateKey: string): string {
 
 function longDate(dateKey: string): string {
   return LONG_DATE.format(new Date(`${dateKey}T00:00:00`))
-}
-
-function monthYear(dateKey: string): string {
-  return MONTH_YEAR.format(new Date(`${dateKey}T00:00:00`))
 }
