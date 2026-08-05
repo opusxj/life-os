@@ -6,6 +6,7 @@ import {
   CardAction,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -25,25 +26,30 @@ import { cn } from "@/lib/utils"
 export function MortgageHeadlineCard({
   mortgage,
   today,
+  action,
   className,
 }: {
   mortgage: Mortgage
   /** yyyy-mm-dd resolved server-side so SSR and hydration agree */
   today: string
+  /** The mortgage's own menu, so the card carries its whole identity */
+  action?: React.ReactNode
   className?: string
 }) {
   const status = mortgageStatus(mortgage, today)
   const accent = ACCENT[status.stage]
+  const guidance = guidanceFor(mortgage, status)
 
   return (
     <Card size="sm" className={className}>
       <CardHeader className="border-b">
-        <CardTitle>{TITLE[status.stage]}</CardTitle>
+        <CardTitle className="text-base">{mortgage.name}</CardTitle>
         <CardDescription className="text-[13px]">
-          {description(mortgage, status)}
+          {rateSummary(mortgage, status)}
         </CardDescription>
-        <CardAction>
+        <CardAction className="flex items-center gap-2">
           <Countdown status={status} />
+          {action}
         </CardAction>
       </CardHeader>
 
@@ -69,22 +75,55 @@ export function MortgageHeadlineCard({
           )}
         </div>
 
-        {status.shock !== null && status.shock !== 0 && (
-          <p className={cn("mt-4 text-[13px] font-medium", accent.text)}>
-            {shockSentence(status.shock)}
-          </p>
+        {(status.shock !== null || guidance) && (
+          <div className="mt-4 space-y-1">
+            {status.shock !== null && status.shock !== 0 && (
+              <p className={cn("text-[13px] font-medium", accent.text)}>
+                {shockSentence(status.shock)}
+              </p>
+            )}
+            {guidance && (
+              <p className="text-[13px] text-muted-foreground">{guidance}</p>
+            )}
+          </div>
         )}
       </CardContent>
+
+      <CardFooter className="grid grid-cols-2 divide-x divide-border p-0 sm:grid-cols-3">
+        <FooterStat label="Balance" value={formatPence(status.balanceToday)} />
+        <FooterStat
+          label={status.stage === "reverted" ? "Rate ended" : "Rate ends"}
+          value={
+            mortgage.rateEndsOn ? longDate(mortgage.rateEndsOn) : "No end date"
+          }
+        />
+        <FooterStat
+          label={status.lumpSumAtTerm ? "Capital due" : "Term ends"}
+          value={monthYear(mortgage.termEndsOn)}
+          className="col-span-2 border-t sm:col-span-1 sm:border-t-0"
+        />
+      </CardFooter>
     </Card>
   )
 }
 
-const TITLE = {
-  settled: "Your rate",
-  watch: "Your rate",
-  act: "Your rate is ending",
-  reverted: "You're on the standard rate",
-} as const
+/** Reference pattern: a divided strip of small label over bold value. */
+function FooterStat({
+  label,
+  value,
+  className,
+}: {
+  label: string
+  value: string
+  className?: string
+}) {
+  return (
+    <div className={cn("px-4 py-2.5", className)}>
+      <div className="text-[12px] text-muted-foreground">{label}</div>
+      <div className="text-[15px] font-medium tabular-nums">{value}</div>
+    </div>
+  )
+}
 
 const ACCENT = {
   settled: { text: "text-muted-foreground", tone: "neutral" },
@@ -102,20 +141,33 @@ const BAR: Record<Tone, string> = {
   bad: "bg-destructive",
 }
 
-function description(mortgage: Mortgage, status: MortgageStatus): string {
-  if (status.stage === "reverted") {
-    return "Your fixed deal has ended. A product transfer with your existing lender is usually the quickest way onto a new rate."
+/** The facts, under the name: who it's with, what rate, and until when. */
+function rateSummary(mortgage: Mortgage, status: MortgageStatus): string {
+  const rate = `${mortgage.interestRate}% ${rateWord(mortgage.rateType)}`
+  if (status.stage === "reverted" && mortgage.rateEndsOn) {
+    return `${mortgage.lender} · ${rate} ended ${longDate(mortgage.rateEndsOn)}`
   }
   if (!mortgage.rateEndsOn) {
-    return "This rate has no end date, so your payment only moves if the rate does."
+    return `${mortgage.lender} · ${rate}, no end date`
   }
+  return `${mortgage.lender} · ${rate} until ${longDate(mortgage.rateEndsOn)}`
+}
+
+/** The one thing worth saying beyond the numbers, and only when there is one. */
+function guidanceFor(
+  mortgage: Mortgage,
+  status: MortgageStatus
+): string | null {
   if (status.missing === "reversion_rate") {
     return `Add ${mortgage.lender}'s standard rate to see what your payment becomes when this deal ends.`
   }
-  if (status.stage === "act") {
-    return `Most lenders let you reserve a new deal up to six months ahead, so you can arrange one now.`
+  if (status.stage === "reverted") {
+    return "A product transfer with your existing lender is usually the quickest way onto a new rate."
   }
-  return "What your payment becomes when this deal ends, if you do nothing."
+  if (status.stage === "act") {
+    return "Most lenders let you reserve a new deal up to six months ahead, so you can arrange one now."
+  }
+  return null
 }
 
 function Countdown({ status }: { status: MortgageStatus }) {
@@ -222,9 +274,22 @@ const MONTH_YEAR = new Intl.DateTimeFormat("en-GB", {
   month: "long",
   year: "numeric",
 })
+const LONG_DATE = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+})
 
 /** The new payment starts the month after the deal ends. */
 function monthAfter(dateKey: string): string {
   const date = new Date(`${dateKey}T00:00:00`)
   return MONTH_YEAR.format(new Date(date.getFullYear(), date.getMonth() + 1, 1))
+}
+
+function longDate(dateKey: string): string {
+  return LONG_DATE.format(new Date(`${dateKey}T00:00:00`))
+}
+
+function monthYear(dateKey: string): string {
+  return MONTH_YEAR.format(new Date(`${dateKey}T00:00:00`))
 }

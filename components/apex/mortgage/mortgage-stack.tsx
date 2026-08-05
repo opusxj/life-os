@@ -20,15 +20,17 @@ export function MortgageStack({
   today: string
 }) {
   return (
-    <ApexSection
-      label={`${mortgage.name} · ${mortgage.lender}`}
-      action={<MortgageMenu mortgage={mortgage} />}
-    >
-      {/* Zone 1: the page's one answer, above the grid and outside it — the
-          hierarchy is deliberate, the rest of the page is not its equal. */}
-      <MortgageHeadlineCard mortgage={mortgage} today={today} />
+    <ApexSection>
+      {/* Zone 1 carries the mortgage's identity as well as its answer, so the
+          name and its menu live in the card rather than in a label above it.
+          The rest of the page is deliberately not its equal. */}
+      <MortgageHeadlineCard
+        mortgage={mortgage}
+        today={today}
+        action={<MortgageMenu mortgage={mortgage} />}
+      />
 
-      {/* Mortgage grid: Balance goes wide from xl, What-if from 2xl — six
+      {/* Mortgage grid: Balance goes wide from xl, What-if from 2xl. Six
           cards land as two clean rows of four at 2xl; the fully-owned
           five-card stack fills 4 + 3 with no orphan row. */}
       <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
