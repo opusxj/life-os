@@ -182,3 +182,36 @@ function resolveShock(
 function parseDay(key: string): Date {
   return new Date(`${key}T00:00:00`)
 }
+
+export type LendingBase = {
+  /** What the loan is secured against, pence */
+  value: number
+  /** True when that is a shared-ownership share rather than the whole home */
+  shared: boolean
+  /** The share the base reflects; 100 for sole ownership */
+  share: number
+}
+
+/**
+ * What LTV, equity, and band arithmetic divide by. Shared ownership is priced
+ * against the share's value, not the whole property: £142,350 on a 50% share
+ * of a £310,000 home is a 91.8% loan, not 45.9%. One definition here so the
+ * cards cannot disagree by a rounding association or a degenerate-share guard.
+ * Null when there's no usable property value: that is the cards' prompt state.
+ */
+export function lendingBase(
+  mortgage: Pick<Mortgage, "propertyValue" | "equitySharePct">
+): LendingBase | null {
+  const value = mortgage.propertyValue
+  if (value === null || value <= 0) return null
+
+  const share = mortgage.equitySharePct
+  // null, 100+, and nonsense non-positive shares all mean sole ownership
+  if (share === null || share >= 100 || share <= 0) {
+    return { value, shared: false, share: 100 }
+  }
+
+  const shareValue = Math.round((value * share) / 100)
+  if (shareValue <= 0) return null
+  return { value: shareValue, shared: true, share }
+}

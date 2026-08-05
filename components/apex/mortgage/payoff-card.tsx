@@ -1,5 +1,6 @@
 import { CalendarRange } from "lucide-react"
 
+import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import {
   ApexStatCard,
   ApexStatHint,
@@ -8,44 +9,88 @@ import {
 import {
   monthsBetween,
   monthsFromNow,
-  simulatePayoff,
 } from "@/lib/apex/mortgage/amortization"
+import { formatPenceShort } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
+import type { MortgageStatus } from "@/lib/apex/mortgage/status"
 import { cn } from "@/lib/utils"
 
 import { formatMonthYear, pluralMonths } from "./format"
 
 /** When is this actually paid off, versus the term on paper? */
-export function PayoffCard({ mortgage }: { mortgage: Mortgage }) {
-  const projection = simulatePayoff(
-    mortgage.balance,
-    mortgage.interestRate,
-    mortgage.monthlyPayment
-  )
+export function PayoffCard({
+  mortgage,
+  status,
+  today,
+  className,
+}: {
+  mortgage: Mortgage
+  status: MortgageStatus
+  /** yyyy-mm-dd resolved server-side, the same clock status was computed on */
+  today: string
+  className?: string
+}) {
+  const termEnd = formatMonthYear(mortgage.termEndsOn)
 
-  if (!projection) {
+  // Interest-only never clears itself: the capital falls due as a lump sum, so
+  // a payoff date would be an invention rather than a projection.
+  if (status.lumpSumAtTerm) {
     return (
-      <ApexStatCard label="Payoff trajectory" icon={CalendarRange}>
-        <ApexStatValue className="text-muted-foreground">—</ApexStatValue>
-        <ApexStatHint className="font-medium text-destructive">
-          {`The payment doesn't cover the interest`}
+      <ApexStatCard
+        label="Capital due"
+        description="This mortgage does not pay itself off"
+        icon={CalendarRange}
+        iconClassName={ANCHOR_TINTS.due}
+        className={className}
+      >
+        <ApexStatValue>{termEnd}</ApexStatValue>
+        <ApexStatHint className="mt-1.5">
+          {`${formatPenceShort(status.balanceToday)} falls due in full. Your payments cover the interest only.`}
         </ApexStatHint>
       </ApexStatCard>
     )
   }
 
-  const projected = monthsFromNow(projection.months)
+  if (status.monthsToFree === null) {
+    return (
+      <ApexStatCard
+        label="Paid off"
+        description="At today's payment and rate"
+        icon={CalendarRange}
+        iconClassName={ANCHOR_TINTS.due}
+        className={className}
+      >
+        <ApexStatValue className="text-muted-foreground">
+          Not on this payment
+        </ApexStatValue>
+        <ApexStatHint className="mt-1.5 font-medium text-destructive">
+          {`The payment doesn't cover the interest, so the balance never clears.`}
+        </ApexStatHint>
+      </ApexStatCard>
+    )
+  }
+
+  const projected = monthsFromNow(
+    status.monthsToFree,
+    new Date(`${today}T00:00:00`)
+  )
   const delta = monthsBetween(
     projected,
     new Date(`${mortgage.termEndsOn}T00:00:00`)
   )
-  const termEnd = formatMonthYear(mortgage.termEndsOn)
 
   return (
-    <ApexStatCard label="Payoff trajectory" icon={CalendarRange}>
+    <ApexStatCard
+      label="Paid off"
+      description="At today's payment and rate"
+      icon={CalendarRange}
+      iconClassName={ANCHOR_TINTS.due}
+      className={className}
+    >
       <ApexStatValue>{formatMonthYear(projected)}</ApexStatValue>
       <ApexStatHint
         className={cn(
+          "mt-1.5",
           delta > 0 && "font-medium text-emerald-600 dark:text-emerald-400",
           delta < 0 && "font-medium text-amber-600 dark:text-amber-400"
         )}

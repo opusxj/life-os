@@ -1,51 +1,95 @@
-import { ApexSection } from "@/components/apex/page"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
+import { mortgageStatus } from "@/lib/apex/mortgage/status"
 
 import { BalanceCard } from "./balance-card"
+import { BalanceRunway } from "./balance-runway"
+import { EquityCard } from "./equity-card"
 import { MortgageHeadlineCard } from "./headline-card"
+import { LtvCard } from "./ltv-card"
+import { MilestonesCard } from "./milestones-card"
 import { MonthlyCostCard } from "./monthly-cost-card"
 import { MortgageMenu } from "./mortgage-menu"
-import { OwnershipCard } from "./ownership-card"
+import { PaperworkCard } from "./paperwork-card"
 import { PayoffCard } from "./payoff-card"
-import { RateCard } from "./rate-card"
+import { ThisMonthCard } from "./this-month-card"
+import { TrueCostCard } from "./true-cost-card"
 import { WhatIfCard } from "./what-if-card"
 
-/** One mortgage = one stack of isolated cards; each answers one question. */
+/**
+ * One mortgage = one stack of isolated cards, each answering one question,
+ * read in the order the questions occur to someone:
+ * the deal → where you stand → the whole road → the asset → what you can do
+ * → the record. Cards that lack their data (LTV, equity, milestones) prompt
+ * once or step aside; the stack never renders a broken half-answer.
+ */
 export function MortgageStack({
   mortgage,
   today,
+  cardBalanceAction,
 }: {
   mortgage: Mortgage
   /** yyyy-mm-dd, resolved server-side so SSR and hydration agree */
   today: string
+  /** Balance card carries its own Update balance only when the page bar can't */
+  cardBalanceAction?: boolean
 }) {
+  // Resolved once and shared, so no two cards can disagree about the balance
+  const status = mortgageStatus(mortgage, today)
+
   return (
-    <ApexSection>
-      {/* Zone 1 carries the mortgage's identity as well as its answer, so the
-          name and its menu live in the card rather than in a label above it.
-          The rest of the page is deliberately not its equal. */}
+    <section className="space-y-3.5">
+      {/* The deal, and nothing that appears below it. The rate and its end
+          date live in the subtitle rather than in a card of their own, so the
+          top of the page states each fact exactly once. */}
       <MortgageHeadlineCard
         mortgage={mortgage}
         today={today}
         action={<MortgageMenu mortgage={mortgage} />}
       />
 
-      {/* Mortgage grid: Balance goes wide from xl, What-if from 2xl. Six
-          cards land as two clean rows of four at 2xl; the fully-owned
-          five-card stack fills 4 + 3 with no orphan row. */}
-      <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-        <BalanceCard mortgage={mortgage} className="xl:col-span-2" />
-        <RateCard mortgage={mortgage} />
-        <MonthlyCostCard mortgage={mortgage} />
-        <OwnershipCard mortgage={mortgage} />
-        <PayoffCard mortgage={mortgage} />
+      {/* Where you stand: the balance, where this month's money goes, the end */}
+      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+        <BalanceCard
+          mortgage={mortgage}
+          status={status}
+          today={today}
+          quickAction={cardBalanceAction}
+        />
+        <ThisMonthCard mortgage={mortgage} status={status} />
+        <PayoffCard mortgage={mortgage} status={status} today={today} />
+      </div>
+
+      {/* The whole road, one picture */}
+      <BalanceRunway mortgage={mortgage} status={status} today={today} />
+
+      {/* The asset: what the debt is secured on and what that's worth to you */}
+      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+        <LtvCard mortgage={mortgage} status={status} />
+        <EquityCard mortgage={mortgage} status={status} />
+        <TrueCostCard mortgage={mortgage} status={status} today={today} />
+      </div>
+
+      {/* What you can do about it, and what happens next if you don't */}
+      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
         <WhatIfCard
-          balance={mortgage.balance}
+          balance={status.balanceToday}
           interestRate={mortgage.interestRate}
           monthlyPayment={mortgage.monthlyPayment}
-          className="2xl:col-span-2"
+          today={today}
+          className="sm:col-span-2"
+        />
+        <MilestonesCard mortgage={mortgage} status={status} today={today} />
+      </div>
+
+      {/* The record: running costs and the terms on file */}
+      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+        <MonthlyCostCard mortgage={mortgage} />
+        <PaperworkCard
+          mortgage={mortgage}
+          status={status}
+          className="lg:col-span-2"
         />
       </div>
-    </ApexSection>
+    </section>
   )
 }

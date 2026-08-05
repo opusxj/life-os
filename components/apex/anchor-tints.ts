@@ -14,6 +14,9 @@ export const ANCHOR_TINTS = {
   bill: "bg-sky-500/10 text-sky-600 dark:bg-sky-500/15 dark:text-sky-400",
   /** Deadlines and due dates */
   due: "bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400",
+  /** The asset itself: property value, LTV, equity stakes */
+  property:
+    "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400",
   /** The page's single headline answer — the theme's terracotta */
   primary: "bg-primary/10 text-primary",
 } as const

@@ -112,6 +112,37 @@ export function overpaymentImpact(
 
 export type RepaymentType = "repayment" | "interest_only" | "part_and_part"
 
+export type PaymentSplit = {
+  /** Interest actually covered by this month's payment */
+  interest: number
+  /** The part of the payment that reduces the debt */
+  capital: number
+  /** Interest the payment doesn't cover; the balance grows by this */
+  shortfall: number
+}
+
+/**
+ * Where one month's payment goes. Lenders show the payment and they show the
+ * balance, and never the line between them, which is the number that makes
+ * overpaying make sense: early in a term most of a payment is rent on the debt
+ * rather than repayment of it.
+ */
+export function paymentSplit(
+  balance: number,
+  annualRatePct: number,
+  payment: number,
+  repaymentType: RepaymentType = "repayment"
+): PaymentSplit {
+  const accrued = Math.round(balance * monthlyRate(annualRatePct))
+  return {
+    interest: Math.min(accrued, payment),
+    // Interest-only pays the interest and nothing else, by construction
+    capital:
+      repaymentType === "interest_only" ? 0 : Math.max(0, payment - accrued),
+    shortfall: Math.max(0, accrued - payment),
+  }
+}
+
 /**
  * Age a known balance forward to today. A mortgage moves along a contractually
  * determined line, which makes projecting far more accurate than trusting a
@@ -138,9 +169,39 @@ export function projectBalance(
   const r = monthlyRate(annualRatePct)
   let current = balance
   for (let index = 0; index < months && current > 0; index += 1) {
-    current = current + current * r - payment
+    current = stepBalance(current, r, payment)
   }
   return Math.max(0, Math.round(current))
+}
+
+/** One month of the contractual line: interest accrues, then the payment lands.
+ *  The single definition of the step — everything that walks a balance forward
+ *  (projectBalance, balanceSeries, and through them every card) goes via here,
+ *  so no two surfaces can disagree about what a month does. */
+function stepBalance(balance: number, r: number, payment: number): number {
+  return balance + balance * r - payment
+}
+
+/**
+ * The whole path, one entry per month: index 0 is the starting balance, index
+ * n the balance after n payments, clamped at zero. Stops early once cleared.
+ * Values are unrounded floats (round only at display) so threshold crossings
+ * and chart geometry agree to the penny with projectBalance's arithmetic.
+ */
+export function balanceSeries(
+  principal: number,
+  annualRatePct: number,
+  payment: number,
+  maxMonths: number
+): number[] {
+  const r = monthlyRate(annualRatePct)
+  const series = [Math.max(0, principal)]
+  let current = principal
+  for (let month = 1; month <= maxMonths && current > 0; month += 1) {
+    current = stepBalance(current, r, payment)
+    series.push(Math.max(0, current))
+  }
+  return series
 }
 
 /**
