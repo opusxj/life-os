@@ -10,15 +10,24 @@ export type MortgageExtra = {
   monthly: number
 }
 
+export type MortgageRepaymentType =
+  "repayment" | "interest_only" | "part_and_part"
+
 export type Mortgage = {
   id: string
   name: string
   lender: string
   originalAmount: number
   balance: number
+  /** yyyy-mm-dd — when `balance` was last true. Age it, don't trust it. */
+  balanceAsOf: string
   interestRate: number
   rateType: MortgageRateType
+  repaymentType: MortgageRepaymentType
   rateEndsOn: string | null
+  rateStartedOn: string | null
+  /** Lender SVR the deal reverts to; null until the user tells us */
+  reversionRate: number | null
   termEndsOn: string
   monthlyPayment: number
   propertyValue: number | null
@@ -59,9 +68,14 @@ function toMortgage(row: Tables<"mortgages">): Mortgage {
     lender: row.lender,
     originalAmount: row.original_amount,
     balance: row.balance,
+    balanceAsOf: row.balance_as_of,
     interestRate: Number(row.interest_rate),
     rateType: toRateType(row.rate_type),
+    repaymentType: toRepaymentType(row.repayment_type),
     rateEndsOn: row.rate_ends_on,
+    rateStartedOn: row.rate_started_on,
+    reversionRate:
+      row.reversion_rate === null ? null : Number(row.reversion_rate),
     termEndsOn: row.term_ends_on,
     monthlyPayment: row.monthly_payment,
     propertyValue: row.property_value,
@@ -74,6 +88,12 @@ function toMortgage(row: Tables<"mortgages">): Mortgage {
 
 function toRateType(value: string): MortgageRateType {
   return value === "variable" || value === "tracker" ? value : "fixed"
+}
+
+function toRepaymentType(value: string): MortgageRepaymentType {
+  return value === "interest_only" || value === "part_and_part"
+    ? value
+    : "repayment"
 }
 
 function extrasFromMetadata(

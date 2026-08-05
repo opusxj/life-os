@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { AddMortgageButton } from "@/components/apex/mortgage/add-mortgage-button"
 import { MortgageEmpty } from "@/components/apex/mortgage/mortgage-empty"
 import { MortgageStack } from "@/components/apex/mortgage/mortgage-stack"
+import { todayKey } from "@/components/apex/due-state"
 import { ApexPage, ApexPageHeader } from "@/components/apex/page"
 import { getMortgages } from "@/lib/apex/mortgage/queries"
 import { getWorkspace } from "@/lib/data/workspace"
@@ -25,7 +26,11 @@ export default async function MortgagePage() {
         <MortgageEmpty />
       ) : (
         mortgages.map((mortgage) => (
-          <MortgageStack key={mortgage.id} mortgage={mortgage} />
+          <MortgageStack
+            key={mortgage.id}
+            mortgage={mortgage}
+            today={todayKey()}
+          />
         ))
       )}
     </ApexPage>

@@ -110,6 +110,39 @@ export function overpaymentImpact(
   }
 }
 
+export type RepaymentType = "repayment" | "interest_only" | "part_and_part"
+
+/**
+ * Age a known balance forward to today. A mortgage moves along a contractually
+ * determined line, which makes projecting far more accurate than trusting a
+ * stored figure: against a daily-rest schedule, five years of unattended
+ * projection drifts ~£86 on a £200k mortgage, while a stored-and-unaged balance
+ * is ~£9,000 out after two years. So we never ask for the balance twice.
+ *
+ * Interest-only does not amortise — the balance is the balance until the
+ * capital falls due at term end.
+ *
+ * part_and_part is treated as repayment here, which understates the balance.
+ * Modelling it properly needs the interest-only portion, which the entity
+ * doesn't carry yet (docs/modules/apex/mortgage.md §2.1).
+ */
+export function projectBalance(
+  balance: number,
+  annualRatePct: number,
+  payment: number,
+  months: number,
+  repaymentType: RepaymentType = "repayment"
+): number {
+  if (balance <= 0) return 0
+  if (months <= 0 || repaymentType === "interest_only") return balance
+  const r = monthlyRate(annualRatePct)
+  let current = balance
+  for (let index = 0; index < months && current > 0; index += 1) {
+    current = current + current * r - payment
+  }
+  return Math.max(0, Math.round(current))
+}
+
 /**
  * Calendar month `months` from `from` (defaults to now), pinned to the 1st —
  * payoff dates are displayed at month precision, so the day never matters.

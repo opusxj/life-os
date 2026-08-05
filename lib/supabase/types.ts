@@ -321,6 +321,7 @@ export type Database = {
       mortgages: {
         Row: {
           balance: number
+          balance_as_of: string
           created_at: string
           created_by: string
           deleted_at: string | null
@@ -336,6 +337,9 @@ export type Database = {
           original_amount: number
           property_value: number | null
           rate_ends_on: string | null
+          rate_started_on: string | null
+          repayment_type: string
+          reversion_rate: number | null
           rate_type: string
           rent_monthly: number | null
           space_id: string
@@ -344,6 +348,7 @@ export type Database = {
         }
         Insert: {
           balance: number
+          balance_as_of?: string
           created_at?: string
           created_by: string
           deleted_at?: string | null
@@ -359,6 +364,9 @@ export type Database = {
           original_amount: number
           property_value?: number | null
           rate_ends_on?: string | null
+          rate_started_on?: string | null
+          repayment_type?: string
+          reversion_rate?: number | null
           rate_type: string
           rent_monthly?: number | null
           space_id: string
@@ -367,6 +375,7 @@ export type Database = {
         }
         Update: {
           balance?: number
+          balance_as_of?: string
           created_at?: string
           created_by?: string
           deleted_at?: string | null
@@ -382,6 +391,9 @@ export type Database = {
           original_amount?: number
           property_value?: number | null
           rate_ends_on?: string | null
+          rate_started_on?: string | null
+          repayment_type?: string
+          reversion_rate?: number | null
           rate_type?: string
           rent_monthly?: number | null
           space_id?: string
