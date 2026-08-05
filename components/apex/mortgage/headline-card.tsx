@@ -1,8 +1,5 @@
-import { ArrowRight, CalendarClock, House } from "lucide-react"
+import { ArrowRight, CalendarClock, House, TrendingUp } from "lucide-react"
 
-import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
-import { ApexStatUnit } from "@/components/apex/stat-card"
-import { Badge } from "@/components/ui/badge"
 import {
   Card,
   CardAction,
@@ -11,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { monthsBetween } from "@/lib/apex/mortgage/amortization"
 import { formatPence } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import { mortgageStatus, type MortgageStatus } from "@/lib/apex/mortgage/status"
@@ -19,10 +17,14 @@ import { cn } from "@/lib/utils"
 /**
  * Zone 1: what you pay now, and what it becomes when the deal ends.
  *
- * Lenders show the date a fixed rate ends. None of them shows the payment it
- * turns into, which is the number people actually act on. The content is the
- * same whatever the urgency; only the accent and the countdown change, so the
- * card reads identically in a quiet year and a decisive month.
+ * The one inverted panel on the page (dark card in the light theme, light in
+ * the dark), so the answer that matters most carries its own hierarchy without
+ * a section label. Lenders show the date a fixed rate ends; none shows the
+ * payment it turns into, which is the number people act on.
+ *
+ * The meter is the deal itself: every tick a slice of the fixed period,
+ * filled to today, the final six months amber because that is when a new
+ * deal can usually be reserved.
  */
 export function MortgageHeadlineCard({
   mortgage,
@@ -38,63 +40,49 @@ export function MortgageHeadlineCard({
   className?: string
 }) {
   const status = mortgageStatus(mortgage, today)
-  const accent = ACCENT[status.stage]
   const guidance = guidanceFor(mortgage, status)
 
   return (
-    <Card size="sm" className={className}>
-      <CardHeader className="border-b">
+    <Card
+      size="sm"
+      className={cn(
+        "border-transparent bg-foreground text-background shadow-md",
+        className
+      )}
+    >
+      <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <span
-            className={cn(
-              "flex size-7 items-center justify-center rounded-lg [&>svg]:size-3.5",
-              ANCHOR_TINTS.primary
-            )}
+            aria-hidden
+            className="flex size-7 items-center justify-center rounded-lg bg-background/10 text-primary [&>svg]:size-3.5"
           >
             <House />
           </span>
           {mortgage.name}
         </CardTitle>
-        <CardDescription className="text-[13px]">
+        <CardDescription className="text-[13px] text-background/60">
           {rateSummary(mortgage, status)}
         </CardDescription>
-        <CardAction className="flex items-center gap-2">
+        <CardAction className="flex items-center gap-2 [&_button]:text-background/70 [&_button:hover]:bg-background/10 [&_button:hover]:text-background">
           <Countdown status={status} />
           {action}
         </CardAction>
       </CardHeader>
 
-      <CardContent className="pt-4">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <PaymentColumn
-            label="Paying now"
-            amount={mortgage.monthlyPayment}
-            caption={`${mortgage.interestRate}% ${rateWord(mortgage.rateType)}`}
-            width={barWidth(mortgage.monthlyPayment, status.reversionPayment)}
-            tone="current"
-          />
-          {status.reversionPayment !== null ? (
-            <PaymentColumn
-              label={afterLabel(mortgage, status)}
-              amount={status.reversionPayment}
-              caption={`${mortgage.reversionRate}% standard rate`}
-              width={barWidth(status.reversionPayment, mortgage.monthlyPayment)}
-              tone={accent.tone}
-            />
-          ) : (
-            <UnknownColumn lender={mortgage.lender} />
-          )}
-        </div>
+      <CardContent className="pt-3">
+        <PaymentPair mortgage={mortgage} status={status} />
+
+        <DealMeter mortgage={mortgage} today={today} />
 
         {(status.shock !== null || guidance) && (
-          <div className="mt-4 space-y-1">
+          <div className="mt-3.5 space-y-1">
             {status.shock !== null && status.shock !== 0 && (
-              <p className={cn("text-[13px] font-medium", accent.text)}>
-                {shockSentence(status.shock)}
+              <p className="text-[13px] font-medium text-background/80">
+                {shockSentence(status.shock, status.stage)}
               </p>
             )}
             {guidance && (
-              <p className="text-[13px] text-muted-foreground">{guidance}</p>
+              <p className="text-[13px] text-background/60">{guidance}</p>
             )}
           </div>
         )}
@@ -103,20 +91,153 @@ export function MortgageHeadlineCard({
   )
 }
 
-const ACCENT = {
-  settled: { text: "text-muted-foreground", tone: "neutral" },
-  watch: { text: "text-muted-foreground", tone: "neutral" },
-  act: { text: "text-amber-600 dark:text-amber-400", tone: "warn" },
-  reverted: { text: "text-destructive", tone: "bad" },
-} as const
+/**
+ * The paired answer: today's payment, the payment it becomes, and the delta
+ * as a chip. Pence render faded (the reference grammar's grey half-figure)
+ * so the pounds carry the comparison.
+ */
+function PaymentPair({
+  mortgage,
+  status,
+}: {
+  mortgage: Mortgage
+  status: MortgageStatus
+}) {
+  if (status.reversionPayment === null) {
+    return (
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <PriceFigure pence={mortgage.monthlyPayment} />
+        <span className="text-sm text-background/60">a month</span>
+        {status.missing === "reversion_rate" && (
+          <span className="text-sm text-background/45">
+            {`after ${afterWord(mortgage, status)}, unknown`}
+          </span>
+        )}
+      </div>
+    )
+  }
 
-type Tone = "current" | "neutral" | "warn" | "bad"
+  return (
+    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+      <PriceFigure pence={mortgage.monthlyPayment} />
+      <ArrowRight aria-hidden className="size-5 shrink-0 text-background/40" />
+      <PriceFigure pence={status.reversionPayment} />
+      <span className="text-sm text-background/60">
+        {`a month from ${afterWord(mortgage, status)}`}
+      </span>
+      {status.shock !== null && status.shock !== 0 && (
+        <ShockChip shock={status.shock} stage={status.stage} />
+      )}
+    </div>
+  )
+}
 
-const BAR: Record<Tone, string> = {
-  current: "bg-foreground/25",
-  neutral: "bg-foreground/45",
-  warn: "bg-amber-500",
-  bad: "bg-destructive",
+/** £812.40 with the pence faded, so the pounds do the talking. */
+function PriceFigure({ pence }: { pence: number }) {
+  const text = formatPence(pence)
+  const dot = text.lastIndexOf(".")
+  return (
+    <span className="font-heading text-3xl font-semibold tabular-nums">
+      {text.slice(0, dot)}
+      <span className="text-background/50">{text.slice(dot)}</span>
+    </span>
+  )
+}
+
+function ShockChip({
+  shock,
+  stage,
+}: {
+  shock: number
+  stage: MortgageStatus["stage"]
+}) {
+  const more = shock > 0
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums",
+        // The panel flips with the theme, so on-panel tones flip too:
+        // light theme = dark panel = light accent text, and vice versa.
+        !more &&
+          "bg-emerald-500/25 text-emerald-200 dark:bg-emerald-600/15 dark:text-emerald-700",
+        more &&
+          stage === "reverted" &&
+          "bg-red-500/25 text-red-200 dark:bg-red-600/15 dark:text-red-700",
+        more &&
+          stage === "act" &&
+          "bg-amber-500/25 text-amber-200 dark:bg-amber-500/20 dark:text-amber-700",
+        more &&
+          stage !== "act" &&
+          stage !== "reverted" &&
+          "bg-background/10 text-background/85"
+      )}
+    >
+      <TrendingUp
+        aria-hidden
+        className={cn("size-3", !more && "rotate-180")}
+      />
+      {`${more ? "+" : "-"}${formatPence(Math.abs(shock))}`}
+    </span>
+  )
+}
+
+/** How many ticks the deal meter draws at most; each tick is a slice of the
+ *  fixed period, so short deals stay chunky and long ones stay readable. */
+const METER_MAX_TICKS = 48
+/** Mirrors ARRANGE_WINDOW_MONTHS in status.ts: the reservable tail. */
+const ARRANGE_TAIL_MONTHS = 6
+
+/**
+ * The fixed period as a segmented meter, filled to today. Needs both ends of
+ * the deal to draw; without a start date there is no span to fill, so the
+ * meter simply doesn't render and the countdown pill carries the time story.
+ */
+function DealMeter({
+  mortgage,
+  today,
+}: {
+  mortgage: Mortgage
+  today: string
+}) {
+  if (!mortgage.rateStartedOn || !mortgage.rateEndsOn) return null
+
+  const start = parseDay(mortgage.rateStartedOn)
+  const end = parseDay(mortgage.rateEndsOn)
+  const total = monthsBetween(start, end)
+  if (total < 2) return null
+
+  const elapsed = Math.min(
+    total,
+    Math.max(0, monthsBetween(start, parseDay(today)))
+  )
+  const ticks = Math.min(total, METER_MAX_TICKS)
+  const filled = Math.round((elapsed / total) * ticks)
+  // The reservable tail, in ticks; only the unfilled part of it reads amber
+  const tailTicks = Math.ceil((ARRANGE_TAIL_MONTHS / total) * ticks)
+
+  return (
+    <div className="mt-4">
+      <div aria-hidden className="flex h-5 items-stretch gap-[3px]">
+        {Array.from({ length: ticks }, (_, index) => (
+          <span
+            key={index}
+            className={cn(
+              "flex-1 rounded-[2px]",
+              index < filled
+                ? "bg-background/90"
+                : index >= ticks - tailTicks
+                  ? "bg-amber-400/60 dark:bg-amber-500/60"
+                  : "bg-background/15"
+            )}
+          />
+        ))}
+      </div>
+      <div className="mt-1.5 flex justify-between text-[11px] text-background/50 tabular-nums">
+        <span>{MONTH_YEAR.format(start)}</span>
+        <span>{MONTH_YEAR.format(end)}</span>
+      </div>
+    </div>
+  )
 }
 
 /** The facts, under the name: who it's with, what rate, and until when. */
@@ -151,97 +272,53 @@ function guidanceFor(
 function Countdown({ status }: { status: MortgageStatus }) {
   if (status.monthsToRateEnd === null) return null
 
-  if (status.stage === "reverted") {
-    return <Badge variant="destructive">Ended</Badge>
-  }
-
   const months = status.monthsToRateEnd
-  const label =
-    months === 0 ? "This month" : months === 1 ? "1 month" : `${months} months`
+  const ended = status.stage === "reverted"
+  const label = ended
+    ? "Ended"
+    : months === 0
+      ? "This month"
+      : months === 1
+        ? "1 month"
+        : `${months} months`
 
   return (
-    <Badge
-      variant="secondary"
+    <span
       className={cn(
-        "gap-1.5",
-        status.stage === "act" &&
-          "bg-amber-500/15 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400"
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+        ended && "bg-red-500/25 text-red-200 dark:bg-red-600/15 dark:text-red-700",
+        !ended &&
+          status.stage === "act" &&
+          "bg-amber-500/25 text-amber-200 dark:bg-amber-500/20 dark:text-amber-700",
+        !ended && status.stage !== "act" && "bg-background/10 text-background/85"
       )}
     >
-      <CalendarClock className="size-3" />
+      <CalendarClock aria-hidden className="size-3" />
       {label}
-    </Badge>
+    </span>
   )
 }
 
-/** One side of the comparison. The bar makes the gap readable before the digits. */
-function PaymentColumn({
-  label,
-  amount,
-  caption,
-  width,
-  tone,
-}: {
-  label: string
-  amount: number
-  caption: string
-  width: number
-  tone: Tone
-}) {
-  return (
-    <div className="space-y-1.5">
-      <div className="text-[12px] text-muted-foreground">{label}</div>
-      <div className="font-heading text-2xl font-semibold tabular-nums">
-        {formatPence(amount)} <ApexStatUnit>a month</ApexStatUnit>
-      </div>
-      <div aria-hidden className="h-1.5 overflow-hidden rounded-full bg-muted">
-        <div
-          className={cn("h-full rounded-full", BAR[tone])}
-          style={{ width: `${width}%` }}
-        />
-      </div>
-      <div className="text-[12px] text-muted-foreground">{caption}</div>
-    </div>
-  )
+/** "April 2027": the month after the deal ends, or the reversion framing. */
+function afterWord(mortgage: Mortgage, status: MortgageStatus): string {
+  if (status.stage === "reverted") return "the deal's end"
+  if (!mortgage.rateEndsOn) return "the standard rate starts"
+  return monthAfter(mortgage.rateEndsOn)
 }
 
-/** The reversion rate is lender-set and can't be derived, so we ask for it. */
-function UnknownColumn({ lender }: { lender: string }) {
-  return (
-    <div className="space-y-1.5">
-      <div className="text-[12px] text-muted-foreground">
-        After your deal ends
-      </div>
-      <div className="flex items-center gap-1.5 font-heading text-2xl font-semibold text-muted-foreground/50">
-        <span aria-hidden>?</span>
-        <ArrowRight className="size-4" />
-      </div>
-      <div className="h-1.5 rounded-full bg-muted" aria-hidden />
-      <div className="text-[12px] text-muted-foreground">
-        {`Needs ${lender}'s standard rate`}
-      </div>
-    </div>
-  )
-}
-
-function afterLabel(mortgage: Mortgage, status: MortgageStatus): string {
-  if (status.stage === "reverted") return "Paying before it ended"
-  if (!mortgage.rateEndsOn) return "On the standard rate"
-  return `From ${monthAfter(mortgage.rateEndsOn)}`
-}
-
-function shockSentence(shock: number): string {
-  const amount = formatPence(Math.abs(shock))
+function shockSentence(
+  shock: number,
+  stage: MortgageStatus["stage"]
+): string {
   const yearly = formatPence(Math.abs(shock) * 12)
+  if (stage === "reverted") {
+    return shock > 0
+      ? `That is ${yearly} a year more than the deal you were on.`
+      : `That is ${yearly} a year less than the deal you were on.`
+  }
   return shock > 0
-    ? `${amount} a month more, or ${yearly} a year.`
-    : `${amount} a month less, or ${yearly} a year.`
-}
-
-function barWidth(value: number, against: number | null): number {
-  const largest = Math.max(value, against ?? value)
-  if (largest <= 0) return 0
-  return Math.round((value / largest) * 100)
+    ? `${yearly} a year more once the deal ends.`
+    : `${yearly} a year less once the deal ends.`
 }
 
 function rateWord(rateType: Mortgage["rateType"]): string {
@@ -249,6 +326,10 @@ function rateWord(rateType: Mortgage["rateType"]): string {
 }
 
 const MONTH_YEAR = new Intl.DateTimeFormat("en-GB", {
+  month: "short",
+  year: "numeric",
+})
+const FULL_MONTH_YEAR = new Intl.DateTimeFormat("en-GB", {
   month: "long",
   year: "numeric",
 })
@@ -260,10 +341,17 @@ const LONG_DATE = new Intl.DateTimeFormat("en-GB", {
 
 /** The new payment starts the month after the deal ends. */
 function monthAfter(dateKey: string): string {
-  const date = new Date(`${dateKey}T00:00:00`)
-  return MONTH_YEAR.format(new Date(date.getFullYear(), date.getMonth() + 1, 1))
+  const date = parseDay(dateKey)
+  return FULL_MONTH_YEAR.format(
+    new Date(date.getFullYear(), date.getMonth() + 1, 1)
+  )
 }
 
 function longDate(dateKey: string): string {
-  return LONG_DATE.format(new Date(`${dateKey}T00:00:00`))
+  return LONG_DATE.format(parseDay(dateKey))
+}
+
+/** yyyy-mm-dd → local midnight, matching status.ts month arithmetic */
+function parseDay(key: string): Date {
+  return new Date(`${key}T00:00:00`)
 }
