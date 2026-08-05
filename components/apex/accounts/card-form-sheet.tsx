@@ -76,7 +76,7 @@ export function CardFormSheet({
           <SheetTitle>Add card</SheetTitle>
           <SheetDescription>
             {
-              "The physical or virtual card — we only ever keep the last four digits."
+              "The physical or virtual card. We only ever keep the last four digits."
             }
           </SheetDescription>
         </SheetHeader>

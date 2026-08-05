@@ -74,7 +74,7 @@ export async function saveRecurringPayment(
 
   if (error) return { error: friendlyDbError(error.message) }
   if (id && count === 0) {
-    return { error: "That payment was cancelled or removed — nothing saved." }
+    return { error: "That payment was cancelled or removed, nothing saved." }
   }
   revalidateApex()
   return { success: true }

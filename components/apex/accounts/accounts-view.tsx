@@ -93,7 +93,7 @@ export function AccountsView({
             <EmptyTitle>No accounts yet</EmptyTitle>
             <EmptyDescription>
               {
-                "Add the accounts you actually use — balances take care of themselves."
+                "Add the accounts you actually use. Balances take care of themselves."
               }
             </EmptyDescription>
           </EmptyHeader>

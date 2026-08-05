@@ -89,7 +89,7 @@ export function ManageSpaceDialog({
               <span className="min-w-0 flex-1 truncate">
                 {member.name}
                 {member.isCurrentUser && (
-                  <span className="text-muted-foreground"> — you</span>
+                  <span className="text-muted-foreground"> (you)</span>
                 )}
               </span>
 
@@ -246,7 +246,7 @@ function InviteForm({ spaceId }: { spaceId: string }) {
           only once an account exists on that exact address. Saying "Invite
           sent" left people waiting on an inbox that would never receive it. */}
       <p className="text-[12px] text-muted-foreground">
-        They need an account on this address first — the invite then appears in
+        They need an account on this address first. The invite then appears in
         their notifications. Nothing is emailed.
       </p>
       {state?.error && (
@@ -262,7 +262,7 @@ function InviteForm({ spaceId }: { spaceId: string }) {
           role="status"
           className="text-[13px] text-emerald-600 dark:text-emerald-400"
         >
-          Invite created. Check the spelling below — it only reaches an exact
+          Invite created. Check the spelling below, it only reaches an exact
           match.
         </p>
       )}

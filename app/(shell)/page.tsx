@@ -22,7 +22,7 @@ export default async function HomePage() {
         </EmptyMedia>
         <EmptyTitle>Welcome home, {user?.name}</EmptyTitle>
         <EmptyDescription>
-          Your day across every area of life will live here — money, meals,
+          Your day across every area of life will live here: money, meals,
           people, media and time.
         </EmptyDescription>
       </EmptyHeader>

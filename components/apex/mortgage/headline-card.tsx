@@ -1,28 +1,26 @@
-import Link from "next/link"
-import {
-  ArrowRight,
-  CalendarClock,
-  CircleAlert,
-  TrendingUp,
-} from "lucide-react"
+import { ArrowRight, CalendarClock } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { formatPence, formatPenceShort } from "@/lib/apex/money"
-import { monthsFromNow } from "@/lib/apex/mortgage/amortization"
+import { Badge } from "@/components/ui/badge"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { formatPence } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import { mortgageStatus, type MortgageStatus } from "@/lib/apex/mortgage/status"
 import { cn } from "@/lib/utils"
 
 /**
- * Zone 1 — the page's single answer, and it changes with where you are in the
- * deal cycle. Quiet for years; for a few months every two to five years the
- * reversion payment is the only thing that matters and it takes the page over.
+ * Zone 1: what you pay now, and what it becomes when the deal ends.
  *
- * The stages come from research (docs/modules/apex/mortgage.md §3.1): anxiety
- * here is caused by not knowing, not by the number, so `watch` states plainly
- * that there is nothing to do yet rather than showing a red countdown against
- * an action that isn't available.
+ * Lenders show the date a fixed rate ends. None of them shows the payment it
+ * turns into, which is the number people actually act on. The content is the
+ * same whatever the urgency; only the accent and the countdown change, so the
+ * card reads identically in a quiet year and a decisive month.
  */
 export function MortgageHeadlineCard({
   mortgage,
@@ -35,278 +33,185 @@ export function MortgageHeadlineCard({
   className?: string
 }) {
   const status = mortgageStatus(mortgage, today)
+  const accent = ACCENT[status.stage]
 
   return (
-    <Card
-      size="sm"
-      className={cn(
-        "gap-0 border-l-4 p-0",
-        ACCENT[status.stage].border,
-        className
-      )}
-    >
-      <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-        <Headline mortgage={mortgage} status={status} />
-        <Aside mortgage={mortgage} status={status} />
+    <Card size="sm" className={className}>
+      <CardHeader className="border-b">
+        <CardTitle>{TITLE[status.stage]}</CardTitle>
+        <CardDescription className="text-[13px]">
+          {description(mortgage, status)}
+        </CardDescription>
+        <CardAction>
+          <Countdown status={status} />
+        </CardAction>
+      </CardHeader>
+
+      <CardContent className="pt-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <PaymentColumn
+            label="Paying now"
+            amount={mortgage.monthlyPayment}
+            caption={`${mortgage.interestRate}% ${rateWord(mortgage.rateType)}`}
+            width={barWidth(mortgage.monthlyPayment, status.reversionPayment)}
+            tone="current"
+          />
+          {status.reversionPayment !== null ? (
+            <PaymentColumn
+              label={afterLabel(mortgage, status)}
+              amount={status.reversionPayment}
+              caption={`${mortgage.reversionRate}% standard rate`}
+              width={barWidth(status.reversionPayment, mortgage.monthlyPayment)}
+              tone={accent.tone}
+            />
+          ) : (
+            <UnknownColumn lender={mortgage.lender} />
+          )}
+        </div>
+
+        {status.shock !== null && status.shock !== 0 && (
+          <p className={cn("mt-4 text-[13px] font-medium", accent.text)}>
+            {shockSentence(status.shock)}
+          </p>
+        )}
       </CardContent>
     </Card>
   )
 }
 
-const ACCENT = {
-  settled: {
-    border: "border-l-emerald-500/70",
-    text: "text-emerald-600 dark:text-emerald-400",
-  },
-  watch: { border: "border-l-border", text: "text-foreground" },
-  act: {
-    border: "border-l-amber-500",
-    text: "text-amber-600 dark:text-amber-400",
-  },
-  reverted: { border: "border-l-destructive", text: "text-destructive" },
+const TITLE = {
+  settled: "Your rate",
+  watch: "Your rate",
+  act: "Your rate is ending",
+  reverted: "You're on the standard rate",
 } as const
 
-function Headline({
-  mortgage,
-  status,
-}: {
-  mortgage: Mortgage
-  status: MortgageStatus
-}) {
-  // Reversion is the whole point of the card, and the rate can't be guessed —
-  // SVR is lender-set, not base + N. Ask for it rather than invent it.
-  if (
-    (status.stage === "act" || status.stage === "reverted") &&
-    status.missing === "reversion_rate"
-  ) {
-    return (
-      <Block
-        eyebrow={
-          status.stage === "reverted"
-            ? "Your deal has ended"
-            : `Your deal ends ${relativeMonths(status.monthsToRateEnd)}`
-        }
-        eyebrowIcon={CircleAlert}
-        eyebrowClass={ACCENT[status.stage].text}
-        value="What happens to your payment?"
-        valueClass="text-xl sm:text-2xl"
-        note={`Add ${mortgage.lender}'s standard rate and we'll show you the new payment before it lands.`}
-      />
-    )
-  }
+const ACCENT = {
+  settled: { text: "text-muted-foreground", tone: "neutral" },
+  watch: { text: "text-muted-foreground", tone: "neutral" },
+  act: { text: "text-amber-600 dark:text-amber-400", tone: "warn" },
+  reverted: { text: "text-destructive", tone: "bad" },
+} as const
 
-  switch (status.stage) {
-    case "reverted":
-      return (
-        <Block
-          eyebrow="You're on the standard rate"
-          eyebrowIcon={CircleAlert}
-          eyebrowClass={ACCENT.reverted.text}
-          value={
-            status.shock !== null && status.shock > 0
-              ? `${formatPenceShort(status.shock)} a month more than you were`
-              : "Your fixed deal has ended"
-          }
-          valueClass="text-2xl sm:text-3xl"
-          note="A product transfer with your existing lender is usually the quickest way off it."
-        />
-      )
+type Tone = "current" | "neutral" | "warn" | "bad"
 
-    case "act":
-      return (
-        <Block
-          eyebrow={`Your deal ends ${relativeMonths(status.monthsToRateEnd)}`}
-          eyebrowIcon={CalendarClock}
-          eyebrowClass={ACCENT.act.text}
-          value={
-            status.shock !== null
-              ? `${status.shock > 0 ? "+" : ""}${formatPenceShort(status.shock)} a month`
-              : "Time to arrange your next deal"
-          }
-          valueClass="text-3xl sm:text-4xl"
-          note={
-            status.shock !== null && status.reversionPayment !== null
-              ? `${formatPence(mortgage.monthlyPayment)} now → ${formatPence(status.reversionPayment)} if you do nothing. You can arrange a new deal today.`
-              : "You can arrange a new deal today."
-          }
-        />
-      )
-
-    case "watch":
-      return (
-        <Block
-          eyebrow={`Your deal ends ${relativeMonths(status.monthsToRateEnd)}`}
-          eyebrowIcon={CalendarClock}
-          eyebrowClass="text-muted-foreground"
-          value="Nothing to do yet"
-          valueClass="text-2xl sm:text-3xl"
-          note={
-            status.arrangeFrom
-              ? `You can start arranging a new deal from ${longDate(status.arrangeFrom)} — we'll tell you then.`
-              : undefined
-          }
-        />
-      )
-
-    default:
-      return <SettledBlock mortgage={mortgage} status={status} />
-  }
+const BAR: Record<Tone, string> = {
+  current: "bg-foreground/25",
+  neutral: "bg-foreground/45",
+  warn: "bg-amber-500",
+  bad: "bg-destructive",
 }
 
-/** The quiet state, which is most of the time. Time leads; money supports. */
-function SettledBlock({
-  mortgage,
-  status,
-}: {
-  mortgage: Mortgage
-  status: MortgageStatus
-}) {
-  if (status.lumpSumAtTerm) {
-    return (
-      <Block
-        eyebrow="Interest only"
-        eyebrowIcon={TrendingUp}
-        eyebrowClass="text-muted-foreground"
-        value={`${formatPenceShort(status.balanceToday)} due ${monthYear(new Date(`${mortgage.termEndsOn}T00:00:00`))}`}
-        valueClass="text-2xl sm:text-3xl"
-        note="The balance doesn't reduce on this kind of mortgage — the capital is repaid as a lump sum at the end of the term."
-      />
-    )
+function description(mortgage: Mortgage, status: MortgageStatus): string {
+  if (status.stage === "reverted") {
+    return "Your fixed deal has ended. A product transfer with your existing lender is usually the quickest way onto a new rate."
   }
-
-  if (status.monthsToFree === null) {
-    return (
-      <Block
-        eyebrow="Mortgage"
-        eyebrowIcon={TrendingUp}
-        eyebrowClass="text-muted-foreground"
-        value={formatPenceShort(status.balanceToday)}
-        valueClass="text-3xl sm:text-4xl"
-        note="The payment doesn't currently cover the interest, so the balance isn't reducing."
-      />
-    )
+  if (!mortgage.rateEndsOn) {
+    return "This rate has no end date, so your payment only moves if the rate does."
   }
-
-  return (
-    <Block
-      eyebrow="Mortgage-free in"
-      eyebrowIcon={TrendingUp}
-      eyebrowClass="text-muted-foreground"
-      value={durationWords(status.monthsToFree)}
-      valueClass="text-3xl sm:text-4xl"
-      note={`${formatPenceShort(status.balanceToday)} left, on track for ${monthYear(monthsFromNow(status.monthsToFree))}.`}
-    />
-  )
-}
-
-/** Right-hand column: the one action, when there is one. */
-function Aside({
-  mortgage,
-  status,
-}: {
-  mortgage: Mortgage
-  status: MortgageStatus
-}) {
   if (status.missing === "reversion_rate") {
-    return (
-      <Button size="sm" variant="outline" render={<Link href="#rate" />}>
-        Add standard rate
-        <ArrowRight data-icon="inline-end" />
-      </Button>
-    )
+    return `Add ${mortgage.lender}'s standard rate to see what your payment becomes when this deal ends.`
+  }
+  if (status.stage === "act") {
+    return `Most lenders let you reserve a new deal up to six months ahead, so you can arrange one now.`
+  }
+  return "What your payment becomes when this deal ends, if you do nothing."
+}
+
+function Countdown({ status }: { status: MortgageStatus }) {
+  if (status.monthsToRateEnd === null) return null
+
+  if (status.stage === "reverted") {
+    return <Badge variant="destructive">Ended</Badge>
   }
 
-  if (status.stage === "act" || status.stage === "reverted") {
-    return (
-      <div className="shrink-0 text-right">
-        <div className="text-[12px] text-muted-foreground">Paying now</div>
-        <div className="text-lg font-medium tabular-nums">
-          {formatPence(mortgage.monthlyPayment)}
-        </div>
-        {status.reversionPayment !== null && (
-          <>
-            <div className="mt-1.5 text-[12px] text-muted-foreground">
-              After {shortDate(mortgage.rateEndsOn)}
-            </div>
-            <div
-              className={cn(
-                "text-lg font-medium tabular-nums",
-                ACCENT[status.stage].text
-              )}
-            >
-              {formatPence(status.reversionPayment)}
-            </div>
-          </>
-        )}
-      </div>
-    )
-  }
+  const months = status.monthsToRateEnd
+  const label =
+    months === 0 ? "This month" : months === 1 ? "1 month" : `${months} months`
 
   return (
-    <div className="shrink-0 text-right">
-      <div className="text-[12px] text-muted-foreground">Monthly payment</div>
-      <div className="text-lg font-medium tabular-nums">
-        {formatPence(mortgage.monthlyPayment)}
-      </div>
-      <div className="mt-1.5 text-[12px] text-muted-foreground">
-        {mortgage.interestRate}% {rateWord(mortgage.rateType)}
-      </div>
-    </div>
+    <Badge
+      variant="secondary"
+      className={cn(
+        "gap-1.5",
+        status.stage === "act" &&
+          "bg-amber-500/15 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400"
+      )}
+    >
+      <CalendarClock className="size-3" />
+      {label}
+    </Badge>
   )
 }
 
-function Block({
-  eyebrow,
-  eyebrowIcon: Icon,
-  eyebrowClass,
-  value,
-  valueClass,
-  note,
+/** One side of the comparison. The bar makes the gap readable before the digits. */
+function PaymentColumn({
+  label,
+  amount,
+  caption,
+  width,
+  tone,
 }: {
-  eyebrow: string
-  eyebrowIcon: React.ComponentType<{ className?: string }>
-  eyebrowClass: string
-  value: string
-  valueClass: string
-  note?: string
+  label: string
+  amount: number
+  caption: string
+  width: number
+  tone: Tone
 }) {
   return (
-    <div className="min-w-0 space-y-1">
-      <div
-        className={cn(
-          "flex items-center gap-1.5 text-[13px] font-medium",
-          eyebrowClass
-        )}
-      >
-        <Icon className="size-3.5" />
-        {eyebrow}
+    <div className="space-y-1.5">
+      <div className="text-[12px] text-muted-foreground">{label}</div>
+      <div className="font-heading text-2xl font-semibold tabular-nums">
+        {formatPence(amount)}
       </div>
-      <div className={cn("font-heading font-semibold", valueClass)}>
-        {value}
+      <div aria-hidden className="h-1.5 overflow-hidden rounded-full bg-muted">
+        <div
+          className={cn("h-full rounded-full", BAR[tone])}
+          style={{ width: `${width}%` }}
+        />
       </div>
-      {note && (
-        <p className="max-w-prose text-[13px] text-muted-foreground">{note}</p>
-      )}
+      <div className="text-[12px] text-muted-foreground">{caption}</div>
     </div>
   )
 }
 
-function relativeMonths(months: number | null): string {
-  if (months === null) return "at some point"
-  if (months < 0) return "already"
-  if (months === 0) return "this month"
-  if (months === 1) return "next month"
-  return `in ${months} months`
+/** The reversion rate is lender-set and can't be derived, so we ask for it. */
+function UnknownColumn({ lender }: { lender: string }) {
+  return (
+    <div className="space-y-1.5">
+      <div className="text-[12px] text-muted-foreground">
+        After your deal ends
+      </div>
+      <div className="flex items-center gap-1.5 font-heading text-2xl font-semibold text-muted-foreground/50">
+        <span aria-hidden>?</span>
+        <ArrowRight className="size-4" />
+      </div>
+      <div className="h-1.5 rounded-full bg-muted" aria-hidden />
+      <div className="text-[12px] text-muted-foreground">
+        {`Needs ${lender}'s standard rate`}
+      </div>
+    </div>
+  )
 }
 
-/** "21 years, 4 months" — time is the hook, so it gets words not digits. */
-function durationWords(months: number): string {
-  const years = Math.floor(months / 12)
-  const rest = months % 12
-  const parts: string[] = []
-  if (years > 0) parts.push(`${years} year${years === 1 ? "" : "s"}`)
-  if (rest > 0) parts.push(`${rest} month${rest === 1 ? "" : "s"}`)
-  return parts.join(", ") || "under a month"
+function afterLabel(mortgage: Mortgage, status: MortgageStatus): string {
+  if (status.stage === "reverted") return "Paying before it ended"
+  if (!mortgage.rateEndsOn) return "On the standard rate"
+  return `From ${monthAfter(mortgage.rateEndsOn)}`
+}
+
+function shockSentence(shock: number): string {
+  const amount = formatPence(Math.abs(shock))
+  const yearly = formatPence(Math.abs(shock) * 12)
+  return shock > 0
+    ? `${amount} a month more, or ${yearly} a year.`
+    : `${amount} a month less, or ${yearly} a year.`
+}
+
+function barWidth(value: number, against: number | null): number {
+  const largest = Math.max(value, against ?? value)
+  if (largest <= 0) return 0
+  return Math.round((value / largest) * 100)
 }
 
 function rateWord(rateType: Mortgage["rateType"]): string {
@@ -317,25 +222,9 @@ const MONTH_YEAR = new Intl.DateTimeFormat("en-GB", {
   month: "long",
   year: "numeric",
 })
-const LONG_DATE = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-})
-const SHORT_DATE = new Intl.DateTimeFormat("en-GB", {
-  month: "short",
-  year: "numeric",
-})
 
-function monthYear(date: Date): string {
-  return MONTH_YEAR.format(date)
-}
-
-function longDate(date: Date): string {
-  return LONG_DATE.format(date)
-}
-
-function shortDate(dateKey: string | null): string {
-  if (!dateKey) return "your deal ends"
-  return SHORT_DATE.format(new Date(`${dateKey}T00:00:00`))
+/** The new payment starts the month after the deal ends. */
+function monthAfter(dateKey: string): string {
+  const date = new Date(`${dateKey}T00:00:00`)
+  return MONTH_YEAR.format(new Date(date.getFullYear(), date.getMonth() + 1, 1))
 }

@@ -72,7 +72,7 @@ export function TransferSheet({
           <SheetTitle>Transfer</SheetTitle>
           <SheetDescription>
             {
-              "Move money between two accounts — both balances update instantly."
+              "Move money between two accounts. Both balances update instantly."
             }
           </SheetDescription>
         </SheetHeader>

@@ -2,6 +2,16 @@
 
 The working system for Life OS: design bar, code rules, and ticket workflow. This is how multiple people/agents work in parallel without stepping on each other or repeating mistakes.
 
+## Copy rules
+
+Interface text is part of the product, not decoration around it.
+
+- **Never use an em dash in user-facing copy.** Split the sentence, or use a colon or comma. (Standalone `—` as a "no value" cell placeholder is a symbol, not writing, and is fine.)
+- **Never write something the product doesn't do.** "We'll tell you then" promises a notification that doesn't exist. Copy that softens a screen with a claim we can't honour is worse than a blunt sentence, and in a finance tool it costs trust we don't get back.
+- **Card shape is title, short description, then the information.** The description says what the card is showing and why; the numbers do the rest.
+- **Don't make the biggest text on a card a non-statement.** "Nothing to do yet" as a headline wastes the slot. Lead with the real figure and let the calm framing sit in the description.
+- Plain sentences over clever ones. This audience reads decoration as noise.
+
 ## Design bar
 
 The shell's look and feel is the approved standard ("continue like this"). Every new surface must match it:

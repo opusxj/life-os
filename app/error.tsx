@@ -30,8 +30,7 @@ export default function ErrorBoundary({
           That didn&apos;t load
         </h1>
         <p className="text-sm text-muted-foreground">
-          Something went wrong on our side. Nothing you entered has been lost —
-          try again.
+          Something went wrong on our side. Nothing you entered has been lost.
         </p>
         <div className="flex justify-center gap-2 pt-1">
           <Button size="sm" onClick={reset}>

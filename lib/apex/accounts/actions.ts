@@ -143,7 +143,7 @@ export async function deleteAccount(
   }
   if (blockers.length > 0) {
     return {
-      error: `Still in use by ${blockers.join(", ")}. Move or remove those first — deleting the account would leave their money unaccounted for.`,
+      error: `Still in use by ${blockers.join(", ")}. Move or remove those first. Deleting the account would leave their money unaccounted for.`,
     }
   }
 
@@ -289,7 +289,7 @@ export async function transferBetween(
   }
   if (amount > from.balance) {
     return {
-      error: `${formatPence(from.balance)} available — that transfer is larger.`,
+      error: `${formatPence(from.balance)} available. That transfer is larger.`,
     }
   }
 

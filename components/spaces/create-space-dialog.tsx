@@ -29,17 +29,17 @@ export function CreateSpaceDialog({
 }) {
   const router = useRouter()
   const [color, setColor] = React.useState(SWATCH_COLORS[0])
-  const [state, action, pending] = React.useActionState<SpaceFormState, FormData>(
-    async (prev, formData) => {
-      const result = await createSpace(prev, formData)
-      if (result?.success) {
-        onOpenChange(false)
-        router.refresh()
-      }
-      return result
-    },
-    undefined
-  )
+  const [state, action, pending] = React.useActionState<
+    SpaceFormState,
+    FormData
+  >(async (prev, formData) => {
+    const result = await createSpace(prev, formData)
+    if (result?.success) {
+      onOpenChange(false)
+      router.refresh()
+    }
+    return result
+  }, undefined)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -47,7 +47,7 @@ export function CreateSpaceDialog({
         <DialogHeader>
           <DialogTitle>New space</DialogTitle>
           <DialogDescription>
-            {"A shared area of life — you'll be its owner."}
+            {"A shared area of life. You'll be its owner."}
           </DialogDescription>
         </DialogHeader>
 
@@ -71,7 +71,10 @@ export function CreateSpaceDialog({
           </div>
 
           {state?.error && (
-            <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-[13px] text-destructive">
+            <p
+              role="alert"
+              className="rounded-lg bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
+            >
               {state.error}
             </p>
           )}

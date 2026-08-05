@@ -206,7 +206,7 @@ export function MonthCard({
     >
       {budgets.length === 0 ? (
         <ApexStatHint className="mt-0">
-          {"No budgets yet — set envelopes in Budgets & Savings."}
+          {"No budgets yet. Set envelopes in Budgets & Savings."}
         </ApexStatHint>
       ) : (
         <div className="space-y-2.5">

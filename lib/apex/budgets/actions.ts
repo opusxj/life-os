@@ -203,7 +203,7 @@ export async function topUpGoal(
     if (!source) return { error: "That source account no longer exists." }
     if (amount > source.balance) {
       return {
-        error: `${formatPence(source.balance)} available — that top up is larger.`,
+        error: `${formatPence(source.balance)} available. That top up is larger.`,
       }
     }
     const { error } = await context.supabase.from("transactions").insert({
@@ -225,7 +225,7 @@ export async function topUpGoal(
     .eq("id", goalId)
     .is("deleted_at", null)
   if (error) return { error: friendlyDbError(error.message) }
-  if (count === 0) return { error: "That goal was removed — nothing saved." }
+  if (count === 0) return { error: "That goal was removed, nothing saved." }
   revalidateApex()
   return { success: true }
 }

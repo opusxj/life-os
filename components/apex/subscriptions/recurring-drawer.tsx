@@ -77,7 +77,7 @@ export function RecurringDrawer({
     payment?.categoryId ?? NONE
   )
   const accountItems = {
-    [NONE]: "None — ask when paying",
+    [NONE]: "None, ask when paying",
     ...Object.fromEntries(
       accounts.map((account) => [account.id, account.name])
     ),
@@ -108,7 +108,7 @@ export function RecurringDrawer({
             {payment ? "Edit recurring payment" : "Add subscription or bill"}
           </SheetTitle>
           <SheetDescription>
-            {"A schedule, not a charge — nothing posts until you mark it paid."}
+            {"A schedule, not a charge. Nothing posts until you mark it paid."}
           </SheetDescription>
         </SheetHeader>
 
@@ -231,7 +231,7 @@ export function RecurringDrawer({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NONE}>None — ask when paying</SelectItem>
+                  <SelectItem value={NONE}>None, ask when paying</SelectItem>
                   {accounts.map((account) => (
                     <SelectItem key={account.id} value={account.id}>
                       {account.name}

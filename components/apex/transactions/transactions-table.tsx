@@ -102,7 +102,7 @@ export function TransactionsCard({
             <EmptyDescription>
               {filtered
                 ? "Nothing matches these filters."
-                : "Log the first one — it takes ten seconds."}
+                : "Log the first one. It takes ten seconds."}
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>

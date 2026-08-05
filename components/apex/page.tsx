@@ -123,7 +123,7 @@ export function ApexPlaceholder({
           <Wallet />
         </EmptyMedia>
         <EmptyTitle>{title}</EmptyTitle>
-        <EmptyDescription>{`Being built right now — ${ticket}.`}</EmptyDescription>
+        <EmptyDescription>{`Being built right now. ${ticket}.`}</EmptyDescription>
       </EmptyHeader>
     </Empty>
   )

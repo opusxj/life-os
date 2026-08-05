@@ -131,7 +131,9 @@ function NavSection({
                   {badge && (
                     <Badge
                       variant={
-                        badge.tone === "destructive" ? "destructive" : "secondary"
+                        badge.tone === "destructive"
+                          ? "destructive"
+                          : "secondary"
                       }
                       className={cn(
                         "ml-auto h-4 min-w-4 px-1 text-[10px] tabular-nums",
@@ -232,7 +234,7 @@ function MembersSection({ workspace }: { workspace: Workspace }) {
                 <span className="truncate">{member.name}</span>
                 {member.isCurrentUser && (
                   <span className="text-[11px] text-muted-foreground">
-                    — you
+                    (you)
                   </span>
                 )}
                 {member.role !== "member" && (

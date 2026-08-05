@@ -66,7 +66,7 @@ export function MortgageDrawer({
           <SheetTitle>{editing ? "Edit mortgage" : "Add mortgage"}</SheetTitle>
           <SheetDescription className="text-[13px]">
             {editing
-              ? `Updating ${mortgage.name} — staircased? Change the equity share here.`
+              ? `Updating ${mortgage.name}. Staircased? Change the equity share here.`
               : `The property, the deal and what it costs monthly.`}
           </SheetDescription>
         </SheetHeader>

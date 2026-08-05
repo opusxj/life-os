@@ -89,7 +89,7 @@ export function MortgageMenu({ mortgage }: { mortgage: Mortgage }) {
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title={`Delete ${mortgage.name}?`}
-        description={`It disappears from the space but stays recoverable — deletion here is always soft.`}
+        description={`It disappears from the space but stays recoverable. Deletion here is always soft.`}
         confirmLabel="Delete mortgage"
         pending={pending}
         error={error}
