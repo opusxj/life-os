@@ -4,7 +4,7 @@ import { mortgageStatus } from "@/lib/apex/mortgage/status"
 import { BalanceCard } from "./balance-card"
 import { BalanceRunway } from "./balance-runway"
 import { EquityCard } from "./equity-card"
-import { MortgageHeadlineCard } from "./headline-card"
+import { HeadlineVariants } from "./headline-variants"
 import { LtvCard } from "./ltv-card"
 import { MilestonesCard } from "./milestones-card"
 import { MonthlyCostCard } from "./monthly-cost-card"
@@ -38,10 +38,10 @@ export function MortgageStack({
 
   return (
     <section className="space-y-3.5">
-      {/* The deal, and nothing that appears below it. The rate and its end
-          date live in the subtitle rather than in a card of their own, so the
-          top of the page states each fact exactly once. */}
-      <MortgageHeadlineCard
+      {/* TEMPORARY: four candidate Zone 1 designs stacked for side-by-side
+          judgment on real data. The winner replaces MortgageHeadlineCard and
+          the picker goes away. */}
+      <HeadlineVariants
         mortgage={mortgage}
         today={today}
         action={<MortgageMenu mortgage={mortgage} />}
