@@ -86,6 +86,11 @@ warmth, not BI restraint. Thin hairline marks read as lifeless here.
   container carries a sensible aria-label). Tooltips are labels, not
   lectures: a few words ("52 months down", "£244.19 clears debt"). If a
   region needs a sentence to explain, the design failed upstream.
+- **Tooltips live on graphics only, never on text.** A meter segment, an
+  arc, a track: those can't explain themselves, so they hover. Words
+  already have. If a piece of text seems to need a tooltip, rewrite the
+  text; if a fact only exists inside a tooltip on text, the fact wasn't
+  earning its place ("tooltips on everything is a bit overkill").
 - **No orphaned data**: every number on a card names its subject in words.
   "From April 2027" fails (from what?); "After the deal ends" passes.
   "+£227.20" fails (than what?); "£227.20 a month more" passes. A countdown

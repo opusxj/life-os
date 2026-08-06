@@ -3,11 +3,6 @@ import { House } from "lucide-react"
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import { SegmentMeter } from "@/components/apex/meter"
 import { ApexStatCard } from "@/components/apex/stat-card"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import { monthsBetween } from "@/lib/apex/mortgage/amortization"
 import { formatPence } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
@@ -116,25 +111,16 @@ function PaymentColumn({
         <PriceFigure pence={pence} />
       </div>
       {delta !== undefined && delta !== null && delta !== 0 && (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <p
-                className={cn(
-                  "mt-0.5 cursor-help text-[13px] font-medium tabular-nums",
-                  delta > 0
-                    ? "text-red-600 dark:text-red-400"
-                    : "text-emerald-600 dark:text-emerald-400"
-                )}
-              />
-            }
-          >
-            {`${delta > 0 ? "+" : "-"}${formatPence(Math.abs(delta))} a month`}
-          </TooltipTrigger>
-          <TooltipContent>
-            {`${formatPence(Math.abs(delta) * 12)} a year`}
-          </TooltipContent>
-        </Tooltip>
+        <p
+          className={cn(
+            "mt-0.5 text-[13px] font-medium tabular-nums",
+            delta > 0
+              ? "text-red-600 dark:text-red-400"
+              : "text-emerald-600 dark:text-emerald-400"
+          )}
+        >
+          {`${delta > 0 ? "+" : "-"}${formatPence(Math.abs(delta))} a month`}
+        </p>
       )}
     </div>
   )
