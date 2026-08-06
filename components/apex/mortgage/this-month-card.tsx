@@ -93,13 +93,16 @@ export function ThisMonthCard({
         </>
       )}
 
-      {/* A hairline is all the separation this needs: a filled strip is what
-          the footer slot uses for actions, and prose sitting in one miscues
-          as a toolbar. */}
+      {/* Settles at the card's base: mt-auto takes the slack, pt-4 keeps a
+          minimum gap when there is none to take. A hairline is all the
+          separation this needs, since a filled strip is what the footer slot
+          uses for actions and prose in one miscues as a toolbar. */}
       {crossoverLine && (
-        <p className="mt-4 border-t pt-3 text-[12px] leading-snug text-muted-foreground">
-          {crossoverLine}
-        </p>
+        <div className="mt-auto pt-4">
+          <p className="border-t pt-3 text-[12px] leading-snug text-muted-foreground">
+            {crossoverLine}
+          </p>
+        </div>
       )}
 
     </ApexStatCard>

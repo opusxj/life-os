@@ -69,7 +69,10 @@ export function ApexStatCard({
         </div>
         {action && <CardAction>{action}</CardAction>}
       </CardHeader>
-      <CardContent className="flex-1">{children}</CardContent>
+      {/* A flex column, so a trailing note can take `mt-auto` and settle at
+          the card's base instead of stopping wherever its text ran out.
+          Cards in a row then end on the same line however tall they get. */}
+      <CardContent className="flex flex-1 flex-col">{children}</CardContent>
       {footer && (
         <CardFooter className="gap-1 px-2.5 py-2">{footer}</CardFooter>
       )}

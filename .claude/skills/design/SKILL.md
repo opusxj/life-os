@@ -215,6 +215,11 @@ Rejected, with the user's words where they're instructive:
   the lightest line on the card deserves, and `ApexStatCard`'s footer slot
   reads as an action bar (the Balance card puts a button there), so prose
   in it miscues as a toolbar.
+- A card whose parts bunch at the top with dead space beneath: spread it,
+  answer at the top and closing note at the base. `ApexStatCard`'s content
+  is a flex column for exactly this, so a trailing note takes `mt-auto`
+  (with `pt-4` for a floor when there is no slack) and cards in a row end
+  on the same line however tall they grow.
 - Amber on a money delta: "The 227 should not be orange, it should be red."
   Amber means deadline; costs wear red, savings emerald.
 - A floating arrow between figures: "a weird arrow which looks so weird."
