@@ -23,7 +23,9 @@ export function ApexPage({
   return (
     <div
       className={cn(
-        "w-full p-5",
+        // Capped like the reference dashboards: nothing on an Apex page is
+        // ever full-bleed, because tick meters and charts scale badly wide
+        "mx-auto w-full max-w-[1100px] p-5",
         fill ? "flex h-full min-h-0 flex-col gap-4" : "space-y-6 pb-10",
         className
       )}

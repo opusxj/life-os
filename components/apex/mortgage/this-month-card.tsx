@@ -61,12 +61,12 @@ export function ThisMonthCard({
           {
             pct: capitalPct,
             className: "bg-emerald-500",
-            tip: `${formatPence(split.capital)} clears debt and becomes equity.`,
+            tip: `${formatPence(split.capital)} clears debt`,
           },
           {
             pct: interestPct,
             className: "bg-amber-500/70",
-            tip: `${formatPence(split.interest)} is interest, the cost of borrowing.`,
+            tip: `${formatPence(split.interest)} interest`,
           },
         ]}
       />

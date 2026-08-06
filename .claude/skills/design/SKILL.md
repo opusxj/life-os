@@ -83,8 +83,24 @@ warmth, not BI restraint. Thin hairline marks read as lifeless here.
   reserved for cards whose whole point is the proportion.
 - **No mystery pixels**: every colored region a user could point at and ask
   "what is that?" explains itself on hover via the house tooltip (and its
-  container carries a sensible aria-label). If a tooltip can't say what a
-  region means in one sentence, the region shouldn't exist.
+  container carries a sensible aria-label). Tooltips are labels, not
+  lectures: a few words ("52 months down", "£244.19 clears debt"). If a
+  region needs a sentence to explain, the design failed upstream.
+- **No orphaned data**: every number on a card names its subject in words.
+  "From April 2027" fails (from what?); "After the deal ends" passes.
+  "+£227.20" fails (than what?); "£227.20 a month more" passes. A countdown
+  needs its event ("Your deal ends in 7 months", never a bare "7 months"
+  badge). If a value only makes sense through an unstated event, state the
+  event as a sentence and hang the numbers off it.
+- **Deltas ride under their value**, signed, in the money colors: red for
+  costs-more, emerald for costs-less (amber is deadlines, never deltas).
+  The reference grammar's "↑ 2.1% vs last week" line, not a floating chip.
+- **Page width caps at 1100px** and nothing renders full-bleed: tick meters
+  cap around 420px, charts live beside a legend rail. Wide screens get
+  margins, not stretched components.
+- **Charts carry no floating annotation pills**: a legend rail beside the
+  plot names every mark (swatch, label, value). In-plot text is axis ticks
+  and nothing else.
 
 ## Tint vocabulary (semantic, never decorative)
 
@@ -147,6 +163,18 @@ Rejected, with the user's words where they're instructive:
   read as wrong without the user being able to name why ("I don't really
   know what's wrong with it"). The diagnosis was chromatic starvation and
   tightness, fixed by the ratified dialect above.
+- Orphaned data fragments: "'from april 2027' like, from what? … There's a
+  random +227 I don't know what it means? … 7 months in the top right
+  corner, 7 months to what?" Fixed by stating the event as a sentence.
+- Full-bleed components: a 1300px tick bar ("the giant lined bar … one long
+  card just looks a bit funky") and a poster-sized chart ("This is also
+  just huge … like a PNG image just put there"). Fixed by the width cap and
+  the chart's legend rail.
+- Verbose tooltips: "it's not CLEAR it's just too much text/content."
+- Amber on a money delta: "The 227 should not be orange, it should be red."
+  Amber means deadline; costs wear red, savings emerald.
+- A floating arrow between figures: "a weird arrow which looks so weird."
+  Labelled columns replaced it.
 
 Accepted:
 

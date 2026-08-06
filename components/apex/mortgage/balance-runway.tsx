@@ -12,18 +12,16 @@ import {
 import { formatPenceShort } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import type { MortgageStatus } from "@/lib/apex/mortgage/status"
+import { cn } from "@/lib/utils"
 
 import { formatMonthYear } from "./format"
 
 /**
  * The whole life of the debt in one picture: the balance from today, at the
- * current payment and rate, down to zero or to the end of the term, whichever
- * comes first. Interest-only draws the honest version, a flat line to the day
- * the capital falls due.
- *
- * Hand-rolled SVG on a fixed 720x240 viewBox so it stays a server component;
- * every projected point is derived here from the same status the other cards
- * share, never stored.
+ * current payment and rate, to zero or the term end. The legend rail beside
+ * the plot names what the picture shows (today, the deal ending, where it
+ * lands), so the chart carries no floating annotations: without the rail it
+ * read as a pasted image whose marks meant nothing.
  */
 export function BalanceRunway({
   mortgage,
@@ -43,15 +41,10 @@ export function BalanceRunway({
   // A cleared balance or an already-ended term leaves no road to draw
   if (status.balanceToday <= 0 || termMonths < 1) return null
 
-  // A flat line is only honest for pure interest-only. Part and part amortises
-  // here exactly the way projectBalance does (understating, documented in
-  // docs/modules/apex/mortgage.md §2.1), so the chart and the status agree.
+  // A flat line is only honest for pure interest-only; part and part
+  // amortises here exactly the way projectBalance does.
   const flat = mortgage.repaymentType === "interest_only"
 
-  // A payment under the interest has no runway at all: the line would only
-  // rise, and drawing that as a road would dignify it. Say the right cause
-  // plainly instead: simulatePayoff also bails past its century ceiling, and
-  // that case is a long road rather than a broken one.
   if (
     !flat &&
     simulatePayoff(
@@ -107,159 +100,162 @@ export function BalanceRunway({
     .join(" ")
   const areaPath = `${linePath} L${px(x(months))} ${BASE_Y} L${PAD_L} ${BASE_Y} Z`
 
-  // The rate-end threshold, when it is still ahead and lands inside the domain.
-  // Dashed is deliberate here: it marks a boundary, unlike the solid gridlines.
-  // The label rides at the top unless the line is up there too (a young
-  // mortgage starts near the top of the scale), in which case it drops under
-  // the curve, inside the area fill, where a falling line can't reach it.
-  let rateMarker: {
-    x: number
-    flip: boolean
-    labelY: number
-    label: string
-    aria: string
-  } | null = null
-  if (
+  // The rate-end threshold, when it is still ahead and inside the domain.
+  // Dashed is deliberate: it marks a boundary, unlike the solid gridlines.
+  const marker =
     mortgage.rateEndsOn !== null &&
     status.monthsToRateEnd !== null &&
     status.monthsToRateEnd > 0 &&
     status.monthsToRateEnd < months
-  ) {
-    const lineY = y(points[Math.min(status.monthsToRateEnd, points.length - 1)].v)
-    const topY = PAD_T + 12
-    rateMarker = {
-      x: x(status.monthsToRateEnd),
-      flip: x(status.monthsToRateEnd) > PAD_L + PLOT_W * 0.65,
-      // Pill centre: rides the top unless the curve is up there too, in
-      // which case it drops below the line, inside the area fill
-      labelY: lineY < topY + 22 ? Math.min(lineY + 22, BASE_Y - 16) : topY,
-      label: `${mortgage.interestRate}% ends ${formatMonthYear(mortgage.rateEndsOn)}`,
-      aria: `The ${mortgage.interestRate}% rate ends ${formatMonthYear(mortgage.rateEndsOn)}.`,
-    }
-  }
+      ? { x: x(status.monthsToRateEnd), when: formatMonthYear(mortgage.rateEndsOn) }
+      : null
 
   const termEndLabel = formatMonthYear(mortgage.termEndsOn)
-  const startLabel = formatPenceShort(status.balanceToday)
-  const endX = PAD_L + PLOT_W
-  const endY = y(remaining)
-  // Pill centre: below the dot when the line ends high, above it when the
-  // line ends near the baseline, so the pill never collides with either
-  const endLabelY = endY <= BASE_Y - 34 ? endY + 20 : endY - 18
+  const endRow = flat
+    ? { label: "Due at the term end", value: `${formatPenceShort(remaining)} · ${termEndLabel}` }
+    : cleared
+      ? { label: "Paid off", value: formatMonthYear(monthsFromNow(months, now)) }
+      : {
+          label: `At the ${termEndLabel} term end`,
+          value: `${formatPenceShort(Math.round(remaining / 100) * 100)} still owed`,
+        }
 
-  let endLabel: string
-  let sentence: string
-  if (flat) {
-    endLabel = `${startLabel} due ${termEndLabel}`
-    sentence = `${startLabel} owed today, due in full at the ${termEndLabel} term end.`
-  } else if (cleared) {
-    const paidOff = formatMonthYear(monthsFromNow(months, now))
-    endLabel = `Paid off ${paidOff}`
-    sentence = `${startLabel} owed today, paid off by ${paidOff} at the current payment and rate.`
-  } else {
-    const owed = formatPenceShort(Math.round(remaining / 100) * 100)
-    endLabel = `${owed} still owed at ${termEndLabel}`
-    sentence = `${startLabel} owed today falls to ${owed} by the ${termEndLabel} term end at the current payment and rate.`
-  }
-  if (rateMarker) sentence += ` ${rateMarker.aria}`
+  const sentence = `${formatPenceShort(status.balanceToday)} owed today; ${
+    cleared ? `paid off ${endRow.value}` : endRow.value
+  }${marker ? `. The ${mortgage.interestRate}% rate ends ${marker.when}.` : "."}`
 
   return (
     <RunwayShell className={className}>
-      <svg
-        viewBox={`0 0 ${VB_W} ${VB_H}`}
-        className="h-auto w-full"
-        role="img"
-        aria-label={sentence}
-      >
-        <title>{sentence}</title>
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+        {/* The rail is the legend: every mark in the plot has a named row */}
+        <div className="flex shrink-0 flex-col gap-3.5 sm:w-44">
+          <LegendRow swatch="dot" label="Today">
+            {formatPenceShort(status.balanceToday)}
+          </LegendRow>
+          {marker && (
+            <LegendRow swatch="dash" label="Deal ends">
+              {marker.when}
+            </LegendRow>
+          )}
+          <LegendRow swatch="ring" label={endRow.label}>
+            {endRow.value}
+          </LegendRow>
+        </div>
 
-        {yTicks.map((value) => (
-          <g key={value}>
-            <line
-              x1={PAD_L}
-              y1={px(y(value))}
-              x2={VB_W - PAD_R}
-              y2={px(y(value))}
-              strokeWidth={1}
-              className="stroke-border"
-            />
+        <svg
+          viewBox={`0 0 ${VB_W} ${VB_H}`}
+          className="h-auto w-full min-w-0 flex-1"
+          role="img"
+          aria-label={sentence}
+        >
+          <title>{sentence}</title>
+
+          {yTicks.map((value) => (
+            <g key={value}>
+              <line
+                x1={PAD_L}
+                y1={px(y(value))}
+                x2={VB_W - PAD_R}
+                y2={px(y(value))}
+                strokeWidth={1}
+                className="stroke-border"
+              />
+              <text
+                x={PAD_L - 7}
+                y={px(y(value)) + 3}
+                textAnchor="end"
+                fontSize={10}
+                className="fill-muted-foreground tabular-nums"
+              >
+                {axisPounds(value)}
+              </text>
+            </g>
+          ))}
+
+          {xLabels.map((label) => (
             <text
-              x={PAD_L - 8}
-              y={px(y(value)) + 3}
-              textAnchor="end"
+              key={label.year}
+              x={px(label.x)}
+              y={VB_H - 6}
+              textAnchor="middle"
               fontSize={10}
               className="fill-muted-foreground tabular-nums"
             >
-              {axisPounds(value)}
+              {label.year}
             </text>
-          </g>
-        ))}
+          ))}
 
-        {xLabels.map((label) => (
-          <text
-            key={label.year}
-            x={px(label.x)}
-            y={VB_H - 8}
-            textAnchor="middle"
-            fontSize={10}
-            className="fill-muted-foreground tabular-nums"
-          >
-            {label.year}
-          </text>
-        ))}
+          <path d={areaPath} className="fill-emerald-500/10" />
+          <path
+            d={linePath}
+            fill="none"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="stroke-emerald-500"
+          />
 
-        <path d={areaPath} className="fill-emerald-500/10" />
-        <path
-          d={linePath}
-          fill="none"
-          strokeWidth={3}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="stroke-emerald-500"
-        />
-
-        {rateMarker && (
-          <g>
+          {marker && (
             <line
-              x1={px(rateMarker.x)}
+              x1={px(marker.x)}
               y1={PAD_T}
-              x2={px(rateMarker.x)}
+              x2={px(marker.x)}
               y2={BASE_Y}
               strokeWidth={1.5}
               strokeDasharray="5 5"
               className="stroke-amber-500/70"
             />
-            <SvgPill
-              x={rateMarker.x + (rateMarker.flip ? -8 : 8)}
-              y={rateMarker.labelY}
-              anchor={rateMarker.flip ? "end" : "start"}
-              label={rateMarker.label}
-              tone="amber"
-            />
-          </g>
-        )}
+          )}
 
-        <circle
-          cx={endX}
-          cy={px(endY)}
-          r={5}
-          strokeWidth={2}
-          className="fill-emerald-500 stroke-card"
-        />
-        <SvgPill
-          x={endX - 10}
-          y={endLabelY}
-          anchor="end"
-          label={endLabel}
-          tone="emerald"
-        />
-      </svg>
+          <circle
+            cx={PAD_L + PLOT_W}
+            cy={px(y(remaining))}
+            r={4.5}
+            strokeWidth={2}
+            className="fill-emerald-500 stroke-card"
+          />
+        </svg>
+      </div>
     </RunwayShell>
   )
 }
 
-/** One header for every state, so the card reads the same even when empty.
- *  Built on ApexStatCard so the chart panel carries the page's anchor grammar
- *  (icon chip, provenance line) like every other card. */
+/** One legend entry: the mark's swatch, what it is, and its value. */
+function LegendRow({
+  swatch,
+  label,
+  children,
+}: {
+  swatch: "dot" | "dash" | "ring"
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <span
+        aria-hidden
+        className={cn(
+          "mt-1 shrink-0",
+          swatch === "dot" && "size-2.5 rounded-full bg-emerald-500",
+          swatch === "ring" &&
+            "size-2.5 rounded-full border-2 border-emerald-500",
+          swatch === "dash" &&
+            "h-0 w-3 translate-y-1 border-t-2 border-dashed border-amber-500"
+        )}
+      />
+      <span className="min-w-0">
+        <span className="block text-[12px] leading-snug text-muted-foreground">
+          {label}
+        </span>
+        <span className="block text-sm font-medium tabular-nums">
+          {children}
+        </span>
+      </span>
+    </div>
+  )
+}
+
+/** One header for every state, so the card reads the same even when empty. */
 function RunwayShell({
   className,
   children,
@@ -277,59 +273,6 @@ function RunwayShell({
     >
       {children}
     </ApexStatCard>
-  )
-}
-
-/**
- * The chart's annotations wear the same pastel pills as the rest of the
- * page. `y` is the pill's vertical centre; width is estimated from the
- * label because SVG has no auto-sizing, at ~5.9px per character of 11px
- * text plus padding.
- */
-function SvgPill({
-  x,
-  y,
-  anchor,
-  label,
-  tone,
-}: {
-  x: number
-  y: number
-  anchor: "start" | "end"
-  label: string
-  tone: "amber" | "emerald"
-}) {
-  const width = Math.round(label.length * 5.9 + 18)
-  const rectX = anchor === "end" ? x - width : x
-  return (
-    <g>
-      <rect
-        x={px(rectX)}
-        y={px(y - 11)}
-        width={width}
-        height={22}
-        rx={11}
-        className={
-          tone === "amber"
-            ? "fill-amber-500/15 dark:fill-amber-500/20"
-            : "fill-emerald-500/15 dark:fill-emerald-500/20"
-        }
-      />
-      <text
-        x={px(rectX + width / 2)}
-        y={px(y + 4)}
-        textAnchor="middle"
-        fontSize={11}
-        fontWeight={500}
-        className={
-          tone === "amber"
-            ? "fill-amber-800 dark:fill-amber-300"
-            : "fill-emerald-800 dark:fill-emerald-300"
-        }
-      >
-        {label}
-      </text>
-    </g>
   )
 }
 
@@ -406,12 +349,12 @@ function parseDay(key: string): Date {
   return new Date(`${key}T00:00:00`)
 }
 
-const VB_W = 720
-const VB_H = 240
-const PAD_L = 48
-const PAD_R = 16
-const PAD_T = 16
-const PAD_B = 26
+const VB_W = 560
+const VB_H = 180
+const PAD_L = 42
+const PAD_R = 10
+const PAD_T = 14
+const PAD_B = 22
 const PLOT_W = VB_W - PAD_L - PAD_R
 const PLOT_H = VB_H - PAD_T - PAD_B
 const BASE_Y = VB_H - PAD_B

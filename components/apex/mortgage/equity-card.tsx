@@ -50,17 +50,17 @@ export function EquityCard({
     {
       pct: (Math.max(0, equity) / propertyValue) * 100,
       className: "bg-emerald-500",
-      tip: `${formatPenceShort(Math.max(0, equity))} is your equity, the part of the home you own outright.`,
+      tip: `${formatPenceShort(Math.max(0, equity))} yours outright`,
     },
     {
       pct: (Math.min(balance, shareValue) / propertyValue) * 100,
       className: "bg-foreground/25",
-      tip: `${formatPenceShort(Math.min(balance, shareValue))} is still mortgaged.`,
+      tip: `${formatPenceShort(Math.min(balance, shareValue))} mortgaged`,
     },
     {
       pct: isShared ? 100 - share : 0,
       className: "bg-muted",
-      tip: `Your landlord's ${formatShare(100 - share)}%, worth ${formatPenceShort(propertyValue - shareValue)}.`,
+      tip: `Landlord's ${formatShare(100 - share)}% · ${formatPenceShort(propertyValue - shareValue)}`,
     },
   ]
 

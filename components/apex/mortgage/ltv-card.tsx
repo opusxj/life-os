@@ -114,7 +114,7 @@ export function LtvCard({
           />
         </TooltipTrigger>
         <TooltipContent>
-          {`The notch is this loan at ${ltvPct.toFixed(1)}%. The cuts are the pricing bands: 60, 75, 80, 85, 90 and 95%.`}
+          {`Notch: your ${ltvPct.toFixed(1)}%. Cuts: pricing bands.`}
         </TooltipContent>
       </Tooltip>
 

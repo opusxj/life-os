@@ -1,7 +1,7 @@
-import { ArrowRight, CalendarClock, House, TrendingUp } from "lucide-react"
+import { House } from "lucide-react"
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
-import { ApexStatCard, ApexStatTag } from "@/components/apex/stat-card"
+import { ApexStatCard } from "@/components/apex/stat-card"
 import {
   Tooltip,
   TooltipContent,
@@ -16,13 +16,14 @@ import { cn } from "@/lib/utils"
 import { pluralMonths } from "./format"
 
 /**
- * Zone 1: what you pay now, and what it becomes when the deal ends.
+ * Zone 1: the deal ending, stated as a sentence, with every number attached
+ * to it in words.
  *
- * Lenders show the date a fixed rate ends; none shows the payment it turns
- * into, which is the number people act on. The payment pair carries the
- * money, the deal meter carries the time: the whole fixed period as ticks,
- * filled to today, the reservable tail in amber — and every region says
- * what it is on hover, because unexplained colored squares are decoration.
+ * The card's one event is the fixed rate dying. Earlier versions scattered
+ * its consequences as fragments ("From April 2027", "+£227.20", a "7 months"
+ * badge) and the user rightly asked: from what? more than what? seven months
+ * to WHAT? The design skill's no-orphaned-data rule was written off the back
+ * of this card: state the event, then hang the numbers off it.
  */
 export function MortgageHeadlineCard({
   mortgage,
@@ -43,78 +44,96 @@ export function MortgageHeadlineCard({
   return (
     <ApexStatCard
       label={mortgage.name}
-      description={rateSummary(mortgage, status)}
+      description={`${mortgage.lender} · ${mortgage.interestRate}% ${rateWord(mortgage.rateType)} · ${REPAYMENT_WORD[mortgage.repaymentType]}`}
       icon={House}
       iconClassName={ANCHOR_TINTS.primary}
-      action={
-        <span className="flex items-center gap-2">
-          <Countdown status={status} />
-          {action}
-        </span>
-      }
+      action={action}
       className={className}
     >
-      <PaymentPair mortgage={mortgage} status={status} />
+      <p className="text-base font-medium">
+        {eventSentence(mortgage, status)}
+        {mortgage.rateEndsOn && (
+          <span className="font-normal text-muted-foreground">
+            {` · ${longDate(mortgage.rateEndsOn)}`}
+          </span>
+        )}
+      </p>
 
-      <DealMeter mortgage={mortgage} today={today} />
+      <div className="mt-3.5 flex flex-wrap items-start gap-x-7 gap-y-3">
+        <PaymentColumn
+          label={status.stage === "reverted" ? "Before" : "Paying now"}
+          pence={mortgage.monthlyPayment}
+        />
+        {status.reversionPayment !== null ? (
+          <PaymentColumn
+            label={
+              status.stage === "reverted" ? "Paying now" : "After the deal ends"
+            }
+            pence={status.reversionPayment}
+            delta={status.shock}
+          />
+        ) : (
+          <div>
+            <div className="text-[12px] text-muted-foreground">
+              After the deal ends
+            </div>
+            <div className="mt-0.5 font-heading text-[25px] leading-8 font-semibold text-muted-foreground/50">
+              ?
+            </div>
+          </div>
+        )}
+      </div>
 
-      {(status.shock !== null || guidance) && (
-        <div className="mt-3.5 space-y-1">
-          {status.shock !== null && status.shock !== 0 && (
-            <p className="text-[13px] font-medium text-foreground/80">
-              {shockSentence(status.shock, status.stage)}
-            </p>
-          )}
-          {guidance && (
-            <p className="text-[13px] text-muted-foreground">{guidance}</p>
-          )}
-        </div>
+      <DealMeter mortgage={mortgage} status={status} today={today} />
+
+      {guidance && (
+        <p className="mt-3.5 text-[13px] text-muted-foreground">{guidance}</p>
       )}
     </ApexStatCard>
   )
 }
 
-/** The paired answer: today's payment, the payment it becomes, the delta pill. */
-function PaymentPair({
-  mortgage,
-  status,
+/**
+ * One labelled figure. The delta renders UNDER the value it belongs to, in
+ * the money colors (red = costs more, emerald = costs less), with the yearly
+ * figure one hover away.
+ */
+function PaymentColumn({
+  label,
+  pence,
+  delta,
 }: {
-  mortgage: Mortgage
-  status: MortgageStatus
+  label: string
+  pence: number
+  /** Signed monthly difference vs the other column; omit for the base column */
+  delta?: number | null
 }) {
-  if (status.reversionPayment === null) {
-    return (
-      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <PriceFigure pence={mortgage.monthlyPayment} />
-        <span className="text-[13px] text-muted-foreground">a month</span>
-        {status.missing === "reversion_rate" && (
-          <span className="text-[13px] text-muted-foreground/70">
-            {`after ${afterWord(mortgage, status)}, unknown`}
-          </span>
-        )}
-      </div>
-    )
-  }
-
   return (
-    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-      <PriceFigure pence={mortgage.monthlyPayment} />
-      <ArrowRight
-        aria-hidden
-        className="size-4.5 shrink-0 text-muted-foreground/50"
-      />
-      <PriceFigure pence={status.reversionPayment} />
-      <span className="text-[13px] text-muted-foreground">
-        {`a month from ${afterWord(mortgage, status)}`}
-      </span>
-      {status.shock !== null && status.shock !== 0 && (
-        <ApexStatTag tint={shockTint(status)}>
-          <TrendingUp
-            aria-hidden
-            className={cn("size-3", status.shock < 0 && "rotate-180")}
-          />
-          {`${status.shock > 0 ? "+" : "-"}${formatPence(Math.abs(status.shock))} a month`}
-        </ApexStatTag>
+    <div>
+      <div className="text-[12px] text-muted-foreground">{label}</div>
+      <div className="mt-0.5">
+        <PriceFigure pence={pence} />
+      </div>
+      {delta !== undefined && delta !== null && delta !== 0 && (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <p
+                className={cn(
+                  "mt-0.5 cursor-help text-[13px] font-medium tabular-nums",
+                  delta > 0
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-emerald-600 dark:text-emerald-400"
+                )}
+              />
+            }
+          >
+            {`${delta > 0 ? "+" : "-"}${formatPence(Math.abs(delta))} a month`}
+          </TooltipTrigger>
+          <TooltipContent>
+            {`${formatPence(Math.abs(delta) * 12)} a year`}
+          </TooltipContent>
+        </Tooltip>
       )}
     </div>
   )
@@ -132,15 +151,18 @@ function PriceFigure({ pence }: { pence: number }) {
   )
 }
 
-function shockTint(status: MortgageStatus) {
-  if (status.shock !== null && status.shock < 0) return "balance" as const
-  if (status.stage === "reverted") return "destructive" as const
-  if (status.stage === "act") return "due" as const
-  return "neutral" as const
+/** The event, in words. Everything else on the card hangs off this line. */
+function eventSentence(mortgage: Mortgage, status: MortgageStatus): string {
+  if (!mortgage.rateEndsOn || status.monthsToRateEnd === null) {
+    return "Your rate has no end date"
+  }
+  if (status.stage === "reverted") return "Your deal ended"
+  const months = status.monthsToRateEnd
+  if (months === 0) return "Your deal ends this month"
+  return `Your deal ends in ${pluralMonths(months)}`
 }
 
-/** How many ticks the deal meter draws at most; each tick is a slice of the
- *  fixed period, so short deals stay chunky and long ones stay readable. */
+/** How many ticks the deal meter draws at most. */
 const METER_MAX_TICKS = 48
 /** Mirrors ARRANGE_WINDOW_MONTHS in status.ts: the reservable tail. */
 const ARRANGE_TAIL_MONTHS = 6
@@ -148,17 +170,17 @@ const ARRANGE_TAIL_MONTHS = 6
 type TickKind = "done" | "left" | "window"
 
 /**
- * The fixed period as a segmented meter, filled to today. Contiguous runs of
- * ticks share one tooltip, so hovering any part of a region says what the
- * region IS: months behind you, months until the reserve window, the window
- * itself. Needs both ends of the deal to draw; without a start date the
- * countdown pill carries the time story alone.
+ * The fixed period as a segmented meter, filled to today, capped in width so
+ * it never sprawls. Tooltips are labels, not lectures: what each region is,
+ * in a few words.
  */
 function DealMeter({
   mortgage,
+  status,
   today,
 }: {
   mortgage: Mortgage
+  status: MortgageStatus
   today: string
 }) {
   if (!mortgage.rateStartedOn || !mortgage.rateEndsOn) return null
@@ -184,30 +206,33 @@ function DealMeter({
   )
   const plainTicks = ticks - filled - windowTicks
 
+  const windowOpen = status.stage === "act" || status.stage === "reverted"
   const regions: { kind: TickKind; count: number; tip: string }[] = [
     {
       kind: "done" as const,
       count: filled,
-      tip: `${pluralMonths(elapsed)} of this ${pluralMonths(total)} deal are behind you.`,
+      tip: `${pluralMonths(elapsed)} down`,
     },
     {
       kind: "left" as const,
       count: plainTicks,
-      tip: `${pluralMonths(plainMonths)} until the reserve window opens.`,
+      tip: `${pluralMonths(plainMonths)} to the reserve window`,
     },
     {
       kind: "window" as const,
       count: windowTicks,
-      tip: `The last ${pluralMonths(windowMonths)} of the deal. Most lenders let you reserve a new deal this far ahead.`,
+      tip: windowOpen
+        ? "Reserve window, open now"
+        : `Reserve window, opens ${status.arrangeFrom ? MONTH_YEAR.format(status.arrangeFrom) : "6 months out"}`,
     },
   ].filter((region) => region.count > 0)
 
   return (
-    <div className="mt-4">
+    <div className="mt-4 max-w-md">
       <div
         role="img"
         aria-label={`${pluralMonths(elapsed)} of the ${pluralMonths(total)} deal elapsed; ${pluralMonths(remaining)} remain.`}
-        className="flex h-4 items-stretch gap-[3px]"
+        className="flex h-3.5 items-stretch gap-[3px]"
       >
         {regions.map((region) => (
           <Tooltip key={region.kind}>
@@ -244,18 +269,6 @@ function DealMeter({
   )
 }
 
-/** The facts, under the name: who it's with, what rate, and until when. */
-function rateSummary(mortgage: Mortgage, status: MortgageStatus): string {
-  const rate = `${mortgage.interestRate}% ${rateWord(mortgage.rateType)}`
-  if (status.stage === "reverted" && mortgage.rateEndsOn) {
-    return `${mortgage.lender} · ${rate} ended ${longDate(mortgage.rateEndsOn)}`
-  }
-  if (!mortgage.rateEndsOn) {
-    return `${mortgage.lender} · ${rate}, no end date`
-  }
-  return `${mortgage.lender} · ${rate} until ${longDate(mortgage.rateEndsOn)}`
-}
-
 /** The one thing worth saying beyond the numbers, and only when there is one. */
 function guidanceFor(
   mortgage: Mortgage,
@@ -273,74 +286,25 @@ function guidanceFor(
   return null
 }
 
-function Countdown({ status }: { status: MortgageStatus }) {
-  if (status.monthsToRateEnd === null) return null
-
-  const ended = status.stage === "reverted"
-  const months = status.monthsToRateEnd
-  const label = ended
-    ? "Ended"
-    : months === 0
-      ? "This month"
-      : pluralMonths(months)
-
-  return (
-    <ApexStatTag
-      tint={ended ? "destructive" : status.stage === "act" ? "due" : "neutral"}
-    >
-      <CalendarClock aria-hidden className="size-3" />
-      {label}
-    </ApexStatTag>
-  )
-}
-
-function shockSentence(
-  shock: number,
-  stage: MortgageStatus["stage"]
-): string {
-  const yearly = formatPence(Math.abs(shock) * 12)
-  if (stage === "reverted") {
-    return shock > 0
-      ? `That is ${yearly} a year more than the deal you were on.`
-      : `That is ${yearly} a year less than the deal you were on.`
-  }
-  return shock > 0
-    ? `${yearly} a year more once the deal ends.`
-    : `${yearly} a year less once the deal ends.`
-}
-
-/** "April 2027": the month after the deal ends, or the reversion framing. */
-function afterWord(mortgage: Mortgage, status: MortgageStatus): string {
-  if (status.stage === "reverted") return "the deal's end"
-  if (!mortgage.rateEndsOn) return "the standard rate starts"
-  return monthAfter(mortgage.rateEndsOn)
-}
-
 function rateWord(rateType: Mortgage["rateType"]): string {
   return rateType === "fixed" ? "fixed" : rateType
+}
+
+const REPAYMENT_WORD: Record<Mortgage["repaymentType"], string> = {
+  repayment: "repayment",
+  interest_only: "interest only",
+  part_and_part: "part and part",
 }
 
 const MONTH_YEAR = new Intl.DateTimeFormat("en-GB", {
   month: "short",
   year: "numeric",
 })
-const FULL_MONTH_YEAR = new Intl.DateTimeFormat("en-GB", {
+const LONG_DATE = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
   month: "long",
   year: "numeric",
 })
-const LONG_DATE = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-})
-
-/** The new payment starts the month after the deal ends. */
-function monthAfter(dateKey: string): string {
-  const date = parseDay(dateKey)
-  return FULL_MONTH_YEAR.format(
-    new Date(date.getFullYear(), date.getMonth() + 1, 1)
-  )
-}
 
 function longDate(dateKey: string): string {
   return LONG_DATE.format(parseDay(dateKey))
