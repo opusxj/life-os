@@ -195,6 +195,12 @@ Rejected, with the user's words where they're instructive:
   fix was to lead with the consequence and name the rate, not the "deal".
 - Hard-written "·" separators: "we should never hard write a dot, it should
   use the icon library."
+- "£568.21 of it is interest": "sounds terrible". Partitive phrasing reads
+  as broken English; name what the money does instead ("Only £244.19
+  reduces what you owe").
+- A detached legend row stacked under a bar: the swatches are good, the
+  row is not. Put each key at its own end of the bar so the swatch points
+  at the run it names, and let the segment tooltips carry the amounts.
 - Amber on a money delta: "The 227 should not be orange, it should be red."
   Amber means deadline; costs wear red, savings emerald.
 - A floating arrow between figures: "a weird arrow which looks so weird."

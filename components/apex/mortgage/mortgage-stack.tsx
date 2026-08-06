@@ -55,7 +55,7 @@ export function MortgageStack({
           today={today}
           quickAction={cardBalanceAction}
         />
-        <ThisMonthCard mortgage={mortgage} status={status} />
+        <ThisMonthCard mortgage={mortgage} status={status} today={today} />
         <PayoffCard mortgage={mortgage} status={status} today={today} />
       </div>
 

@@ -205,6 +205,33 @@ export function balanceSeries(
 }
 
 /**
+ * When more of a payment starts clearing debt than paying interest.
+ *
+ * Capital beats interest once `payment - B·r > B·r`, i.e. once the balance
+ * falls below `payment / 2r`. Early in a long term that crossover is years
+ * away and no lender shows it, which is exactly why it is worth a line: it
+ * turns the split from a static ratio into something with a date on it.
+ *
+ * 0 when it has already happened; null when it never will (the payment does
+ * not cover the interest, or the crossover sits beyond the ceiling).
+ */
+export function monthsToCapitalMajority(
+  balance: number,
+  annualRatePct: number,
+  payment: number
+): number | null {
+  const r = monthlyRate(annualRatePct)
+  if (r <= 0) return 0
+  const target = payment / (2 * r)
+  if (balance <= target) return 0
+  if (payment <= balance * r) return null
+
+  const series = balanceSeries(balance, annualRatePct, payment, MAX_MONTHS)
+  const month = series.findIndex((value) => value <= target)
+  return month === -1 ? null : month
+}
+
+/**
  * Calendar month `months` from `from` (defaults to now), pinned to the 1st —
  * payoff dates are displayed at month precision, so the day never matters.
  */
