@@ -17,6 +17,28 @@ npm run typecheck  # must pass before commit
 npm run lint       # must pass before commit
 ```
 
+## Answering a suggestion
+
+A suggestion is an invitation to think, not a work order. Before implementing
+one, spend a moment on whether it is the best version of what the person is
+actually after: what problem prompted it, and whether a different move serves
+that problem better. Then do exactly one of these, out loud:
+
+- **Build it**, when it is plainly the right call.
+- **Propose the alternative you would rather do**, with the reason, and let
+  them choose. One or two options, not a survey.
+- **Say the original is the better call**, and why, when you considered
+  something else and it lost.
+
+What is not wanted is silent execution of an idea you had reservations about,
+or reservations that only surface after it ships. Disagreement is cheap before
+the work and expensive after it.
+
+Proportionality matters, or this becomes noise. A mechanical change ("make it
+full width", "rename this") deserves no deliberation. Anything that changes
+what a user sees, what the product claims, how data is modelled, or that hides
+a semantic mistake behind a cosmetic request, does.
+
 ## Hard rules
 
 - Work from a board ticket; one ticket = one branch (`los-<n>-slug`) = one PR; conventional commits.
