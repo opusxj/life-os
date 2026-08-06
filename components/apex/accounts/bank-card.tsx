@@ -51,7 +51,7 @@ export function BankCard({
       whileHover={{ y: -3, rotate: -0.4 }}
       transition={spring}
       data-bank-card={card.name}
-      className="group relative isolate flex aspect-[1.586/1] w-full flex-col overflow-hidden rounded-xl p-4 text-white shadow-lg shadow-black/15"
+      className="group relative isolate flex aspect-[1.586/1] w-full flex-col overflow-hidden rounded-2xl p-4 text-white shadow-lg shadow-black/15"
       style={{
         background: `linear-gradient(135deg, ${card.color}, color-mix(in srgb, ${card.color} 55%, #000))`,
       }}
@@ -86,20 +86,25 @@ export function BankCard({
           <span className="font-mono text-[13px] tracking-[0.22em]">
             {`•••• ${card.last4 ?? "····"}`}
           </span>
+          {/* The date names its event: a bare "05/27" is an orphaned number. */}
           {card.expires_on && (
-            <span className="text-[13px] text-white/70">
-              {formatExpiry(card.expires_on)}
+            <span className="text-[13px] text-white/70 tabular-nums">
+              {`Expires ${formatExpiry(card.expires_on)}`}
             </span>
           )}
         </div>
       </div>
 
+      {/* Pill grammar for the one discrete fact worth flagging. It sits on
+          the card art, which is identical in both themes, so the hand-picked
+          fills need no dark: variants. Red = already worse, amber = deadline
+          approaching, per the tint vocabulary. */}
       {expiry !== "ok" && (
         <span
           className={
             expiry === "expired"
-              ? "absolute right-3 bottom-11 rounded bg-red-500/90 px-1.5 py-0.5 text-xs font-medium"
-              : "absolute right-3 bottom-11 rounded bg-amber-400/90 px-1.5 py-0.5 text-xs font-medium text-amber-950"
+              ? "absolute right-3 bottom-11 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-950"
+              : "absolute right-3 bottom-11 rounded-full bg-amber-400/90 px-2 py-0.5 text-[11px] font-medium text-amber-950"
           }
         >
           {expiry === "expired" ? "Expired" : "Expires soon"}

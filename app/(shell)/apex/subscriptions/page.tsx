@@ -8,14 +8,16 @@ import {
   Repeat,
 } from "lucide-react"
 
-import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
-import { dueState, todayKey } from "@/components/apex/due-state"
+import { ANCHOR_TINTS, type TagTint } from "@/components/apex/anchor-tints"
+import { dueState, todayKey, type DueState } from "@/components/apex/due-state"
 import { AddRecurringButton } from "@/components/apex/subscriptions/add-recurring-button"
 import { RecurringTable } from "@/components/apex/subscriptions/recurring-table"
 import { ApexCardGrid, ApexPage, ApexPageHeader } from "@/components/apex/page"
 import {
   ApexStatCard,
   ApexStatHint,
+  ApexStatTag,
+  ApexStatUnit,
   ApexStatValue,
 } from "@/components/apex/stat-card"
 import {
@@ -59,7 +61,10 @@ export default async function SubscriptionsPage() {
   )
   const totalMonthly = subscriptionsMonthly + billsMonthly
   // Query is ordered by next_due_on, so the soonest is first
-  const nextDue = payments[0]
+  const nextDue = payments.at(0)
+  const nextDuePill = nextDue
+    ? duePill(dueState(nextDue.nextDueOn, today))
+    : null
   const rows = payments.map((payment) => ({
     ...payment,
     monthly: monthlyPence(payment.amount, payment.cadence),
@@ -75,7 +80,9 @@ export default async function SubscriptionsPage() {
 
   return (
     <ApexPage>
-      <ApexPageHeader title="Subscriptions & Bills">{addButton}</ApexPageHeader>
+      <ApexPageHeader title="Subscriptions & Bills" count={payments.length}>
+        {addButton}
+      </ApexPageHeader>
 
       {payments.length === 0 ? (
         <Empty>
@@ -96,56 +103,81 @@ export default async function SubscriptionsPage() {
         <>
           <ApexCardGrid className="xl:grid-cols-4">
             <ApexStatCard
-              label="Outgoings / month"
+              label="Outgoings"
+              description="All recurring, scaled to a month"
               icon={Banknote}
               iconClassName={ANCHOR_TINTS.primary}
             >
-              <ApexStatValue>{formatPenceShort(totalMonthly)}</ApexStatValue>
-              <ApexStatHint>
-                {payments.length === 1
-                  ? `1 recurring payment`
-                  : `${payments.length} recurring payments`}
-              </ApexStatHint>
+              <ApexStatValue>
+                {formatPenceShort(totalMonthly)}{" "}
+                <ApexStatUnit>a month</ApexStatUnit>
+              </ApexStatValue>
+              <div className="mt-2.5">
+                <ApexStatTag>
+                  {payments.length === 1
+                    ? "1 recurring payment"
+                    : `${payments.length} recurring payments`}
+                </ApexStatTag>
+              </div>
             </ApexStatCard>
             <ApexStatCard
-              label="Subscriptions / month"
+              label="Subscriptions"
+              description="The optional part of the total"
               icon={Repeat}
               iconClassName={ANCHOR_TINTS.subscription}
             >
               <ApexStatValue>
-                {formatPenceShort(subscriptionsMonthly)}
+                {formatPenceShort(subscriptionsMonthly)}{" "}
+                <ApexStatUnit>a month</ApexStatUnit>
               </ApexStatValue>
-              <ApexStatHint>
-                {subscriptions.length === 1
-                  ? `1 active subscription`
-                  : `${subscriptions.length} active subscriptions`}
-              </ApexStatHint>
+              <div className="mt-2.5">
+                <ApexStatTag>
+                  {subscriptions.length === 1
+                    ? "1 subscription"
+                    : `${subscriptions.length} subscriptions`}
+                </ApexStatTag>
+              </div>
             </ApexStatCard>
             <ApexStatCard
-              label="Bills / month"
+              label="Bills"
+              description="The committed part of the total"
               icon={ReceiptText}
               iconClassName={ANCHOR_TINTS.bill}
             >
-              <ApexStatValue>{formatPenceShort(billsMonthly)}</ApexStatValue>
-              <ApexStatHint>
-                {bills.length === 1
-                  ? `1 committed bill`
-                  : `${bills.length} committed bills`}
-              </ApexStatHint>
+              <ApexStatValue>
+                {formatPenceShort(billsMonthly)}{" "}
+                <ApexStatUnit>a month</ApexStatUnit>
+              </ApexStatValue>
+              <div className="mt-2.5">
+                <ApexStatTag>
+                  {bills.length === 1 ? "1 bill" : `${bills.length} bills`}
+                </ApexStatTag>
+              </div>
             </ApexStatCard>
             <ApexStatCard
               label="Next due"
+              description="The first date on the schedule"
               icon={CalendarClock}
               iconClassName={ANCHOR_TINTS.due}
             >
-              <ApexStatValue>
-                {nextDue ? formatPenceShort(nextDue.amount) : "—"}
-              </ApexStatValue>
-              <ApexStatHint className="truncate">
-                {nextDue
-                  ? `${nextDue.name} · ${dueState(nextDue.nextDueOn, today).label}`
-                  : `Nothing scheduled`}
-              </ApexStatHint>
+              {nextDue && nextDuePill ? (
+                <>
+                  <ApexStatValue className="truncate">
+                    {formatPenceShort(nextDue.amount)}{" "}
+                    <ApexStatUnit>{`to ${nextDue.name}`}</ApexStatUnit>
+                  </ApexStatValue>
+                  <div className="mt-2.5">
+                    <ApexStatTag tint={nextDuePill.tint}>
+                      {nextDuePill.label}
+                    </ApexStatTag>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <ApexStatValue>—</ApexStatValue>
+                  <ApexStatHint>Nothing scheduled</ApexStatHint>
+                </>
+              )}
             </ApexStatCard>
           </ApexCardGrid>
 
@@ -161,4 +193,22 @@ export default async function SubscriptionsPage() {
       )}
     </ApexPage>
   )
+}
+
+/**
+ * The due date as a discrete-fact pill, event stated in the words ("Due
+ * tomorrow", never a bare "Tomorrow"). Amber is the deadline tint; overdue
+ * escalates to destructive, matching the table's due language below.
+ */
+function duePill(state: DueState): { label: string; tint: TagTint } {
+  if (state.status === "overdue") {
+    return { label: "Overdue", tint: "destructive" }
+  }
+  if (state.status === "today") return { label: "Due today", tint: "due" }
+  if (state.days === 1) return { label: "Due tomorrow", tint: "due" }
+  if (state.days <= 7) {
+    return { label: `Due in ${state.days} days`, tint: "due" }
+  }
+  // Beyond a week dueState's label is already the short date, "Mon 3 Aug"
+  return { label: `Due ${state.label}`, tint: "due" }
 }

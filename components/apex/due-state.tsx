@@ -25,9 +25,9 @@ export function dueState(nextDueOn: string, today: string): DueState {
     return { days, status: "today", label: "Due today", actionable: true }
   const label =
     days === 1
-      ? "Tomorrow"
+      ? "Due tomorrow"
       : days <= 7
-        ? `In ${days} days`
+        ? `Due in ${days} days`
         : shortDate(nextDueOn)
   return { days, status: "upcoming", label, actionable: days <= 7 }
 }

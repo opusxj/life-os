@@ -32,20 +32,25 @@ export function PayoffCard({
 }) {
   const termEnd = formatMonthYear(mortgage.termEndsOn)
 
-  // Interest-only never clears itself: the capital falls due as a lump sum, so
-  // a payoff date would be an invention rather than a projection.
+  // Interest-only and part-and-part never fully clear themselves: capital
+  // falls due at the term end, so a payoff date would be an invention rather
+  // than a projection. The two differ in how much falls due: interest-only is
+  // the whole balance; part-and-part is an unknowable slice (the split isn't
+  // stored), so that branch names no figure.
   if (status.lumpSumAtTerm) {
     return (
       <ApexStatCard
         label="Capital due"
-        description="This mortgage does not pay itself off"
+        description="The term end on file"
         icon={CalendarRange}
         iconClassName={ANCHOR_TINTS.due}
         className={className}
       >
         <ApexStatValue>{termEnd}</ApexStatValue>
         <ApexStatHint className="mt-1.5">
-          {`${formatPenceShort(status.balanceToday)} falls due in full. Your payments cover the interest only.`}
+          {mortgage.repaymentType === "interest_only"
+            ? `${formatPenceShort(status.balanceToday)} falls due in full. Your payments cover the interest only.`
+            : "Part of the balance falls due at the term end. Your payments repay only part of the capital."}
         </ApexStatHint>
       </ApexStatCard>
     )
@@ -88,19 +93,25 @@ export function PayoffCard({
       className={className}
     >
       <ApexStatValue>{formatMonthYear(projected)}</ApexStatValue>
-      <ApexStatHint
-        className={cn(
-          "mt-1.5",
-          delta > 0 && "font-medium text-emerald-600 dark:text-emerald-400",
-          delta < 0 && "font-medium text-amber-600 dark:text-amber-400"
-        )}
-      >
-        {delta === 0
-          ? `On track for the ${termEnd} term end`
-          : delta > 0
-            ? `${pluralMonths(delta)} ahead of the ${termEnd} term end`
-            : `${pluralMonths(-delta)} behind the ${termEnd} term end`}
-      </ApexStatHint>
+      {delta === 0 ? (
+        <ApexStatHint className="mt-1.5">
+          {`On track for the ${termEnd} term end`}
+        </ApexStatHint>
+      ) : (
+        /* The delta rides under its value, signed, in the money colors:
+           clearing the debt early is emerald, running past the term is red.
+           The term-end month is named so the sign has a stated subject. */
+        <p
+          className={cn(
+            "mt-1.5 text-[13px] font-medium tabular-nums",
+            delta < 0
+              ? "text-red-600 dark:text-red-400"
+              : "text-emerald-600 dark:text-emerald-400"
+          )}
+        >
+          {`${delta < 0 ? "+" : "-"}${pluralMonths(Math.abs(delta))} vs the ${termEnd} term end`}
+        </p>
+      )}
     </ApexStatCard>
   )
 }

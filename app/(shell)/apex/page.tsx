@@ -77,6 +77,7 @@ export default async function ApexOverviewPage() {
           />
           <MortgageSnapshot
             mortgages={data.mortgages}
+            today={today}
             className={mortgageClass}
           />
           <SavingsStrip

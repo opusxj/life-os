@@ -3,12 +3,16 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react"
+import { MoreHorizontal, Pencil, PiggyBank, Plus, Trash2 } from "lucide-react"
 
 import { ConfirmDialog } from "@/components/apex/confirm-dialog"
-import { ProgressGrid } from "@/components/apex/progress-grid"
-import { ApexStatHint } from "@/components/apex/stat-card"
-import { Badge } from "@/components/ui/badge"
+import { DataProgress } from "@/components/apex/progress"
+import {
+  ApexStatHint,
+  ApexStatTag,
+  ApexStatUnit,
+  ApexStatValue,
+} from "@/components/apex/stat-card"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -16,7 +20,6 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
 import {
   Drawer,
@@ -71,9 +74,15 @@ export function GoalCard({
 
   const fraction = Math.min(1, goal.saved / goal.targetAmount)
   const percent = Math.floor(fraction * 100)
-  const hint = [onTrackHint(goal), goal.account && `via ${goal.account.name}`]
-    .filter(Boolean)
-    .join(" · ")
+  const reached = goal.saved >= goal.targetAmount
+  const targetLabel = goal.targetOn
+    ? format(new Date(`${goal.targetOn}T00:00:00`), "MMM yyyy")
+    : null
+  // Same month arithmetic as paceHint, so pill and hint can never disagree
+  const targetPassed = goal.targetOn
+    ? monthsToTarget(goal.targetOn) <= 0
+    : false
+  const hint = paceHint(goal)
 
   function remove() {
     startTransition(async () => {
@@ -88,21 +97,41 @@ export function GoalCard({
   }
 
   return (
-    <Card size="sm">
+    <Card className="gap-3.5 rounded-2xl [--card-spacing:--spacing(5)]">
       <CardHeader>
-        <CardTitle className="flex min-w-0 items-center gap-2">
+        {/* Mirrors the ApexStatCard header by hand because the 38px chip
+            wears the goal's own data color (an inline style), which the
+            primitive's className-only icon slot can't carry. Chip treatment
+            mirrors account-card.tsx (light mode darkens the icon toward
+            black, dark mode runs the raw hex on a stronger tint); the two
+            chips should someday share a component. */}
+        <div className="flex items-center gap-2.5">
           <span
             aria-hidden
-            className="size-2.5 shrink-0 rounded-full"
-            style={{ backgroundColor: goal.color }}
-          />
-          <span className="truncate">{goal.name}</span>
-        </CardTitle>
-        <CardAction className="flex items-center gap-1">
-          <Badge
-            variant="secondary"
-            className="tabular-nums"
-          >{`${percent}%`}</Badge>
+            className="flex size-9.5 shrink-0 items-center justify-center rounded-xl bg-(--chip-bg) text-(--chip-icon) dark:bg-(--chip-bg-dark) dark:text-(--chip-icon-dark) [&>svg]:size-5"
+            style={
+              {
+                "--chip-bg": `color-mix(in srgb, ${goal.color} 14%, transparent)`,
+                "--chip-icon": `color-mix(in srgb, ${goal.color} 75%, black)`,
+                "--chip-bg-dark": `color-mix(in srgb, ${goal.color} 20%, transparent)`,
+                "--chip-icon-dark": goal.color,
+              } as React.CSSProperties
+            }
+          >
+            <PiggyBank />
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-medium text-card-foreground">
+              {goal.name}
+            </span>
+            <span className="block truncate text-[12px] leading-snug text-muted-foreground">
+              {goal.account
+                ? `From your ${goal.account.name} balance`
+                : "From your top ups"}
+            </span>
+          </span>
+        </div>
+        <CardAction>
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
@@ -138,26 +167,38 @@ export function GoalCard({
         </CardAction>
       </CardHeader>
 
-      <CardContent className="flex flex-1 flex-col gap-3">
-        <ProgressGrid
-          target={goal.targetAmount}
-          fraction={fraction}
+      <CardContent className="flex-1">
+        <ApexStatValue>
+          {formatPenceShort(goal.saved)}{" "}
+          <ApexStatUnit>{`of ${formatPenceShort(goal.targetAmount)}`}</ApexStatUnit>
+        </ApexStatValue>
+
+        <DataProgress
+          value={fraction * 100}
           color={goal.color}
+          aria-label={`${percent}% of target saved`}
+          className="mt-3"
         />
-        <div className="mt-auto">
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-lg font-semibold tracking-tight tabular-nums">
-              {formatPenceShort(goal.saved)}
-            </span>
-            <span className="text-[13px] text-muted-foreground">
-              {`of ${formatPenceShort(goal.targetAmount)}`}
-            </span>
-          </div>
-          {hint && <ApexStatHint>{hint}</ApexStatHint>}
+
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          {reached ? (
+            <ApexStatTag tint="balance">Goal reached</ApexStatTag>
+          ) : (
+            <ApexStatTag tint="balance">{`${percent}% saved`}</ApexStatTag>
+          )}
+          {!reached &&
+            targetLabel &&
+            (targetPassed ? (
+              <ApexStatTag tint="neutral">{`Target was ${targetLabel}`}</ApexStatTag>
+            ) : (
+              <ApexStatTag tint="due">{`Target by ${targetLabel}`}</ApexStatTag>
+            ))}
         </div>
+
+        {hint && <ApexStatHint className="mt-2.5">{hint}</ApexStatHint>}
       </CardContent>
 
-      <CardFooter className="gap-1 px-2 py-1.5">
+      <CardFooter className="gap-1 px-2.5 py-2">
         <Button variant="ghost" size="xs" onClick={() => setTopUpOpen(true)}>
           <Plus data-icon="inline-start" />
           Top up
@@ -232,7 +273,7 @@ export function TopUpDrawer({
           <DrawerTitle>{`Top up ${goal.name}`}</DrawerTitle>
           <DrawerDescription>
             {goal.account
-              ? `Moves money into ${goal.account.name}.`
+              ? `Records a transfer into ${goal.account.name}.`
               : "Adds to the amount you've put aside."}
           </DrawerDescription>
         </DrawerHeader>
@@ -309,17 +350,27 @@ export function TopUpDrawer({
   )
 }
 
-function onTrackHint(goal: SavingGoal): string | null {
+/**
+ * The pace sentence: what the goal needs each month to land on time. The
+ * target date itself lives in the target pill, so this line never repeats it;
+ * "Goal reached" is the emerald tag's job, so a met goal returns null.
+ */
+function paceHint(goal: SavingGoal): string | null {
   if (!goal.targetOn) return null
   const remaining = goal.targetAmount - goal.saved
-  if (remaining <= 0) return "goal reached"
-  const target = new Date(`${goal.targetOn}T00:00:00`)
+  if (remaining <= 0) return null
+  const months = monthsToTarget(goal.targetOn)
+  if (months <= 0) return "The target date has passed."
+  const perMonth = Math.ceil(remaining / months / 100) * 100
+  return `Needs ${formatPenceShort(perMonth)} a month to hit the target.`
+}
+
+/** Whole months from this month to the target's month; 0 or less once passed */
+function monthsToTarget(targetOn: string): number {
+  const target = new Date(`${targetOn}T00:00:00`)
   const now = new Date()
-  const months =
+  return (
     (target.getFullYear() - now.getFullYear()) * 12 +
     (target.getMonth() - now.getMonth())
-  const label = format(target, "MMM yyyy")
-  if (months <= 0) return `target date ${label} has passed`
-  const perMonth = Math.ceil(remaining / months / 100) * 100
-  return `needs ${formatPenceShort(perMonth)}/month to hit ${label}`
+  )
 }

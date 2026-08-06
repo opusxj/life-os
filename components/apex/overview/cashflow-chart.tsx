@@ -4,8 +4,6 @@ import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
 
 import {
   ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
@@ -16,19 +14,32 @@ import type { CashflowMonth } from "@/lib/apex/overview/queries"
 /**
  * Emerald in, rose out — per-theme steps rather than one hex, so each mode
  * passes CVD separation and surface contrast against its own background.
+ * The steps are the Tailwind OKLCH tokens the card's legend rail wears as
+ * classes (bg-emerald-700 dark:bg-emerald-600, bg-rose-400 dark:bg-rose-500),
+ * so bars and swatches can never drift apart; change both together.
  */
 const chartConfig = {
   inflow: {
     label: "In",
-    theme: { light: "#047857", dark: "#059669" },
+    theme: {
+      light: "var(--color-emerald-700)",
+      dark: "var(--color-emerald-600)",
+    },
   },
   outflow: {
     label: "Out",
-    theme: { light: "#fb7185", dark: "#f43f5e" },
+    theme: {
+      light: "var(--color-rose-400)",
+      dark: "var(--color-rose-500)",
+    },
   },
 } satisfies ChartConfig
 
-/** Six months of income vs spend — the dashboard's centerpiece chart. */
+/**
+ * Six months of income vs spend. The plot carries only bars, solid hairline
+ * gridlines, and muted axis ticks; naming the marks is the card's legend
+ * rail's job, so there is no floating legend strip here.
+ */
 export function CashflowChart({ months }: { months: CashflowMonth[] }) {
   return (
     <ChartContainer
@@ -36,7 +47,7 @@ export function CashflowChart({ months }: { months: CashflowMonth[] }) {
       className="aspect-auto h-[190px] w-full"
     >
       <BarChart accessibilityLayer data={months} barGap={2}>
-        <CartesianGrid vertical={false} />
+        <CartesianGrid vertical={false} stroke="var(--border)" strokeWidth={1} />
         <XAxis
           dataKey="label"
           tickLine={false}
@@ -71,7 +82,6 @@ export function CashflowChart({ months }: { months: CashflowMonth[] }) {
             />
           }
         />
-        <ChartLegend content={<ChartLegendContent />} />
         <Bar
           dataKey="inflow"
           fill="var(--color-inflow)"

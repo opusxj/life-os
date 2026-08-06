@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ConfirmDialog } from "@/components/apex/confirm-dialog"
 import { DataProgress } from "@/components/apex/progress"
+import { ApexStatTag } from "@/components/apex/stat-card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -61,18 +62,23 @@ export function BudgetRow({ budget, tick }: { budget: Budget; tick: number }) {
         style={{ backgroundColor: budget.category.color }}
       />
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-2">
+        <div className="flex items-center justify-between gap-2">
           <span className="truncate text-[13px] font-medium">
             {budget.category.name}
           </span>
-          <span className="flex shrink-0 items-baseline gap-2">
+          <span className="flex shrink-0 items-center gap-2">
             {over && (
-              <span className="text-[13px] font-medium text-destructive tabular-nums">
-                {`over by ${formatPenceShort(budget.spent - budget.amount)}`}
-              </span>
+              <ApexStatTag tint="destructive" className="shrink-0">
+                {`${formatPenceShort(budget.spent - budget.amount)} over`}
+              </ApexStatTag>
             )}
-            <span className="text-[13px] text-muted-foreground tabular-nums">
-              {`${formatPenceShort(budget.spent)} of ${formatPenceShort(budget.amount)}`}
+            <span className="text-[13px] tabular-nums">
+              <span className="font-medium">
+                {formatPenceShort(budget.spent)}
+              </span>
+              <span className="text-muted-foreground">
+                {` of ${formatPenceShort(budget.amount)}`}
+              </span>
             </span>
           </span>
         </div>
@@ -81,8 +87,9 @@ export function BudgetRow({ budget, tick }: { budget: Budget; tick: number }) {
           color={over ? "var(--destructive)" : budget.category.color}
           dim={over}
           tick={tick}
+          tickLabel={`${Math.round(tick)}% through the month`}
           aria-label={`${budget.category.name} budget used`}
-          className="mt-1.5 [&_[data-slot=progress-track]]:h-1.5"
+          className="mt-2"
         />
       </div>
 

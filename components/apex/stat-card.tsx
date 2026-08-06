@@ -114,6 +114,31 @@ export function ApexStatUnit({
 }
 
 /**
+ * A formatted currency string with its pence faded so the pounds carry the
+ * comparison ("faded secondary digits", .claude/skills/design). Splits on the
+ * last "."; a string without one renders plain (formatPenceShort drops .00).
+ * Renders inside ApexStatValue, which owns the heading type; this span only
+ * handles the fade.
+ */
+export function ApexStatFigure({
+  children,
+  className,
+}: {
+  /** An already-formatted amount, e.g. from formatPence/formatPenceShort */
+  children: string
+  className?: string
+}) {
+  const dot = children.lastIndexOf(".")
+  if (dot === -1) return <span className={className}>{children}</span>
+  return (
+    <span className={className}>
+      {children.slice(0, dot)}
+      <span className="text-muted-foreground/60">{children.slice(dot)}</span>
+    </span>
+  )
+}
+
+/**
  * A pastel pill for one piece of discrete data: a date, a delta, a one-fact
  * tag ("5% paid of £150,000"). Sentences stay in ApexStatHint; the pill is
  * for the fact you'd want to pick up between two fingers.
