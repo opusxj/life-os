@@ -47,15 +47,18 @@ export function MortgageStack({
         action={<MortgageMenu mortgage={mortgage} />}
       />
 
-      {/* Where you stand: the balance, where this month's money goes, the end */}
+      {/* Where you stand, in time order: this month's payment, the balance it
+          leaves, the date it all ends. The balance sits between them because
+          it is the fact the other two are measured against, and its arc gives
+          the row a centre. */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ThisMonthCard mortgage={mortgage} status={status} today={today} />
         <BalanceCard
           mortgage={mortgage}
           status={status}
           today={today}
           quickAction={cardBalanceAction}
         />
-        <ThisMonthCard mortgage={mortgage} status={status} today={today} />
         <PayoffCard mortgage={mortgage} status={status} today={today} />
       </div>
 
