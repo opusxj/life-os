@@ -78,6 +78,13 @@ warmth, not BI restraint. Thin hairline marks read as lifeless here.
 - **Pills carry discrete data**: dates, deltas, and one-fact tags render as
   pastel pills (`ApexStatTag`), tinted from the vocabulary. "£2,850 to the
   90% band" is a pill; a sentence stays a hint line.
+- **Prefer a metaphor the eye already knows.** A finish-line flag on a track
+  is understood before it is read; a coloured bar has to be interpreted
+  first. This audience includes people who struggle to hold several facts at
+  once, so a graphic that carries its own meaning beats one that needs a
+  legend. Where a card compares "what happens" against "what was meant to
+  happen", draw both on one track and let the gap be a length rather than a
+  subtraction the reader performs.
 - **Displays**: meter-below is the default proportional display. The large
   arc is the feature display, reserved for cards whose whole point is the
   proportion. Its value and the word naming that value both sit inside the
