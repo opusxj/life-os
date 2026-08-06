@@ -150,6 +150,12 @@ vocabulary file deliberately, in its own change.
   industry norm is known; hedge honestly ("most lenders").
 - UK vocabulary: early repayment charge, standard variable rate, deal, term.
   Sentence case everywhere. GBP via `formatPence`/`formatPenceShort` only.
+- **Dates are language, not codes.** Always ordinal ("2nd August", never
+  "2 August"), and months spelled out. Abbreviation is a concession to
+  width, never a default: only table cells, tight badges and chart axes
+  shorten the month, and they keep the ordinal. Format through
+  `lib/apex/dates` so this cannot drift again; it also returns the no-value
+  dash rather than throwing on an unparseable date.
 
 ## Structure rules
 

@@ -7,7 +7,7 @@ import { formatPenceShort } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import type { MortgageStatus } from "@/lib/apex/mortgage/status"
 
-import { formatOrdinalDate } from "./format"
+import { formatDayMonth } from "./format"
 import { UpdateBalancePopover } from "./update-balance-popover"
 
 /**
@@ -80,7 +80,7 @@ export function BalanceCard({
  * check. "Since" only where time has actually been applied to the figure.
  */
 function provenance(balanceAsOf: string, monthsSince: number): string {
-  const date = formatOrdinalDate(balanceAsOf)
+  const date = formatDayMonth(balanceAsOf)
   return monthsSince > 0
     ? `Projected since your ${date} statement`
     : `From your ${date} statement`

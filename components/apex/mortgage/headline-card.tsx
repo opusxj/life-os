@@ -1,16 +1,17 @@
-import { House } from "lucide-react"
+﻿import { House } from "lucide-react"
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import { SegmentMeter } from "@/components/apex/meter"
 import { ApexStatCard } from "@/components/apex/stat-card"
 import { MetaDot } from "@/components/shared/meta-dot"
+import { parseDay } from "@/lib/apex/dates"
 import { monthsBetween } from "@/lib/apex/mortgage/amortization"
 import { formatPence } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import { mortgageStatus, type MortgageStatus } from "@/lib/apex/mortgage/status"
 import { cn } from "@/lib/utils"
 
-import { pluralMonths } from "./format"
+import { formatFullDate, formatMonthYear, pluralMonths } from "./format"
 
 /**
  * Zone 1: what the end of the fixed rate is going to cost, said first.
@@ -141,11 +142,11 @@ function mechanism(mortgage: Mortgage, status: MortgageStatus): string {
     return `You are on a ${rate} with no end date recorded.`
   }
   if (status.missing === "reversion_rate") {
-    return `Your ${rate} ends ${longDate(mortgage.rateEndsOn)}. Add ${mortgage.lender}'s standard rate to see what your payment becomes.`
+    return `Your ${rate} ends ${formatFullDate(mortgage.rateEndsOn)}. Add ${mortgage.lender}'s standard rate to see what your payment becomes.`
   }
   const verb = status.stage === "reverted" ? "ended" : "ends"
   const moves = status.stage === "reverted" ? "moved" : "moves"
-  return `Your ${rate} ${verb} ${longDate(mortgage.rateEndsOn)} and ${mortgage.lender} ${moves} you to its ${mortgage.reversionRate}% standard rate.`
+  return `Your ${rate} ${verb} ${formatFullDate(mortgage.rateEndsOn)} and ${mortgage.lender} ${moves} you to its ${mortgage.reversionRate}% standard rate.`
 }
 
 /** One labelled figure, pence faded so the pounds carry the comparison. */
@@ -216,13 +217,13 @@ function DealMeter({
             className: "bg-amber-400/70 dark:bg-amber-500/60",
             tip: windowOpen
               ? "Reserve window, open now"
-              : `Reserve window, opens ${status.arrangeFrom ? MONTH_YEAR.format(status.arrangeFrom) : "6 months out"}`,
+              : `Reserve window, opens ${status.arrangeFrom ? formatMonthYear(status.arrangeFrom) : "6 months out"}`,
           },
         ]}
       />
       <div className="mt-1.5 flex justify-between text-[11px] text-muted-foreground tabular-nums">
-        <span>{MONTH_YEAR.format(start)}</span>
-        <span>{MONTH_YEAR.format(end)}</span>
+        <span>{formatMonthYear(start)}</span>
+        <span>{formatMonthYear(end)}</span>
       </div>
     </div>
   )
@@ -252,34 +253,11 @@ const REPAYMENT_WORD: Record<Mortgage["repaymentType"], string> = {
   part_and_part: "part and part",
 }
 
-const MONTH_YEAR = new Intl.DateTimeFormat("en-GB", {
-  month: "short",
-  year: "numeric",
-})
-const FULL_MONTH_YEAR = new Intl.DateTimeFormat("en-GB", {
-  month: "long",
-  year: "numeric",
-})
-const LONG_DATE = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-})
-
 /** The new payment starts the month after the rate ends. */
 function monthAfter(dateKey: string | null): string {
   if (!dateKey) return "the standard rate"
   const date = parseDay(dateKey)
-  return FULL_MONTH_YEAR.format(
+  return formatMonthYear(
     new Date(date.getFullYear(), date.getMonth() + 1, 1)
   )
-}
-
-function longDate(dateKey: string): string {
-  return LONG_DATE.format(parseDay(dateKey))
-}
-
-/** yyyy-mm-dd → local midnight, matching status.ts month arithmetic */
-function parseDay(key: string): Date {
-  return new Date(`${key}T00:00:00`)
 }

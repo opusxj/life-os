@@ -1,5 +1,6 @@
 import { History } from "lucide-react"
 
+import { formatDayMonth, formatFullDate } from "@/lib/apex/dates"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import { cn } from "@/lib/utils"
 
@@ -63,15 +64,6 @@ export function MortgagePageBar({
  *  arithmetic, but the figure they start from has stopped being evidence. */
 const STALE_DAYS = 90
 
-const SHORT_DATE = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-})
-const SHORT_DATE_YEAR = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-})
 
 /** Both keys are yyyy-mm-dd, so they parse as UTC midnight and subtract exactly. */
 function daysSince(dateKey: string, today: string): number {
@@ -103,7 +95,7 @@ function ago(days: number): string {
 /** The year only earns its place when the date isn't in the current one, which
  *  is exactly when a bare "24 Nov" would read as eight months in the future. */
 function dateLabel(dateKey: string, today: string): string {
-  const format =
-    dateKey.slice(0, 4) === today.slice(0, 4) ? SHORT_DATE : SHORT_DATE_YEAR
-  return format.format(new Date(`${dateKey}T00:00:00`))
+  return dateKey.slice(0, 4) === today.slice(0, 4)
+    ? formatDayMonth(dateKey)
+    : formatFullDate(dateKey)
 }

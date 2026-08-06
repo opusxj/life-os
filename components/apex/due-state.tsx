@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge"
+import { formatWeekdayDateShort } from "@/lib/apex/dates"
 import { cn } from "@/lib/utils"
 
 export type DueState = {
@@ -72,10 +73,8 @@ export function todayKey(): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
+/** Badges sit in table rows, so this is one of the surfaces allowed to
+ *  shorten the month; the ordinal stays either way (lib/apex/dates). */
 function shortDate(dateKey: string): string {
-  return new Date(`${dateKey}T00:00:00`).toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  })
+  return formatWeekdayDateShort(dateKey)
 }
