@@ -7,6 +7,7 @@ import { formatPenceShort } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import type { MortgageStatus } from "@/lib/apex/mortgage/status"
 
+import { formatOrdinalDate } from "./format"
 import { UpdateBalancePopover } from "./update-balance-popover"
 
 /**
@@ -76,16 +77,11 @@ export function BalanceCard({
  * Interest-only balances never move, so "projected" would overclaim. For
  * everything else the figure shown is the statement aged forward, and saying
  * so is the difference between a number you can trust and one you have to
- * check.
+ * check. "Since" only where time has actually been applied to the figure.
  */
 function provenance(balanceAsOf: string, monthsSince: number): string {
-  const date = STATEMENT_DATE.format(new Date(`${balanceAsOf}T00:00:00`))
+  const date = formatOrdinalDate(balanceAsOf)
   return monthsSince > 0
-    ? `Projected from your ${date} statement`
+    ? `Projected since your ${date} statement`
     : `From your ${date} statement`
 }
-
-const STATEMENT_DATE = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-})

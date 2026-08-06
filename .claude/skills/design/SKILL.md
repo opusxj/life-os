@@ -79,8 +79,11 @@ warmth, not BI restraint. Thin hairline marks read as lifeless here.
   pastel pills (`ApexStatTag`), tinted from the vocabulary. "£2,850 to the
   90% band" is a pill; a sentence stays a hint line.
 - **Displays**: meter-below is the default proportional display. The large
-  arc (value alone in its opening, caption outside) is the feature display,
-  reserved for cards whose whole point is the proportion.
+  arc is the feature display, reserved for cards whose whole point is the
+  proportion. Its value and the word naming that value both sit inside the
+  opening, the caption directly under the figure: split them across the
+  gauge's edge and they stop reading as one unit. Size the arc so the figure
+  clears the stroke by ~25px at its widest rather than shrinking the type.
 - **No mystery pixels**: every colored region a user could point at and ask
   "what is that?" explains itself on hover via the house tooltip (and its
   container carries a sensible aria-label). Tooltips are labels, not

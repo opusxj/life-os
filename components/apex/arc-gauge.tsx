@@ -1,10 +1,13 @@
 import { cn } from "@/lib/utils"
 
 /**
- * The feature display: a thick half-circle gauge whose opening holds the
- * value and nothing else. The caption renders BELOW the arc, outside its
- * box — the ratified dialect's fix for "the numbers are a bit tight with
- * the indicator". Reserved for cards whose whole point is the proportion;
+ * The feature display: a thick half-circle gauge holding its value, and the
+ * word for that value directly beneath it, both inside the opening.
+ *
+ * The arc is sized so a household figure clears the ring by roughly 25px at
+ * its widest, which is what lets the caption sit under the number instead of
+ * below the whole gauge: close enough to read as one unit, far enough not to
+ * crowd the stroke. Reserved for cards whose whole point is the proportion;
  * the default proportional display is SegmentMeter.
  */
 export function ArcGauge({
@@ -17,9 +20,9 @@ export function ArcGauge({
 }: {
   /** 0 to 100; clamped, so callers can pass raw percentages */
   value: number
-  /** Sits alone in the arc's opening; the card's real answer */
+  /** Sits in the arc's opening; the card's real answer */
   label: string
-  /** One short line rendered under the arc, clear of the figure */
+  /** One or two words naming the value, directly under it */
   caption?: string
   arcClassName?: string
   trackClassName?: string
@@ -28,44 +31,45 @@ export function ArcGauge({
   const filled = Math.min(100, Math.max(0, value))
 
   return (
-    <div className={cn("flex flex-col items-center", className)}>
-      <div className="relative h-[100px] w-44">
-        {/* Fixed px so the overlaid figure lands identically everywhere;
-            176x100 against the same viewBox keeps the arc circular. */}
-        <svg width={176} height={100} viewBox="0 0 176 100" aria-hidden>
-          <path
-            d={ARC}
-            fill="none"
-            strokeWidth={13}
-            strokeLinecap="round"
-            className={trackClassName}
-          />
-          <path
-            d={ARC}
-            fill="none"
-            strokeWidth={13}
-            strokeLinecap="round"
-            strokeDasharray={ARC_LENGTH}
-            strokeDashoffset={ARC_LENGTH * (1 - filled / 100)}
-            className={arcClassName}
-          />
-        </svg>
-        {/* The opening spans y≈30 (inner stroke edge) to y=93 (baseline);
-            centring the 32px line box on y≈72 clears the stroke above and
-            keeps the figure off the floor. */}
-        <span className="absolute inset-x-0 top-[56px] block text-center font-heading text-[22px] leading-8 font-semibold tabular-nums">
+    <div className={cn("relative mx-auto h-[118px] w-52", className)}>
+      {/* Fixed px against the same viewBox, so the overlaid label lands in
+          the same place whatever the card is doing around it. */}
+      <svg width={208} height={118} viewBox="0 0 208 118" aria-hidden>
+        <path
+          d={ARC}
+          fill="none"
+          strokeWidth={14}
+          strokeLinecap="round"
+          className={trackClassName}
+        />
+        <path
+          d={ARC}
+          fill="none"
+          strokeWidth={14}
+          strokeLinecap="round"
+          strokeDasharray={ARC_LENGTH}
+          strokeDashoffset={ARC_LENGTH * (1 - filled / 100)}
+          className={arcClassName}
+        />
+      </svg>
+
+      {/* The opening runs from y=31 (inner edge of the stroke at the apex) to
+          the y=110 baseline; this block sits low in it, where the semicircle
+          is widest and the figure has the most room. */}
+      <div className="absolute inset-x-0 top-[62px] flex flex-col items-center">
+        <span className="font-heading text-[22px] leading-7 font-semibold tabular-nums">
           {label}
         </span>
+        {caption && (
+          <span className="text-[11px] leading-4 text-muted-foreground">
+            {caption}
+          </span>
+        )}
       </div>
-      {caption && (
-        <span className="mt-1 text-[12px] text-muted-foreground">
-          {caption}
-        </span>
-      )}
     </div>
   )
 }
 
-/** Semicircle of radius 72 centred at (88, 93), left end to right end. */
-const ARC = "M 16 93 A 72 72 0 0 1 160 93"
-const ARC_LENGTH = Math.PI * 72
+/** Semicircle of radius 86 centred at (104, 110), left end to right end. */
+const ARC = "M 18 110 A 86 86 0 0 1 190 110"
+const ARC_LENGTH = Math.PI * 86
