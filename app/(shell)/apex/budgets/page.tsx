@@ -19,6 +19,7 @@ import {
   ApexStatHint,
   ApexStatValue,
 } from "@/components/apex/stat-card"
+import { MetaDot } from "@/components/shared/meta-dot"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   Empty,
@@ -103,7 +104,9 @@ export default async function BudgetsPage() {
                 className="mt-2"
               />
               <ApexStatHint className="mt-1.5">
-                {`${formatPenceShort(totalSpent)} of ${formatPenceShort(totalBudgeted)} · ${data.monthLabel}`}
+                {`${formatPenceShort(totalSpent)} of ${formatPenceShort(totalBudgeted)}`}
+                <MetaDot />
+                {data.monthLabel}
               </ApexStatHint>
             </ApexStatCard>
 

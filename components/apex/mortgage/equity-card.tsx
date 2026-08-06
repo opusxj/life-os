@@ -60,7 +60,7 @@ export function EquityCard({
     {
       pct: isShared ? 100 - share : 0,
       className: "bg-muted",
-      tip: `Landlord's ${formatShare(100 - share)}% · ${formatPenceShort(propertyValue - shareValue)}`,
+      tip: `Landlord's ${formatShare(100 - share)}%, worth ${formatPenceShort(propertyValue - shareValue)}`,
     },
   ]
 

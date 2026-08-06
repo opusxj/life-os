@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 
 import { MoneyInput } from "@/components/apex/accounts/account-form-sheet"
+import { MetaDot } from "@/components/shared/meta-dot"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -141,7 +142,10 @@ export function TransferSheet({
             <div className="space-y-1.5">
               <Label htmlFor="transfer-note" className="text-[13px]">
                 Note
-                <span className="text-muted-foreground"> · optional</span>
+                <span className="text-muted-foreground">
+                  <MetaDot />
+                  optional
+                </span>
               </Label>
               <Input
                 id="transfer-note"

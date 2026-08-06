@@ -27,8 +27,9 @@ export function ApexStatCard({
   children,
 }: {
   label: string
-  /** Where the number came from, in a few words. Provenance, not filler. */
-  description?: string
+  /** Where the number came from, in a few words. Provenance, not filler.
+   *  Takes nodes so a line can carry a MetaDot between its facts. */
+  description?: React.ReactNode
   icon?: LucideIcon
   iconClassName?: string
   /** Header-corner slot (menu, small button, countdown pill) */

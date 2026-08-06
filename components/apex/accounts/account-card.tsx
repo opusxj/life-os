@@ -6,6 +6,7 @@ import { motion } from "motion/react"
 import { accountKindMeta } from "@/components/apex/accounts/meta"
 import { SyncBalancePopover } from "@/components/apex/accounts/sync-balance-popover"
 import { ApexStatValue } from "@/components/apex/stat-card"
+import { MetaDot } from "@/components/shared/meta-dot"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -84,9 +85,15 @@ export function AccountCard({
                 {account.name}
               </span>
               <span className="block truncate text-[12px] leading-snug text-muted-foreground">
-                {account.institution
-                  ? `${account.institution} · ${kind.label}`
-                  : kind.label}
+                {account.institution ? (
+                  <>
+                    {account.institution}
+                    <MetaDot />
+                    {kind.label}
+                  </>
+                ) : (
+                  kind.label
+                )}
               </span>
             </span>
           </div>

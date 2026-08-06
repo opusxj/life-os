@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { LogOut, Trash2, UserPlus } from "lucide-react"
 
+import { MetaDot } from "@/components/shared/meta-dot"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -67,7 +68,8 @@ export function ManageSpaceDialog({
             {activeSpace.name}
           </DialogTitle>
           <DialogDescription>
-            {members.length} {members.length === 1 ? "member" : "members"} ·
+            {members.length} {members.length === 1 ? "member" : "members"}
+            <MetaDot />
             your role: {myRole}
           </DialogDescription>
         </DialogHeader>

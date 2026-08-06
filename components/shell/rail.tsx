@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { motion, MotionConfig } from "motion/react"
 import { Settings, UserPlus, type LucideIcon } from "lucide-react"
 
+import { MetaDot } from "@/components/shared/meta-dot"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import {
   Tooltip,
@@ -152,7 +153,12 @@ function RailModule({
         </span>
       </TooltipTrigger>
       <TooltipContent side="right" sideOffset={10}>
-        {mod.name} · {mod.domain}
+        {/* One flex item, so MetaDot's own margin sets the gap, not the popup's */}
+        <span>
+          {mod.name}
+          <MetaDot />
+          {mod.domain}
+        </span>
         <KbdGroup className="gap-0.5">
           <Kbd className="h-4 min-w-4 px-1 text-[10px]">Alt</Kbd>
           <Kbd className="h-4 min-w-4 px-1 text-[10px]">{index + 1}</Kbd>

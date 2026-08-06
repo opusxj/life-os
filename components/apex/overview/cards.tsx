@@ -26,6 +26,7 @@ import {
   ApexStatValue,
 } from "@/components/apex/stat-card"
 import { MarkPaidButton } from "@/components/apex/subscriptions/mark-paid-button"
+import { MetaDot } from "@/components/shared/meta-dot"
 import { Button } from "@/components/ui/button"
 import {
   Empty,
@@ -136,7 +137,11 @@ export function DueSoonCard({
           </ApexStatTag>
           {nextUp && (
             <ApexStatHint className="mt-0">
-              {`Next up: ${nextUp.name} · ${formatPenceShort(nextUp.amount)} · due ${dueState(nextUp.nextDueOn, today).label}`}
+              {`Next up: ${nextUp.name}`}
+              <MetaDot />
+              {formatPenceShort(nextUp.amount)}
+              <MetaDot />
+              {`due ${dueState(nextUp.nextDueOn, today).label}`}
             </ApexStatHint>
           )}
         </div>
@@ -374,7 +379,13 @@ export function MortgageSnapshot({
   return (
     <ApexStatCard
       label="Mortgage"
-      description={`${mortgage.name} · ${mortgage.lender}`}
+      description={
+        <>
+          {mortgage.name}
+          <MetaDot />
+          {mortgage.lender}
+        </>
+      }
       icon={House}
       iconClassName={ANCHOR_TINTS.property}
       className={className}

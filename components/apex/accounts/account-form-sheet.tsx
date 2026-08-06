@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 
 import { ACCOUNT_KINDS, APEX_COLORS } from "@/components/apex/accounts/meta"
 import { ColorSwatches } from "@/components/shared/color-swatches"
+import { MetaDot } from "@/components/shared/meta-dot"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -117,7 +118,10 @@ export function AccountFormSheet({
             <div className="space-y-1.5">
               <Label htmlFor="account-institution" className="text-[13px]">
                 Bank / provider
-                <span className="text-muted-foreground"> · optional</span>
+                <span className="text-muted-foreground">
+                  <MetaDot />
+                  optional
+                </span>
               </Label>
               <Input
                 id="account-institution"
@@ -137,7 +141,10 @@ export function AccountFormSheet({
               <div className="space-y-1.5">
                 <Label htmlFor="account-starting" className="text-[13px]">
                   Starting balance
-                  <span className="text-muted-foreground"> · optional</span>
+                  <span className="text-muted-foreground">
+                    <MetaDot />
+                    optional
+                  </span>
                 </Label>
                 <MoneyInput
                   id="account-starting"

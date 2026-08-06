@@ -112,7 +112,7 @@ export function BalanceRunway({
 
   const termEndLabel = formatMonthYear(mortgage.termEndsOn)
   const endRow = flat
-    ? { label: "Due at the term end", value: `${formatPenceShort(remaining)} · ${termEndLabel}` }
+    ? { label: `Due ${termEndLabel}`, value: formatPenceShort(remaining) }
     : cleared
       ? { label: "Paid off", value: formatMonthYear(monthsFromNow(months, now)) }
       : {

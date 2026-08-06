@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { Plus } from "lucide-react"
 
+import { MetaDot } from "@/components/shared/meta-dot"
 import { Button } from "@/components/ui/button"
 import {
   Empty,
@@ -41,7 +42,9 @@ export default async function ModulePage({
           <mod.icon />
         </EmptyMedia>
         <EmptyTitle>
-          {mod.name} · {mod.domain}
+          {mod.name}
+          <MetaDot />
+          {mod.domain}
         </EmptyTitle>
         <EmptyDescription>
           {`${mod.description} This module hasn't been built yet.`}

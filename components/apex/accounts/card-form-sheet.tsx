@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 
 import { APEX_COLORS, CARD_BRANDS } from "@/components/apex/accounts/meta"
 import { ColorSwatches } from "@/components/shared/color-swatches"
+import { MetaDot } from "@/components/shared/meta-dot"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -166,7 +167,10 @@ export function CardFormSheet({
             <div className="space-y-1.5">
               <Label htmlFor="card-expires" className="text-[13px]">
                 Expires
-                <span className="text-muted-foreground"> · optional</span>
+                <span className="text-muted-foreground">
+                  <MetaDot />
+                  optional
+                </span>
               </Label>
               <Input id="card-expires" name="expires" type="month" />
             </div>

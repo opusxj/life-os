@@ -11,6 +11,7 @@ import {
 
 import { AvatarBadge, EntityAvatar } from "@/components/apex/entity-avatar"
 import { DataChip } from "@/components/apex/table-shell"
+import { MetaDot } from "@/components/shared/meta-dot"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { formatPence } from "@/lib/apex/money"
 import type {
@@ -155,11 +156,19 @@ function avatarColor(row: TransactionRowData): string | null {
 }
 
 /** Where the money sat: the account, plus the card or the transfer target. */
-function sourceLine(row: TransactionRowData): string {
+function sourceLine(row: TransactionRowData): React.ReactNode {
   if (row.kind === "transfer") {
     return `${row.accountName} → ${row.transferAccountName ?? "another account"}`
   }
-  if (row.cardLast4) return `${row.accountName} · ·${row.cardLast4}`
+  if (row.cardLast4) {
+    return (
+      <>
+        {row.accountName}
+        <MetaDot />
+        {`·${row.cardLast4}`}
+      </>
+    )
+  }
   return row.accountName
 }
 

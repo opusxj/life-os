@@ -3,6 +3,7 @@ import { House } from "lucide-react"
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import { SegmentMeter } from "@/components/apex/meter"
 import { ApexStatCard } from "@/components/apex/stat-card"
+import { MetaDot } from "@/components/shared/meta-dot"
 import { monthsBetween } from "@/lib/apex/mortgage/amortization"
 import { formatPence } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
@@ -12,14 +13,13 @@ import { cn } from "@/lib/utils"
 import { pluralMonths } from "./format"
 
 /**
- * Zone 1: the deal ending, stated as a sentence, with every number attached
- * to it in words.
+ * Zone 1: what the end of the fixed rate is going to cost, said first.
  *
- * The card's one event is the fixed rate dying. Earlier versions scattered
- * its consequences as fragments ("From April 2027", "+£227.20", a "7 months"
- * badge) and the user rightly asked: from what? more than what? seven months
- * to WHAT? The design skill's no-orphaned-data rule was written off the back
- * of this card: state the event, then hang the numbers off it.
+ * The headline is the consequence ("In 7 months your payment rises £227.20 a
+ * month") because that is the fact worth acting on; the mechanism follows it
+ * in one sentence. Earlier versions led with "your deal ends", which is
+ * jargon that names neither what ends nor what happens next, and scattered
+ * the consequence as orphaned fragments below.
  */
 export function MortgageHeadlineCard({
   mortgage,
@@ -36,26 +36,43 @@ export function MortgageHeadlineCard({
 }) {
   const status = mortgageStatus(mortgage, today)
   const guidance = guidanceFor(mortgage, status)
+  const rising = status.shock !== null && status.shock > 0
 
   return (
     <ApexStatCard
       label={mortgage.name}
-      description={`${mortgage.lender} · ${mortgage.interestRate}% ${rateWord(mortgage.rateType)} · ${REPAYMENT_WORD[mortgage.repaymentType]}`}
+      description={
+        <>
+          {mortgage.lender}
+          <MetaDot />
+          {`${REPAYMENT_WORD[mortgage.repaymentType]} mortgage`}
+        </>
+      }
       icon={House}
       iconClassName={ANCHOR_TINTS.primary}
       action={action}
       className={className}
     >
       <p className="text-base font-medium">
-        {eventSentence(mortgage, status)}
-        {mortgage.rateEndsOn && (
-          <span className="font-normal text-muted-foreground">
-            {` · ${longDate(mortgage.rateEndsOn)}`}
+        {headlineLead(mortgage, status)}
+        {status.shock !== null && status.shock !== 0 && (
+          <span
+            className={cn(
+              "tabular-nums",
+              rising
+                ? "text-red-600 dark:text-red-400"
+                : "text-emerald-600 dark:text-emerald-400"
+            )}
+          >
+            {` ${formatPence(Math.abs(status.shock))} a month`}
           </span>
         )}
       </p>
+      <p className="mt-1 text-[13px] text-muted-foreground">
+        {mechanism(mortgage, status)}
+      </p>
 
-      <div className="mt-3.5 flex flex-wrap items-start gap-x-7 gap-y-3">
+      <div className="mt-4 flex flex-wrap items-start gap-x-7 gap-y-3">
         <PaymentColumn
           label={status.stage === "reverted" ? "Before" : "Paying now"}
           pence={mortgage.monthlyPayment}
@@ -63,15 +80,16 @@ export function MortgageHeadlineCard({
         {status.reversionPayment !== null ? (
           <PaymentColumn
             label={
-              status.stage === "reverted" ? "Paying now" : "After the deal ends"
+              status.stage === "reverted"
+                ? "Paying now"
+                : `From ${monthAfter(mortgage.rateEndsOn)}`
             }
             pence={status.reversionPayment}
-            delta={status.shock}
           />
         ) : (
           <div>
             <div className="text-[12px] text-muted-foreground">
-              After the deal ends
+              After it ends
             </div>
             <div className="mt-0.5 font-heading text-[25px] leading-8 font-semibold text-muted-foreground/50">
               ?
@@ -90,63 +108,59 @@ export function MortgageHeadlineCard({
 }
 
 /**
- * One labelled figure. The delta renders UNDER the value it belongs to, in
- * the money colors (red = costs more, emerald = costs less), with the yearly
- * figure one hover away.
+ * The clause before the money. The amount itself is coloured by the caller,
+ * so this returns only the words that lead into it.
  */
-function PaymentColumn({
-  label,
-  pence,
-  delta,
-}: {
-  label: string
-  pence: number
-  /** Signed monthly difference vs the other column; omit for the base column */
-  delta?: number | null
-}) {
-  return (
-    <div>
-      <div className="text-[12px] text-muted-foreground">{label}</div>
-      <div className="mt-0.5">
-        <PriceFigure pence={pence} />
-      </div>
-      {delta !== undefined && delta !== null && delta !== 0 && (
-        <p
-          className={cn(
-            "mt-0.5 text-[13px] font-medium tabular-nums",
-            delta > 0
-              ? "text-red-600 dark:text-red-400"
-              : "text-emerald-600 dark:text-emerald-400"
-          )}
-        >
-          {`${delta > 0 ? "+" : "-"}${formatPence(Math.abs(delta))} a month`}
-        </p>
-      )}
-    </div>
-  )
+function headlineLead(mortgage: Mortgage, status: MortgageStatus): string {
+  if (status.shock === null || status.shock === 0) {
+    if (!mortgage.rateEndsOn || status.monthsToRateEnd === null) {
+      return "Your rate has no end date"
+    }
+    if (status.stage === "reverted") return "Your fixed rate has ended"
+    const months = status.monthsToRateEnd
+    return months === 0
+      ? "Your fixed rate ends this month"
+      : `Your fixed rate ends in ${pluralMonths(months)}`
+  }
+
+  const direction = status.shock > 0 ? "rises" : "falls"
+  if (status.stage === "reverted") {
+    return `Your payment ${status.shock > 0 ? "rose" : "fell"}`
+  }
+  const months = status.monthsToRateEnd
+  if (months === null) return `Your payment ${direction}`
+  if (months === 0) return `This month your payment ${direction}`
+  return `In ${pluralMonths(months)} your payment ${direction}`
 }
 
-/** £812.40 with the pence faded, so the pounds carry the comparison. */
-function PriceFigure({ pence }: { pence: number }) {
+/** Why the payment moves: the one sentence the card used to leave out. */
+function mechanism(mortgage: Mortgage, status: MortgageStatus): string {
+  const rate = `${mortgage.interestRate}% ${rateWord(mortgage.rateType)} rate`
+
+  if (!mortgage.rateEndsOn) {
+    return `You are on a ${rate} with no end date recorded.`
+  }
+  if (status.missing === "reversion_rate") {
+    return `Your ${rate} ends ${longDate(mortgage.rateEndsOn)}. Add ${mortgage.lender}'s standard rate to see what your payment becomes.`
+  }
+  const verb = status.stage === "reverted" ? "ended" : "ends"
+  const moves = status.stage === "reverted" ? "moved" : "moves"
+  return `Your ${rate} ${verb} ${longDate(mortgage.rateEndsOn)} and ${mortgage.lender} ${moves} you to its ${mortgage.reversionRate}% standard rate.`
+}
+
+/** One labelled figure, pence faded so the pounds carry the comparison. */
+function PaymentColumn({ label, pence }: { label: string; pence: number }) {
   const text = formatPence(pence)
   const dot = text.lastIndexOf(".")
   return (
-    <span className="font-heading text-[25px] leading-8 font-semibold tabular-nums">
-      {text.slice(0, dot)}
-      <span className="text-muted-foreground/60">{text.slice(dot)}</span>
-    </span>
+    <div>
+      <div className="text-[12px] text-muted-foreground">{label}</div>
+      <div className="mt-0.5 font-heading text-[25px] leading-8 font-semibold tabular-nums">
+        {text.slice(0, dot)}
+        <span className="text-muted-foreground/60">{text.slice(dot)}</span>
+      </div>
+    </div>
   )
-}
-
-/** The event, in words. Everything else on the card hangs off this line. */
-function eventSentence(mortgage: Mortgage, status: MortgageStatus): string {
-  if (!mortgage.rateEndsOn || status.monthsToRateEnd === null) {
-    return "Your rate has no end date"
-  }
-  if (status.stage === "reverted") return "Your deal ended"
-  const months = status.monthsToRateEnd
-  if (months === 0) return "Your deal ends this month"
-  return `Your deal ends in ${pluralMonths(months)}`
 }
 
 /** Mirrors ARRANGE_WINDOW_MONTHS in status.ts: the reservable tail. */
@@ -155,9 +169,7 @@ const ARRANGE_TAIL_MONTHS = 6
 /**
  * The fixed period as the house SegmentMeter: one continuous run per region
  * (behind you, still to come, the reservable tail), fully rounded, spanning
- * the card. Not a strip of ticks, which read as dots and got rejected; a
- * continuous bar carries full width fine now the page itself is capped.
- * Tooltips are labels, not lectures.
+ * the card. Tooltips are labels, not lectures.
  */
 function DealMeter({
   mortgage,
@@ -187,7 +199,7 @@ function DealMeter({
   return (
     <div className="mt-4">
       <SegmentMeter
-        label={`${pluralMonths(elapsed)} of the ${pluralMonths(total)} deal elapsed; ${pluralMonths(remaining)} remain.`}
+        label={`${pluralMonths(elapsed)} of the ${pluralMonths(total)} fixed rate elapsed; ${pluralMonths(remaining)} remain.`}
         segments={[
           {
             pct: (elapsed / total) * 100,
@@ -221,9 +233,6 @@ function guidanceFor(
   mortgage: Mortgage,
   status: MortgageStatus
 ): string | null {
-  if (status.missing === "reversion_rate") {
-    return `Add ${mortgage.lender}'s standard rate to see what your payment becomes when this deal ends.`
-  }
   if (status.stage === "reverted") {
     return "A product transfer with your existing lender is usually the quickest way onto a new rate."
   }
@@ -247,11 +256,24 @@ const MONTH_YEAR = new Intl.DateTimeFormat("en-GB", {
   month: "short",
   year: "numeric",
 })
+const FULL_MONTH_YEAR = new Intl.DateTimeFormat("en-GB", {
+  month: "long",
+  year: "numeric",
+})
 const LONG_DATE = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",
   month: "long",
   year: "numeric",
 })
+
+/** The new payment starts the month after the rate ends. */
+function monthAfter(dateKey: string | null): string {
+  if (!dateKey) return "the standard rate"
+  const date = parseDay(dateKey)
+  return FULL_MONTH_YEAR.format(
+    new Date(date.getFullYear(), date.getMonth() + 1, 1)
+  )
+}
 
 function longDate(dateKey: string): string {
   return LONG_DATE.format(parseDay(dateKey))

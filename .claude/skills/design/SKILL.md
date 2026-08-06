@@ -100,6 +100,19 @@ warmth, not BI restraint. Thin hairline marks read as lifeless here.
 - **Deltas ride under their value**, signed, in the money colors: red for
   costs-more, emerald for costs-less (amber is deadlines, never deltas).
   The reference grammar's "↑ 2.1% vs last week" line, not a floating chip.
+  When the card's headline already states the delta, do not repeat it below.
+- **Separators are rendered, not typed.** A "·" between facts on one line is
+  `<MetaDot />` (`components/shared/meta-dot.tsx`), never the character: it
+  then carries its own size and dimming instead of inheriting a glyph that
+  reads as a full stop at 12px, and screen readers skip it. The character
+  survives only where an element cannot go: page titles, aria-labels, select
+  option labels, and anything typed `string`. Card-number typography
+  ("•••• ····", "·1234") is not a separator and stays.
+- **Lead with the consequence, then the mechanism.** A card about a coming
+  change opens with what it costs ("In 7 months your payment rises £227.20 a
+  month"), and explains why in one sentence underneath. Naming only the event
+  ("your deal ends") leaves the reader to work out both what ended and what
+  happens next; jargon like "deal" names neither.
 - **Page width caps at 1100px**, and that cap is what makes width safe:
   inside it, a continuous meter spans its card happily. What failed was a
   strip of discrete ticks stretched across a full-bleed page, which read as
@@ -178,6 +191,10 @@ Rejected, with the user's words where they're instructive:
   just huge … like a PNG image just put there"). Fixed by the width cap and
   the chart's legend rail.
 - Verbose tooltips: "it's not CLEAR it's just too much text/content."
+- "Your deal ends in 7 months": "I don't think this is super clear." The
+  fix was to lead with the consequence and name the rate, not the "deal".
+- Hard-written "·" separators: "we should never hard write a dot, it should
+  use the icon library."
 - Amber on a money delta: "The 227 should not be orange, it should be red."
   Amber means deadline; costs wear red, savings emerald.
 - A floating arrow between figures: "a weird arrow which looks so weird."
