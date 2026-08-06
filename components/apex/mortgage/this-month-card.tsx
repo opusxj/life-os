@@ -69,25 +69,26 @@ export function ThisMonthCard({
               {
                 pct: capitalPct,
                 className: "bg-emerald-500",
-                tip: `${formatPence(split.capital)} this month`,
+                tip: `${capitalPct}% clears the mortgage`,
               },
               {
                 pct: 100 - capitalPct,
                 className: "bg-amber-500/70",
-                tip: `${formatPence(split.interest)} this month`,
+                tip: `${100 - capitalPct}% interest paid`,
               },
             ]}
           />
-          {/* Each key sits at its own end of the bar, so the swatch points at
-              the run it names instead of floating in a detached legend row. */}
-          <div className="mt-2 flex items-center justify-between text-[12px] text-muted-foreground">
+          {/* The amounts sit under their own ends of the bar, tying the two
+              figures in the copy above to the runs that represent them; the
+              share each one is stays a hover away. */}
+          <div className="mt-2 flex items-center justify-between text-[12px] text-muted-foreground tabular-nums">
             <span className="flex items-center gap-1.5">
               <Swatch className="bg-emerald-500" />
-              {`${capitalPct}% reduces debt`}
+              {formatPence(split.capital)}
             </span>
             <span className="flex items-center gap-1.5">
               <Swatch className="bg-amber-500/70" />
-              {`${100 - capitalPct}% interest`}
+              {formatPence(split.interest)}
             </span>
           </div>
         </>
