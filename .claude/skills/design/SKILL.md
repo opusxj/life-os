@@ -201,6 +201,14 @@ Rejected, with the user's words where they're instructive:
 - A detached legend row stacked under a bar: the swatches are good, the
   row is not. Put each key at its own end of the bar so the swatch points
   at the run it names, and let the segment tooltips carry the amounts.
+- A mechanism line whose figures the card already shows: "doesn't the main
+  card display that information kind of anyways?" A supporting sentence
+  earns its place only where the graphic cannot speak, which usually means
+  the broken states, not the healthy one.
+- Card labels that name a period instead of a subject ("This month"):
+  "doesn't really describe what this card actually is". Labels are short
+  nouns for the thing ("Payment split"); the period belongs in the
+  provenance line.
 - Amber on a money delta: "The 227 should not be orange, it should be red."
   Amber means deadline; costs wear red, savings emerald.
 - A floating arrow between figures: "a weird arrow which looks so weird."

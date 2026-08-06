@@ -44,21 +44,20 @@ export function ThisMonthCard({
   )
   const payment = Math.max(1, mortgage.monthlyPayment)
   const capitalPct = Math.round((split.capital / payment) * 100)
+  const note = edgeNote(mortgage, status, split)
   // Walks the balance forward, so resolve it once rather than per JSX branch
   const crossoverLine = crossover(mortgage, status, split, today)
 
   return (
     <ApexStatCard
-      label="This month"
-      description={`Where your ${formatPence(mortgage.monthlyPayment)} payment goes`}
+      label="Payment split"
+      description={`Where this month's ${formatPence(mortgage.monthlyPayment)} goes`}
       icon={Banknote}
       iconClassName={ANCHOR_TINTS.bill}
       className={className}
     >
       <p className="text-base font-medium">{headline(split)}</p>
-      <p className="mt-1 text-[13px] text-muted-foreground">
-        {mechanism(mortgage, status, split)}
-      </p>
+      {note && <p className="mt-1 text-[13px] text-muted-foreground">{note}</p>}
 
       {split.shortfall === 0 && (
         <>
@@ -127,12 +126,17 @@ function headline(split: ReturnType<typeof paymentSplit>): React.ReactNode {
   )
 }
 
-/** Why the split is what it is: the balance and the rate that set it. */
-function mechanism(
+/**
+ * Only the states the graphic cannot show. A healthy split needs no prose:
+ * the interest figure sits under its own end of the bar, and the balance and
+ * rate that set it belong to the Balance card and the hero. Saying them again
+ * here was repetition wearing the clothes of an explanation.
+ */
+function edgeNote(
   mortgage: Mortgage,
   status: MortgageStatus,
   split: ReturnType<typeof paymentSplit>
-): string {
+): string | null {
   const on = `your ${formatPenceShort(status.balanceToday)} balance at ${mortgage.interestRate}%`
 
   if (split.shortfall > 0) {
@@ -141,7 +145,7 @@ function mechanism(
   if (split.capital === 0) {
     return `All ${formatPence(mortgage.monthlyPayment)} is interest on ${on}. The capital is due in full at the end of the term.`
   }
-  return `The other ${formatPence(split.interest)} is interest on ${on}.`
+  return null
 }
 
 /** The ratio with a date on it, and only when the date says something. */
