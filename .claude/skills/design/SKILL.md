@@ -100,9 +100,11 @@ warmth, not BI restraint. Thin hairline marks read as lifeless here.
 - **Deltas ride under their value**, signed, in the money colors: red for
   costs-more, emerald for costs-less (amber is deadlines, never deltas).
   The reference grammar's "↑ 2.1% vs last week" line, not a floating chip.
-- **Page width caps at 1100px** and nothing renders full-bleed: tick meters
-  cap around 420px, charts live beside a legend rail. Wide screens get
-  margins, not stretched components.
+- **Page width caps at 1100px**, and that cap is what makes width safe:
+  inside it, a continuous meter spans its card happily. What failed was a
+  strip of discrete ticks stretched across a full-bleed page, which read as
+  dots. Charts still live beside a legend rail rather than running edge to
+  edge.
 - **Charts carry no floating annotation pills**: a legend rail beside the
   plot names every mark (swatch, label, value). In-plot text is axis ticks
   and nothing else.

@@ -153,10 +153,11 @@ function eventSentence(mortgage: Mortgage, status: MortgageStatus): string {
 const ARRANGE_TAIL_MONTHS = 6
 
 /**
- * The fixed period as the house SegmentMeter, exactly as ratified on the
- * mockup: one continuous run per region (behind you, still to come, the
- * reservable tail), fully rounded, capped in width. Not a strip of ticks —
- * that read as dots and got rejected. Tooltips are labels, not lectures.
+ * The fixed period as the house SegmentMeter: one continuous run per region
+ * (behind you, still to come, the reservable tail), fully rounded, spanning
+ * the card. Not a strip of ticks, which read as dots and got rejected; a
+ * continuous bar carries full width fine now the page itself is capped.
+ * Tooltips are labels, not lectures.
  */
 function DealMeter({
   mortgage,
@@ -184,7 +185,7 @@ function DealMeter({
   const windowOpen = status.stage === "act" || status.stage === "reverted"
 
   return (
-    <div className="mt-4 max-w-[420px]">
+    <div className="mt-4">
       <SegmentMeter
         label={`${pluralMonths(elapsed)} of the ${pluralMonths(total)} deal elapsed; ${pluralMonths(remaining)} remain.`}
         segments={[
