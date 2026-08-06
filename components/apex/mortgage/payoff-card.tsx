@@ -15,6 +15,11 @@ import { parseDay } from "@/lib/apex/dates"
 import { formatPence, formatPenceShort } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import type { MortgageStatus } from "@/lib/apex/mortgage/status"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 import { formatMonthYear } from "./format"
@@ -55,10 +60,12 @@ export function PayoffCard({
         </ApexStatHint>
         <FinishTrack
           finishPct={100}
+          markerPct={100}
           overshoot={false}
           tone="warn"
           startLabel="Today"
           finishLabel={termLabel}
+          markerLabel={termLabel}
         />
         <FooterNote>
           {mortgage.repaymentType === "interest_only"
@@ -105,11 +112,12 @@ export function PayoffCard({
 
       <FinishTrack
         finishPct={(payoffMonths / span) * 100}
-        markerPct={delta > 0 ? (termMonths / span) * 100 : null}
+        markerPct={(termMonths / span) * 100}
         overshoot={delta > 0}
         tone={delta > 0 ? "bad" : "good"}
         startLabel="Today"
-        finishLabel={payoffLabel}
+        // The right-hand label is whatever the track actually ends on
+        finishLabel={delta > 0 ? payoffLabel : termLabel}
         markerLabel={termLabel}
       />
 
@@ -119,13 +127,18 @@ export function PayoffCard({
 }
 
 /**
- * The track. Green up to the finish, the overshoot beyond the term drawn in
- * red, and the flag planted where the debt actually clears. `translateX` is
- * interpolated by position so the flag stays inside the card at either end.
+ * A ruler, not a meter. Deliberately a thinner class of graphic than the
+ * segment bars elsewhere on the page: this card measures a span of years
+ * rather than dividing a whole, and a hairline with markers reads as a
+ * calendar where a fat rounded bar reads as progress toward a target.
+ *
+ * Solid to whichever comes first, dashed beyond it, because a dashed run is
+ * road that was never meant to be travelled. The flag is planted where the
+ * debt clears; the ring is the term end you were contracted to.
  */
 function FinishTrack({
   finishPct,
-  markerPct = null,
+  markerPct,
   overshoot,
   tone,
   startLabel,
@@ -134,69 +147,87 @@ function FinishTrack({
 }: {
   /** 0 to 100: where the debt clears along the track */
   finishPct: number
-  /** 0 to 100: the contractual term end, when it falls before the finish */
-  markerPct?: number | null
+  /** 0 to 100: the contractual term end */
+  markerPct: number
   overshoot: boolean
   tone: "good" | "bad" | "warn"
   startLabel: string
   finishLabel: string
-  markerLabel?: string
+  markerLabel: string
 }) {
   const finish = Math.min(100, Math.max(0, finishPct))
-  const green = overshoot && markerPct !== null ? markerPct : finish
+  const marker = Math.min(100, Math.max(0, markerPct))
+  const solid = Math.min(finish, marker)
+  const flagTone =
+    tone === "bad"
+      ? "text-red-600 dark:text-red-400"
+      : tone === "warn"
+        ? "text-amber-600 dark:text-amber-400"
+        : "text-emerald-600 dark:text-emerald-400"
 
   return (
     <div className="mt-5">
-      <div className="relative">
-        {/* The flag sits above the track, its pole landing on the finish */}
+      {/* The right margin is the flag's room, so it never clips at 100% */}
+      <div
+        role="img"
+        aria-label={`Today to ${finishLabel}, against the ${markerLabel} term end.`}
+        className="relative mr-5 h-5"
+      >
+        {/* Start tick */}
         <span
-          className={cn(
-            "absolute -top-4 flex items-end",
-            tone === "bad"
-              ? "text-red-600 dark:text-red-400"
-              : tone === "warn"
-                ? "text-amber-600 dark:text-amber-400"
-                : "text-emerald-600 dark:text-emerald-400"
-          )}
-          style={{
-            left: `${finish}%`,
-            transform: `translateX(-${finish}%)`,
-          }}
-        >
-          <Flag aria-hidden className="size-4" />
-        </span>
+          aria-hidden
+          className="absolute top-1/2 h-2.5 w-0.5 -translate-y-1/2 rounded-full bg-border"
+        />
 
-        <div
-          role="img"
-          aria-label={`Today to ${finishLabel}${markerLabel && overshoot ? `, with the ${markerLabel} term end passed on the way` : ""}.`}
-          className="flex h-3 w-full items-stretch gap-1 overflow-hidden rounded-full bg-muted"
-        >
-          <div
-            className="rounded-full bg-emerald-500"
-            style={{ width: `${green}%` }}
-          />
-          {overshoot && markerPct !== null && (
-            <div
-              className="rounded-full bg-red-500"
-              style={{ width: `${finish - markerPct}%` }}
-            />
-          )}
-        </div>
+        {/* The run you are contracted for */}
+        <span
+          aria-hidden
+          className="absolute top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-emerald-500"
+          style={{ width: `${solid}%` }}
+        />
 
-        {/* The line you were meant to cross, when you cross it late */}
-        {overshoot && markerPct !== null && (
+        {/* Beyond the finish or beyond the term: road that shouldn't be there */}
+        {finish !== marker && (
           <span
             aria-hidden
-            className="absolute top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-foreground/40"
+            className={cn(
+              "absolute top-1/2 -translate-y-1/2 border-t-2 border-dashed",
+              overshoot ? "border-red-500" : "border-border"
+            )}
             style={{
-              left: `${markerPct}%`,
-              transform: `translateX(-${markerPct}%) translateY(-50%)`,
+              left: `${solid}%`,
+              width: `${Math.abs(finish - marker)}%`,
             }}
           />
         )}
+
+        {/* The term end: a ring on the line, explaining itself on hover */}
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <span
+                className="absolute top-1/2 size-2.5 cursor-help rounded-full border-2 border-foreground/40 bg-card"
+                style={{
+                  left: `${marker}%`,
+                  transform: `translateX(-${marker}%) translateY(-50%)`,
+                }}
+              />
+            }
+          />
+          <TooltipContent>{`Term ends ${markerLabel}`}</TooltipContent>
+        </Tooltip>
+
+        {/* The finish: the pole lands on the line, the flag flies right into
+            the margin, so it never clips however late the payoff runs */}
+        <span
+          className="absolute bottom-1/2"
+          style={{ left: `${finish}%` }}
+        >
+          <Flag aria-hidden className={cn("size-4", flagTone)} />
+        </span>
       </div>
 
-      <div className="mt-2 flex justify-between text-[11px] text-muted-foreground tabular-nums">
+      <div className="mt-1.5 flex justify-between text-[11px] text-muted-foreground tabular-nums">
         <span>{startLabel}</span>
         <span>{finishLabel}</span>
       </div>
