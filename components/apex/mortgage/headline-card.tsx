@@ -1,6 +1,7 @@
 import { House } from "lucide-react"
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
+import { SegmentMeter } from "@/components/apex/meter"
 import { ApexStatCard } from "@/components/apex/stat-card"
 import {
   Tooltip,
@@ -162,17 +163,14 @@ function eventSentence(mortgage: Mortgage, status: MortgageStatus): string {
   return `Your deal ends in ${pluralMonths(months)}`
 }
 
-/** How many ticks the deal meter draws at most. */
-const METER_MAX_TICKS = 48
 /** Mirrors ARRANGE_WINDOW_MONTHS in status.ts: the reservable tail. */
 const ARRANGE_TAIL_MONTHS = 6
 
-type TickKind = "done" | "left" | "window"
-
 /**
- * The fixed period as a segmented meter, filled to today, capped in width so
- * it never sprawls. Tooltips are labels, not lectures: what each region is,
- * in a few words.
+ * The fixed period as the house SegmentMeter, exactly as ratified on the
+ * mockup: one continuous run per region (behind you, still to come, the
+ * reservable tail), fully rounded, capped in width. Not a strip of ticks —
+ * that read as dots and got rejected. Tooltips are labels, not lectures.
  */
 function DealMeter({
   mortgage,
@@ -197,70 +195,32 @@ function DealMeter({
   const remaining = total - elapsed
   const windowMonths = Math.min(remaining, ARRANGE_TAIL_MONTHS)
   const plainMonths = remaining - windowMonths
-
-  const ticks = Math.min(total, METER_MAX_TICKS)
-  const filled = Math.round((elapsed / total) * ticks)
-  const windowTicks = Math.min(
-    ticks - filled,
-    Math.ceil((ARRANGE_TAIL_MONTHS / total) * ticks)
-  )
-  const plainTicks = ticks - filled - windowTicks
-
   const windowOpen = status.stage === "act" || status.stage === "reverted"
-  const regions: { kind: TickKind; count: number; tip: string }[] = [
-    {
-      kind: "done" as const,
-      count: filled,
-      tip: `${pluralMonths(elapsed)} down`,
-    },
-    {
-      kind: "left" as const,
-      count: plainTicks,
-      tip: `${pluralMonths(plainMonths)} to the reserve window`,
-    },
-    {
-      kind: "window" as const,
-      count: windowTicks,
-      tip: windowOpen
-        ? "Reserve window, open now"
-        : `Reserve window, opens ${status.arrangeFrom ? MONTH_YEAR.format(status.arrangeFrom) : "6 months out"}`,
-    },
-  ].filter((region) => region.count > 0)
 
   return (
-    <div className="mt-4 max-w-md">
-      <div
-        role="img"
-        aria-label={`${pluralMonths(elapsed)} of the ${pluralMonths(total)} deal elapsed; ${pluralMonths(remaining)} remain.`}
-        className="flex h-3.5 items-stretch gap-[3px]"
-      >
-        {regions.map((region) => (
-          <Tooltip key={region.kind}>
-            <TooltipTrigger
-              render={
-                <span
-                  className="flex cursor-help items-stretch gap-[3px]"
-                  style={{ flexGrow: region.count, flexBasis: 0 }}
-                />
-              }
-            >
-              {Array.from({ length: region.count }, (_, index) => (
-                <span
-                  key={index}
-                  className={cn(
-                    "flex-1 rounded-[3px]",
-                    region.kind === "done" && "bg-emerald-500",
-                    region.kind === "left" && "bg-muted",
-                    region.kind === "window" &&
-                      "bg-amber-400/70 dark:bg-amber-500/60"
-                  )}
-                />
-              ))}
-            </TooltipTrigger>
-            <TooltipContent>{region.tip}</TooltipContent>
-          </Tooltip>
-        ))}
-      </div>
+    <div className="mt-4 max-w-[420px]">
+      <SegmentMeter
+        label={`${pluralMonths(elapsed)} of the ${pluralMonths(total)} deal elapsed; ${pluralMonths(remaining)} remain.`}
+        segments={[
+          {
+            pct: (elapsed / total) * 100,
+            className: "bg-emerald-500",
+            tip: `${pluralMonths(elapsed)} down`,
+          },
+          {
+            pct: (plainMonths / total) * 100,
+            className: "bg-muted",
+            tip: `${pluralMonths(plainMonths)} to the reserve window`,
+          },
+          {
+            pct: (windowMonths / total) * 100,
+            className: "bg-amber-400/70 dark:bg-amber-500/60",
+            tip: windowOpen
+              ? "Reserve window, open now"
+              : `Reserve window, opens ${status.arrangeFrom ? MONTH_YEAR.format(status.arrangeFrom) : "6 months out"}`,
+          },
+        ]}
+      />
       <div className="mt-1.5 flex justify-between text-[11px] text-muted-foreground tabular-nums">
         <span>{MONTH_YEAR.format(start)}</span>
         <span>{MONTH_YEAR.format(end)}</span>
