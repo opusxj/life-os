@@ -210,10 +210,11 @@ Rejected, with the user's words where they're instructive:
   nouns for the thing ("Payment split"); the period belongs in the
   provenance line.
 - A closing aside left loose under the content: "it's just floating there
-  randomly". An informational line belongs in ApexStatCard's `footer`, a
-  bordered muted strip with a small `Info` icon. Because CardContent is
-  `flex-1` the strip pins to the card's base, so the note lines up across
-  a row of cards whatever their heights.
+  randomly". It needs separation, but only a hairline: `border-t pt-3` at
+  12px muted, inside the card body. A filled strip is heavier chrome than
+  the lightest line on the card deserves, and `ApexStatCard`'s footer slot
+  reads as an action bar (the Balance card puts a button there), so prose
+  in it miscues as a toolbar.
 - Amber on a money delta: "The 227 should not be orange, it should be red."
   Amber means deadline; costs wear red, savings emerald.
 - A floating arrow between figures: "a weird arrow which looks so weird."
