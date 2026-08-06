@@ -126,11 +126,13 @@ export function BalanceRunway({
     status.monthsToRateEnd < months
   ) {
     const lineY = y(points[Math.min(status.monthsToRateEnd, points.length - 1)].v)
-    const topY = PAD_T + 10
+    const topY = PAD_T + 12
     rateMarker = {
       x: x(status.monthsToRateEnd),
       flip: x(status.monthsToRateEnd) > PAD_L + PLOT_W * 0.65,
-      labelY: lineY < topY + 12 ? Math.min(lineY + 16, BASE_Y - 6) : topY,
+      // Pill centre: rides the top unless the curve is up there too, in
+      // which case it drops below the line, inside the area fill
+      labelY: lineY < topY + 22 ? Math.min(lineY + 22, BASE_Y - 16) : topY,
       label: `${mortgage.interestRate}% ends ${formatMonthYear(mortgage.rateEndsOn)}`,
       aria: `The ${mortgage.interestRate}% rate ends ${formatMonthYear(mortgage.rateEndsOn)}.`,
     }
@@ -140,9 +142,9 @@ export function BalanceRunway({
   const startLabel = formatPenceShort(status.balanceToday)
   const endX = PAD_L + PLOT_W
   const endY = y(remaining)
-  // Above the dot when the line ends near the baseline, otherwise below it,
-  // inside the area fill, where a falling line can never cross the text
-  const endLabelY = endY <= BASE_Y - 26 ? endY + 14 : endY - 10
+  // Pill centre: below the dot when the line ends high, above it when the
+  // line ends near the baseline, so the pill never collides with either
+  const endLabelY = endY <= BASE_Y - 34 ? endY + 20 : endY - 18
 
   let endLabel: string
   let sentence: string
@@ -209,7 +211,7 @@ export function BalanceRunway({
         <path
           d={linePath}
           fill="none"
-          strokeWidth={2}
+          strokeWidth={3}
           strokeLinecap="round"
           strokeLinejoin="round"
           className="stroke-emerald-500"
@@ -222,38 +224,34 @@ export function BalanceRunway({
               y1={PAD_T}
               x2={px(rateMarker.x)}
               y2={BASE_Y}
-              strokeWidth={1}
-              strokeDasharray="4 4"
+              strokeWidth={1.5}
+              strokeDasharray="5 5"
               className="stroke-amber-500/70"
             />
-            <text
-              x={px(rateMarker.x + (rateMarker.flip ? -5 : 5))}
-              y={px(rateMarker.labelY)}
-              textAnchor={rateMarker.flip ? "end" : "start"}
-              fontSize={10}
-              className="fill-muted-foreground"
-            >
-              {rateMarker.label}
-            </text>
+            <SvgPill
+              x={rateMarker.x + (rateMarker.flip ? -8 : 8)}
+              y={rateMarker.labelY}
+              anchor={rateMarker.flip ? "end" : "start"}
+              label={rateMarker.label}
+              tone="amber"
+            />
           </g>
         )}
 
         <circle
           cx={endX}
           cy={px(endY)}
-          r={4}
+          r={5}
           strokeWidth={2}
           className="fill-emerald-500 stroke-card"
         />
-        <text
-          x={endX}
-          y={px(endLabelY)}
-          textAnchor="end"
-          fontSize={10}
-          className="fill-muted-foreground tabular-nums"
-        >
-          {endLabel}
-        </text>
+        <SvgPill
+          x={endX - 10}
+          y={endLabelY}
+          anchor="end"
+          label={endLabel}
+          tone="emerald"
+        />
       </svg>
     </RunwayShell>
   )
@@ -279,6 +277,59 @@ function RunwayShell({
     >
       {children}
     </ApexStatCard>
+  )
+}
+
+/**
+ * The chart's annotations wear the same pastel pills as the rest of the
+ * page. `y` is the pill's vertical centre; width is estimated from the
+ * label because SVG has no auto-sizing, at ~5.9px per character of 11px
+ * text plus padding.
+ */
+function SvgPill({
+  x,
+  y,
+  anchor,
+  label,
+  tone,
+}: {
+  x: number
+  y: number
+  anchor: "start" | "end"
+  label: string
+  tone: "amber" | "emerald"
+}) {
+  const width = Math.round(label.length * 5.9 + 18)
+  const rectX = anchor === "end" ? x - width : x
+  return (
+    <g>
+      <rect
+        x={px(rectX)}
+        y={px(y - 11)}
+        width={width}
+        height={22}
+        rx={11}
+        className={
+          tone === "amber"
+            ? "fill-amber-500/15 dark:fill-amber-500/20"
+            : "fill-emerald-500/15 dark:fill-emerald-500/20"
+        }
+      />
+      <text
+        x={px(rectX + width / 2)}
+        y={px(y + 4)}
+        textAnchor="middle"
+        fontSize={11}
+        fontWeight={500}
+        className={
+          tone === "amber"
+            ? "fill-amber-800 dark:fill-amber-300"
+            : "fill-emerald-800 dark:fill-emerald-300"
+        }
+      >
+        {label}
+      </text>
+    </g>
   )
 }
 

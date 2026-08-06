@@ -1,6 +1,7 @@
 import { Sprout } from "lucide-react"
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
+import { SegmentMeter } from "@/components/apex/meter"
 import {
   ApexStatCard,
   ApexStatHint,
@@ -10,7 +11,6 @@ import {
 import { formatPenceShort } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import { lendingBase, type MortgageStatus } from "@/lib/apex/mortgage/status"
-import { cn } from "@/lib/utils"
 
 import { formatShare } from "./format"
 
@@ -43,26 +43,26 @@ export function EquityCard({
   const balance = status.balanceToday
   const equity = shareValue - balance
 
-  // Widths are proportions of the FULL property value. Debt is clamped to the
-  // share's value so negative equity never paints over the landlord's slice,
-  // and the last segment takes the remainder so rounding never leaves a gap.
+  // Widths are proportions of the FULL property value. Debt is clamped to
+  // the share's value so negative equity never paints over the landlord's
+  // slice. Every region answers "what is that?" on hover.
   const segments = [
     {
-      key: "equity",
+      pct: (Math.max(0, equity) / propertyValue) * 100,
       className: "bg-emerald-500",
-      width: (Math.max(0, equity) / propertyValue) * 100,
+      tip: `${formatPenceShort(Math.max(0, equity))} is your equity, the part of the home you own outright.`,
     },
     {
-      key: "debt",
+      pct: (Math.min(balance, shareValue) / propertyValue) * 100,
       className: "bg-foreground/25",
-      width: (Math.min(balance, shareValue) / propertyValue) * 100,
+      tip: `${formatPenceShort(Math.min(balance, shareValue))} is still mortgaged.`,
     },
     {
-      key: "landlord",
+      pct: isShared ? 100 - share : 0,
       className: "bg-muted",
-      width: isShared ? 100 - share : 0,
+      tip: `Your landlord's ${formatShare(100 - share)}%, worth ${formatPenceShort(propertyValue - shareValue)}.`,
     },
-  ].filter((segment) => segment.width > 0)
+  ]
 
   return (
     <ApexStatCard
@@ -83,30 +83,12 @@ export function EquityCard({
         </ApexStatUnit>
       </ApexStatValue>
 
-      {/* One property, up to three claims on it. Parts of one whole, so this
-          stays a custom segmented bar rather than ui/Progress, which renders
-          exactly one indicator. */}
-      <div
-        aria-hidden
-        className="mt-2.5 flex h-1.5 w-full gap-px overflow-hidden rounded-full"
-      >
-        {segments.map((segment, index) => (
-          <div
-            key={segment.key}
-            className={cn(
-              "h-full",
-              index === 0 && "rounded-l-full",
-              index === segments.length - 1 && "flex-1 rounded-r-full",
-              segment.className
-            )}
-            style={
-              index < segments.length - 1
-                ? { width: `${segment.width}%` }
-                : undefined
-            }
-          />
-        ))}
-      </div>
+      {/* One property, up to three claims on it */}
+      <SegmentMeter
+        className="mt-3"
+        label={`Of the ${formatPenceShort(propertyValue)} home: ${formatPenceShort(Math.max(0, equity))} equity, ${formatPenceShort(Math.min(balance, shareValue))} mortgaged${isShared ? `, ${formatShare(100 - share)}% held by your landlord` : ""}.`}
+        segments={segments}
+      />
 
       {equity < 0 ? (
         <ApexStatHint className="mt-2 font-medium text-destructive">

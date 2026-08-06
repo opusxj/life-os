@@ -1,19 +1,20 @@
 import type { LucideIcon } from "lucide-react"
 
+import { TAG_TINTS, type TagTint } from "@/components/apex/anchor-tints"
 import {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 /**
- * The standard Apex card: one question, one bounded answer, built on ui/Card.
- * Label (with optional icon anchor) up top, big value in the content, optional
- * quick action in the header corner, optional footer strip for actions.
+ * The standard Apex card: one question, one bounded answer, built on ui/Card
+ * in the ratified dialect (.claude/skills/design): ~20px padding, 16px
+ * radius, a 38px pastel icon chip anchoring a stacked label and provenance
+ * line, the figure free-standing below.
  */
 export function ApexStatCard({
   label,
@@ -30,7 +31,7 @@ export function ApexStatCard({
   description?: string
   icon?: LucideIcon
   iconClassName?: string
-  /** Header-corner slot (menu, small button) */
+  /** Header-corner slot (menu, small button, countdown pill) */
   action?: React.ReactNode
   /** Muted bottom strip — the card's quick actions live here */
   footer?: React.ReactNode
@@ -38,37 +39,44 @@ export function ApexStatCard({
   children: React.ReactNode
 }) {
   return (
-    <Card size="sm" className={cn("gap-2.5", className)}>
+    <Card
+      className={cn("gap-3.5 rounded-2xl [--card-spacing:--spacing(5)]", className)}
+    >
       <CardHeader>
-        <CardDescription className="flex items-center gap-1.5 text-xs font-medium">
+        <div className="flex items-center gap-2.5">
           {Icon && (
             <span
+              aria-hidden
               className={cn(
-                "flex size-5 items-center justify-center rounded-md bg-muted [&>svg]:size-3",
+                "flex size-9.5 shrink-0 items-center justify-center rounded-xl bg-muted [&>svg]:size-5",
                 iconClassName
               )}
             >
               <Icon />
             </span>
           )}
-          {label}
-        </CardDescription>
-        {description && (
-          <p className="text-[11px] leading-snug text-muted-foreground/80">
-            {description}
-          </p>
-        )}
+          <span className="min-w-0">
+            <span className="block text-sm font-medium text-card-foreground">
+              {label}
+            </span>
+            {description && (
+              <span className="block truncate text-[12px] leading-snug text-muted-foreground">
+                {description}
+              </span>
+            )}
+          </span>
+        </div>
         {action && <CardAction>{action}</CardAction>}
       </CardHeader>
       <CardContent className="flex-1">{children}</CardContent>
       {footer && (
-        <CardFooter className="gap-1 px-2 py-1.5">{footer}</CardFooter>
+        <CardFooter className="gap-1 px-2.5 py-2">{footer}</CardFooter>
       )}
     </Card>
   )
 }
 
-/** The answer — the biggest thing on the card. */
+/** The answer — the biggest thing on the card, free of its indicator. */
 export function ApexStatValue({
   className,
   ...props
@@ -76,7 +84,7 @@ export function ApexStatValue({
   return (
     <div
       className={cn(
-        "font-heading text-2xl font-semibold tracking-tight tabular-nums",
+        "font-heading text-[26px] leading-8 font-semibold tracking-tight tabular-nums",
         className
       )}
       {...props}
@@ -85,9 +93,10 @@ export function ApexStatValue({
 }
 
 /**
- * The trailing half of a figure: "of £812.40", "a month", "/100". Rendered
- * inside ApexStatValue so the eye lands on the number that matters and the
- * qualifier reads as a footnote to it rather than as part of the amount.
+ * The trailing half of a figure: "of £812.40", "a month", "still owed".
+ * Rendered inside ApexStatValue so the eye lands on the number that matters
+ * and the qualifier reads as a footnote to it rather than as part of the
+ * amount.
  */
 export function ApexStatUnit({
   className,
@@ -96,7 +105,29 @@ export function ApexStatUnit({
   return (
     <span
       className={cn(
-        "text-sm font-normal tracking-normal text-muted-foreground",
+        "text-[13px] font-normal tracking-normal text-muted-foreground",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+/**
+ * A pastel pill for one piece of discrete data: a date, a delta, a one-fact
+ * tag ("5% paid of £150,000"). Sentences stay in ApexStatHint; the pill is
+ * for the fact you'd want to pick up between two fingers.
+ */
+export function ApexStatTag({
+  tint = "neutral",
+  className,
+  ...props
+}: React.ComponentProps<"span"> & { tint?: TagTint }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex w-fit items-center gap-1 rounded-full px-3 py-1 text-xs font-medium tabular-nums",
+        TAG_TINTS[tint],
         className
       )}
       {...props}

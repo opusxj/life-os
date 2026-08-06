@@ -22,3 +22,21 @@ export const ANCHOR_TINTS = {
 } as const
 
 export type AnchorTint = keyof typeof ANCHOR_TINTS
+
+/**
+ * Pastel pills for discrete data (dates, deltas, one-fact tags). Same
+ * semantic families as the anchors, one step warmer: visible fill, strong
+ * text from the same ramp so both themes read.
+ */
+export const TAG_TINTS = {
+  balance:
+    "bg-emerald-500/15 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
+  bill: "bg-sky-500/15 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300",
+  due: "bg-amber-500/15 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300",
+  property:
+    "bg-indigo-500/15 text-indigo-800 dark:bg-indigo-500/20 dark:text-indigo-300",
+  destructive: "bg-destructive/10 text-destructive dark:bg-destructive/20",
+  neutral: "bg-muted text-foreground/80",
+} as const
+
+export type TagTint = keyof typeof TAG_TINTS

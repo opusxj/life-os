@@ -1,10 +1,10 @@
-import type { Mortgage } from "@/lib/apex/mortgage/queries"
+﻿import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import { mortgageStatus } from "@/lib/apex/mortgage/status"
 
 import { BalanceCard } from "./balance-card"
 import { BalanceRunway } from "./balance-runway"
 import { EquityCard } from "./equity-card"
-import { HeadlineVariants } from "./headline-variants"
+import { MortgageHeadlineCard } from "./headline-card"
 import { LtvCard } from "./ltv-card"
 import { MilestonesCard } from "./milestones-card"
 import { MonthlyCostCard } from "./monthly-cost-card"
@@ -17,10 +17,10 @@ import { WhatIfCard } from "./what-if-card"
 
 /**
  * One mortgage = one stack of isolated cards, each answering one question,
- * read in the order the questions occur to someone:
- * the deal → where you stand → the whole road → the asset → what you can do
- * → the record. Cards that lack their data (LTV, equity, milestones) prompt
- * once or step aside; the stack never renders a broken half-answer.
+ * read in the order the questions occur to someone: the deal, where you
+ * stand, the whole road, the asset, what you can do, the record. Cards that
+ * lack their data (LTV, equity, milestones) prompt once or step aside; the
+ * stack never renders a broken half-answer.
  */
 export function MortgageStack({
   mortgage,
@@ -37,18 +37,18 @@ export function MortgageStack({
   const status = mortgageStatus(mortgage, today)
 
   return (
-    <section className="space-y-3.5">
-      {/* TEMPORARY: four candidate Zone 1 designs stacked for side-by-side
-          judgment on real data. The winner replaces MortgageHeadlineCard and
-          the picker goes away. */}
-      <HeadlineVariants
+    <section className="space-y-4">
+      {/* The deal, and nothing that appears below it. The rate and its end
+          date live in the subtitle rather than in a card of their own, so the
+          top of the page states each fact exactly once. */}
+      <MortgageHeadlineCard
         mortgage={mortgage}
         today={today}
         action={<MortgageMenu mortgage={mortgage} />}
       />
 
       {/* Where you stand: the balance, where this month's money goes, the end */}
-      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <BalanceCard
           mortgage={mortgage}
           status={status}
@@ -63,14 +63,14 @@ export function MortgageStack({
       <BalanceRunway mortgage={mortgage} status={status} today={today} />
 
       {/* The asset: what the debt is secured on and what that's worth to you */}
-      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <LtvCard mortgage={mortgage} status={status} />
         <EquityCard mortgage={mortgage} status={status} />
         <TrueCostCard mortgage={mortgage} status={status} today={today} />
       </div>
 
       {/* What you can do about it, and what happens next if you don't */}
-      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <WhatIfCard
           balance={status.balanceToday}
           interestRate={mortgage.interestRate}
@@ -82,7 +82,7 @@ export function MortgageStack({
       </div>
 
       {/* The record: running costs and the terms on file */}
-      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MonthlyCostCard mortgage={mortgage} />
         <PaperworkCard
           mortgage={mortgage}

@@ -56,13 +56,35 @@ Rules that follow from it:
 - The biggest text is never a non-statement. Lead with the real figure; calm
   framing lives in the description. A bare "—" is the no-value hero.
 - Faded secondary digits: pence in muted ink so pounds carry the comparison.
-- One lucide icon per card in a tinted chip; the tint comes from the
-  vocabulary below.
-- Arcs (`ArcGauge`) for proportion-of-a-known-whole only. Thin `h-1.5`
-  segmented bars (gap-px) for parts-of-one-whole. Tick meters for elapsed
-  time. Never a saturated block.
+- One lucide icon per card in a **38px pastel chip** (`rounded-xl`, tint at
+  ~10 to 15% opacity, glyph in the tint's strong step). Chips are visible
+  anchors, not 20px specks.
 - Corner action slot for the card's own menu or quick action; a card carries
   its own identity rather than borrowing a section label above it.
+
+## The dialect (ratified on mockups, 2026-08-06)
+
+The visual language is the user's reference dashboards: consumer-fintech
+warmth, not BI restraint. Thin hairline marks read as lifeless here.
+
+- **Breathing room**: ~20px card padding, 16px radius (`rounded-2xl`),
+  `gap-4` grids. Space is what makes the references calm.
+- **Color occupies area**: indicators are thick and rounded. Arcs at ~13px
+  stroke. Meters at `h-3.5`, fully-rounded segments with visible gaps.
+  Tick meters ~16px tall. The pastel track is part of the design, not an
+  absence.
+- **The figure is the event**: ~26px, free-standing, never crowded by its
+  indicator. The number does not sit tight against an arc or bar.
+- **Pills carry discrete data**: dates, deltas, and one-fact tags render as
+  pastel pills (`ApexStatTag`), tinted from the vocabulary. "£2,850 to the
+  90% band" is a pill; a sentence stays a hint line.
+- **Displays**: meter-below is the default proportional display. The large
+  arc (value alone in its opening, caption outside) is the feature display,
+  reserved for cards whose whole point is the proportion.
+- **No mystery pixels**: every colored region a user could point at and ask
+  "what is that?" explains itself on hover via the house tooltip (and its
+  container carries a sensible aria-label). If a tooltip can't say what a
+  region means in one sentence, the region shouldn't exist.
 
 ## Tint vocabulary (semantic, never decorative)
 
@@ -121,11 +143,23 @@ Rejected, with the user's words where they're instructive:
   seems pointless."
 - Big text that says nothing ("Nothing to do yet" as a hero).
 
+- The thin-marks BI dialect as a whole: a page of well-formed dense cards
+  read as wrong without the user being able to name why ("I don't really
+  know what's wrong with it"). The diagnosis was chromatic starvation and
+  tightness, fixed by the ratified dialect above.
+
 Accepted:
 
 - The reference-dashboard grammar: provenance subtitles, verdict lines, arc
   gauges, grey secondary digits, icon chips ("purposeful, clean, easy to
   read and even with ADHD").
+- The ratified dialect, chosen on mockups: breathing room, 38px chips, pill
+  tags ("the tag part is perfect", "the data chip is really nice and
+  actually adds to it"), meter-below as the default display with the big
+  arc kept as the feature display.
+- Micro-interactions that explain: "hovering over the green square and
+  orange square … we aren't really indicating or showing what they even
+  are" — hence the no-mystery-pixels rule.
 - The divided footer strip: small muted label over bold value, hairline
   dividers.
 - The card as its own header: name as title, facts as description, menu in

@@ -2,14 +2,18 @@ import { Landmark } from "lucide-react"
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import { ArcGauge } from "@/components/apex/arc-gauge"
-import { ApexStatCard, ApexStatHint } from "@/components/apex/stat-card"
+import { ApexStatCard, ApexStatTag } from "@/components/apex/stat-card"
 import { formatPenceShort } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import type { MortgageStatus } from "@/lib/apex/mortgage/status"
 
 import { UpdateBalancePopover } from "./update-balance-popover"
 
-/** How much is left, and how far through it that puts you. */
+/**
+ * How much is left, and how far through it that puts you. The one card whose
+ * whole point is the proportion, so it carries the feature arc; everything
+ * else uses the meter display.
+ */
 export function BalanceCard({
   mortgage,
   status,
@@ -59,17 +63,20 @@ export function BalanceCard({
         caption="still owed"
         className="mt-1"
       />
-      <ApexStatHint className="mt-1 text-center">
-        {`${paidPct.toFixed(0)}% paid off of ${formatPenceShort(mortgage.originalAmount)}`}
-      </ApexStatHint>
+      <div className="mt-3 flex justify-center">
+        <ApexStatTag tint="balance">
+          {`${formatPenceShort(mortgage.originalAmount - balance)} paid of ${formatPenceShort(mortgage.originalAmount)}`}
+        </ApexStatTag>
+      </div>
     </ApexStatCard>
   )
 }
 
 /**
  * Interest-only balances never move, so "projected" would overclaim. For
- * everything else the figure shown is the statement aged forward, and saying so
- * is the difference between a number you can trust and one you have to check.
+ * everything else the figure shown is the statement aged forward, and saying
+ * so is the difference between a number you can trust and one you have to
+ * check.
  */
 function provenance(balanceAsOf: string, monthsSince: number): string {
   const date = STATEMENT_DATE.format(new Date(`${balanceAsOf}T00:00:00`))

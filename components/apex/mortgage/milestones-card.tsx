@@ -1,7 +1,8 @@
 import { Flag } from "lucide-react"
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
-import { ApexStatCard } from "@/components/apex/stat-card"
+import { ApexStatCard, ApexStatTag } from "@/components/apex/stat-card"
+import { cn } from "@/lib/utils"
 import {
   balanceSeries,
   monthsBetween,
@@ -48,20 +49,30 @@ export function MilestonesCard({
       iconClassName={ANCHOR_TINTS.due}
       className={className}
     >
-      <ul className="space-y-2">
-        {milestones.map((milestone) => (
+      <ul>
+        {milestones.map((milestone, index) => (
           <li
             key={milestone.label}
-            className="flex items-center gap-2 text-[13px]"
+            className={cn(
+              "flex items-center gap-3 py-2.5",
+              index < milestones.length - 1 && "border-b"
+            )}
           >
             <span
               aria-hidden
-              className="size-1.5 shrink-0 rounded-full bg-amber-500"
-            />
-            <span className="min-w-0 flex-1 truncate">{milestone.label}</span>
-            <span className="shrink-0 text-muted-foreground tabular-nums">
-              {formatMonthYear(monthsFromNow(milestone.month, now))}
+              className={cn(
+                "flex size-7.5 shrink-0 items-center justify-center rounded-[10px] [&>svg]:size-4",
+                ANCHOR_TINTS.due
+              )}
+            >
+              <Flag />
             </span>
+            <span className="min-w-0 flex-1 truncate text-sm">
+              {milestone.label}
+            </span>
+            <ApexStatTag tint="balance" className="shrink-0">
+              {formatMonthYear(monthsFromNow(milestone.month, now))}
+            </ApexStatTag>
           </li>
         ))}
       </ul>

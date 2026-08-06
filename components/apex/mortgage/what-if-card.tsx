@@ -8,6 +8,7 @@ import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import {
   ApexStatCard,
   ApexStatHint,
+  ApexStatTag,
   ApexStatUnit,
   ApexStatValue,
 } from "@/components/apex/stat-card"
@@ -119,9 +120,9 @@ export function WhatIfCard({
           className="*:py-2 [&_[data-slot=slider-range]]:bg-emerald-500"
           aria-label="Extra monthly overpayment"
         />
-        <span className="w-28 shrink-0 text-right text-[13px] font-semibold text-foreground tabular-nums">
+        <ApexStatTag tint="balance" className="w-31 shrink-0 justify-center">
           {`+£${extra} a month`}
-        </span>
+        </ApexStatTag>
       </div>
       <AllowanceLine
         allowance={allowance}
