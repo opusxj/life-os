@@ -209,6 +209,11 @@ Rejected, with the user's words where they're instructive:
   "doesn't really describe what this card actually is". Labels are short
   nouns for the thing ("Payment split"); the period belongs in the
   provenance line.
+- A closing aside left loose under the content: "it's just floating there
+  randomly". An informational line belongs in ApexStatCard's `footer`, a
+  bordered muted strip with a small `Info` icon. Because CardContent is
+  `flex-1` the strip pins to the card's base, so the note lines up across
+  a row of cards whatever their heights.
 - Amber on a money delta: "The 227 should not be orange, it should be red."
   Amber means deadline; costs wear red, savings emerald.
 - A floating arrow between figures: "a weird arrow which looks so weird."

@@ -1,4 +1,4 @@
-import { Banknote } from "lucide-react"
+import { Banknote, Info } from "lucide-react"
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import { SegmentMeter } from "@/components/apex/meter"
@@ -55,6 +55,16 @@ export function ThisMonthCard({
       icon={Banknote}
       iconClassName={ANCHOR_TINTS.bill}
       className={className}
+      footer={
+        crossoverLine ? (
+          /* px-2.5 tops up the footer's own padding to the body's 20px; the
+             strip is tuned for an inset ghost button, which brings its own. */
+          <p className="flex items-start gap-2 px-2.5 text-[12px] leading-snug text-muted-foreground">
+            <Info aria-hidden className="mt-px size-3.5 shrink-0" />
+            {crossoverLine}
+          </p>
+        ) : undefined
+      }
     >
       <p className="text-base font-medium">{headline(split)}</p>
       {note && <p className="mt-1 text-[13px] text-muted-foreground">{note}</p>}
@@ -93,11 +103,6 @@ export function ThisMonthCard({
         </>
       )}
 
-      {crossoverLine && (
-        <p className="mt-3 text-[13px] text-muted-foreground">
-          {crossoverLine}
-        </p>
-      )}
     </ApexStatCard>
   )
 }
