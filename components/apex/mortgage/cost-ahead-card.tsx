@@ -100,6 +100,9 @@ export function CostAheadCard({
   const termLabel = formatMonthYear(mortgage.termEndsOn)
   const markerX = compares ? x(changesIn as number) : null
   const gap = scenarioTotal - heldTotal
+  const paymentGap = scenario
+    ? scenario.paymentAfter - held.paymentAfter
+    : 0
 
   const sentence = compares
     ? `Keeping ${mortgage.interestRate}% costs ${formatPenceShort(heldTotal)} in interest by ${termLabel}; at ${afterRate}% it is ${formatPenceShort(scenarioTotal)}.`
@@ -191,17 +194,36 @@ export function CostAheadCard({
             )}
           />
 
-          {markerX !== null && (
-            <line
-              x1={px(markerX)}
-              y1={PAD_T}
-              x2={px(markerX)}
-              y2={BASE_Y}
-              strokeWidth={1}
-              strokeDasharray="4 4"
-              vectorEffect="non-scaling-stroke"
-              className="stroke-amber-500/60"
-            />
+          {markerX !== null && mortgage.rateEndsOn && (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <g className="cursor-help">
+                    {/* A 1px line is not a hover target; this is */}
+                    <rect
+                      x={px(markerX - 10)}
+                      y={PAD_T}
+                      width={20}
+                      height={BASE_Y - PAD_T}
+                      fill="transparent"
+                    />
+                    <line
+                      x1={px(markerX)}
+                      y1={PAD_T}
+                      x2={px(markerX)}
+                      y2={BASE_Y}
+                      strokeWidth={1}
+                      strokeDasharray="4 4"
+                      vectorEffect="non-scaling-stroke"
+                      className="stroke-amber-500/60"
+                    />
+                  </g>
+                }
+              />
+              <TooltipContent>
+                {`Deal ends ${formatMonthYear(mortgage.rateEndsOn)}`}
+              </TooltipContent>
+            </Tooltip>
           )}
 
           <EndDot
@@ -241,24 +263,26 @@ export function CostAheadCard({
         </svg>
       </div>
 
+      {/* Identification only. The figures are one hover away on the marks
+          themselves, and the consequences are the footer's job. */}
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[11px] text-muted-foreground">
         <Key
           swatch="line"
           className={scenario ? "bg-foreground/40" : "bg-emerald-500"}
         >
-          {`keeping ${mortgage.interestRate}% · ${formatPenceShort(held.paymentAfter)} a month`}
+          {`${mortgage.interestRate}% today`}
         </Key>
         {scenario && (
           <Key
             swatch="line"
             className={gap < 0 ? "bg-emerald-500" : "bg-red-500"}
           >
-            {`at ${afterRate}% · ${formatPenceShort(scenario.paymentAfter)} a month`}
+            {`${afterRate}% after`}
           </Key>
         )}
-        {markerX !== null && mortgage.rateEndsOn && (
+        {markerX !== null && (
           <Key swatch="dash" className="border-amber-500">
-            {`deal ends ${formatMonthYear(mortgage.rateEndsOn)}`}
+            deal ends
           </Key>
         )}
       </div>
@@ -276,9 +300,10 @@ export function CostAheadCard({
             >
               {formatPenceShort(Math.abs(gap))}
             </span>
-            {gap > 0
-              ? " more interest than if today's rate carried on."
-              : " less interest than if today's rate carried on."}
+            {gap > 0 ? " more interest" : " less interest"}
+            {paymentGap === 0
+              ? " than if today's rate carried on."
+              : `, and ${formatPenceShort(Math.abs(paymentGap))} a month ${paymentGap > 0 ? "more" : "less"} to pay.`}
           </p>
         </div>
       )}
