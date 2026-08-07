@@ -128,9 +128,20 @@ by ~25px at its widest rather than shrinking the type.
   explain itself; words already have. If text seems to need a tooltip,
   rewrite the text. If a fact exists only inside a tooltip on text, it wasn't
   earning its place.
-- **Charts carry no floating annotation pills.** A legend rail beside the
-  plot names every mark (swatch, label, value). In-plot text is axis ticks
-  and nothing else.
+- **Charts carry no floating annotation pills.** A key names every mark,
+  under the plot; values that would be printed on the plot live in hovers on
+  the marks instead. In-plot text is axis ticks and nothing else.
+- **A chart's viewBox width is load-bearing.** With `w-full` the browser
+  scales the whole coordinate space to the container, so a 560-wide box in a
+  1000px card multiplies every length by 1.8 and renders "10px" type at 18px.
+  Size the viewBox near the real rendered width, and put
+  `vector-effect="non-scaling-stroke"` on every stroke so line weights hold
+  at any width. Symptom to recognise: reducing the numbers changes nothing
+  on screen.
+- **Draw charts at card weight, not dashboard weight.** Inside a card of 13px
+  text a chart wants ~1.5px lines, ~3.5px end dots and 11px axis type. Stock
+  chart defaults are built for a full-page dashboard and read as a pasted
+  image here.
 
 ## 4. Tint vocabulary
 

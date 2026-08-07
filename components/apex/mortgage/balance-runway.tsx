@@ -141,13 +141,14 @@ export function BalanceRunway({
                 x2={VB_W - PAD_R}
                 y2={px(y(value))}
                 strokeWidth={1}
+                vectorEffect="non-scaling-stroke"
                 className="stroke-border/70"
               />
               <text
-                x={PAD_L - 7}
-                y={px(y(value)) + 3}
+                x={PAD_L - 8}
+                y={px(y(value)) + 4}
                 textAnchor="end"
-                fontSize={10}
+                fontSize={11}
                 className="fill-muted-foreground/80 tabular-nums"
               >
                 {axisPounds(value)}
@@ -164,9 +165,10 @@ export function BalanceRunway({
             <path
               d={linePath(reverted, x, y)}
               fill="none"
-              strokeWidth={1.75}
+              strokeWidth={1.5}
               strokeLinecap="round"
               strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
               className="stroke-red-500"
             />
           )}
@@ -174,9 +176,10 @@ export function BalanceRunway({
           <path
             d={linePath(held, x, y)}
             fill="none"
-            strokeWidth={1.75}
+            strokeWidth={1.5}
             strokeLinecap="round"
             strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
             className="stroke-emerald-500"
           />
 
@@ -188,6 +191,7 @@ export function BalanceRunway({
               y2={BASE_Y}
               strokeWidth={1}
               strokeDasharray="4 4"
+              vectorEffect="non-scaling-stroke"
               className="stroke-amber-500/60"
             />
           )}
@@ -209,17 +213,17 @@ export function BalanceRunway({
 
           <text
             x={PAD_L}
-            y={VB_H - 4}
-            fontSize={10}
+            y={VB_H - 6}
+            fontSize={11}
             className="fill-muted-foreground/80 tabular-nums"
           >
             {now.getFullYear()}
           </text>
           <text
             x={VB_W - PAD_R}
-            y={VB_H - 4}
+            y={VB_H - 6}
             textAnchor="end"
-            fontSize={10}
+            fontSize={11}
             className="fill-muted-foreground/80 tabular-nums"
           >
             {parseDay(mortgage.termEndsOn).getFullYear()}
@@ -268,12 +272,13 @@ function EndDot({
       <TooltipTrigger
         render={
           <g className="cursor-help">
-            <circle cx={cx} cy={cy} r={11} fill="transparent" />
+            <circle cx={cx} cy={cy} r={14} fill="transparent" />
             <circle
               cx={cx}
               cy={cy}
-              r={3}
-              strokeWidth={1.75}
+              r={3.5}
+              strokeWidth={1.5}
+              vectorEffect="non-scaling-stroke"
               className={cn("fill-muted", className)}
             />
           </g>
@@ -422,12 +427,23 @@ function px(value: number): number {
   return Number(value.toFixed(1))
 }
 
-const VB_W = 560
-const VB_H = 156
-const PAD_L = 42
-const PAD_R = 10
+/**
+ * The viewBox width is load-bearing and must stay near the rendered width.
+ *
+ * With `w-full`, the browser scales the whole coordinate space to fit the
+ * container: a 560-wide box in a 1000px card multiplies every length by 1.8,
+ * so 10px type renders at 18px and a 1.75px line at 3.1px. Sized against the
+ * real width (1100px page cap, less card and surface padding) the scale is
+ * ~1 and a stated size is the size you get. Strokes additionally carry
+ * `vector-effect="non-scaling-stroke"`, which pins them to screen pixels at
+ * any width, so only the geometry flexes on a narrow window.
+ */
+const VB_W = 1020
+const VB_H = 175
+const PAD_L = 52
+const PAD_R = 16
 const PAD_T = 12
-const PAD_B = 20
+const PAD_B = 26
 const PLOT_W = VB_W - PAD_L - PAD_R
 const PLOT_H = VB_H - PAD_T - PAD_B
 const BASE_Y = VB_H - PAD_B
