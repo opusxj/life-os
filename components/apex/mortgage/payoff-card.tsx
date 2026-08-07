@@ -69,8 +69,8 @@ export function PayoffCard({
         />
         <FooterNote>
           {mortgage.repaymentType === "interest_only"
-            ? "Your payments cover the interest only, so the capital is still owed in full at the end."
-            : "Part of this loan is interest only, so some of the capital is still owed at the end."}
+            ? "Your payments cover the interest only."
+            : "Part of this loan is interest only."}
         </FooterNote>
       </Shell>
     )
@@ -83,7 +83,7 @@ export function PayoffCard({
           Never, at this payment
         </ApexStatValue>
         <ApexStatHint className="mt-1.5 font-medium text-destructive">
-          {`The payment doesn't cover the interest, so the balance never reaches zero.`}
+          {`The payment doesn't cover the interest`}
         </ApexStatHint>
       </Shell>
     )
@@ -107,7 +107,7 @@ export function PayoffCard({
               : "text-muted-foreground"
         )}
       >
-        {verdict(delta, termLabel)}
+        {verdict(delta)}
       </p>
 
       <FinishTrack
@@ -123,6 +123,18 @@ export function PayoffCard({
 
       <FooterNote>{fix(mortgage, status, termMonths, delta)}</FooterNote>
     </Shell>
+  )
+}
+
+/** Nothing to say is a valid outcome: the card ends at the ruler. */
+function FooterNote({ children }: { children: React.ReactNode }) {
+  if (!children) return null
+  return (
+    <div className="mt-auto pt-4">
+      <p className="border-t pt-3 text-[12px] leading-snug text-muted-foreground">
+        {children}
+      </p>
+    </div>
   )
 }
 
@@ -235,13 +247,11 @@ function FinishTrack({
   )
 }
 
-/** How the payoff sits against the contract, in words. */
-function verdict(delta: number, termLabel: string): string {
-  if (delta === 0) return `Right on your ${termLabel} term end`
-  const span = spanWords(Math.abs(delta))
-  return delta > 0
-    ? `${span} past your ${termLabel} term end`
-    : `${span} before your ${termLabel} term end`
+/** How the payoff sits against the contract. The ruler shows the gap; this
+ *  only has to name it, so it stays to three words where it can. */
+function verdict(delta: number): string {
+  if (delta === 0) return "Exactly on term"
+  return `${spanWords(Math.abs(delta))} ${delta > 0 ? "late" : "early"}`
 }
 
 /** 28 → "2 years 4 months", 7 → "7 months", 24 → "2 years" */
@@ -256,41 +266,25 @@ function spanWords(months: number): string {
 }
 
 /**
- * What to do about it. A payment that misses the term end usually means a
- * stale figure rather than a lender's error, so this prices the gap and
- * leaves the diagnosis alone.
+ * The one instruction, and only when it applies. What the figure means, and
+ * whether the cause is a stale payment or a balance that has slipped behind,
+ * is the reader's to draw: the app cannot tell the difference from what it
+ * holds, and guessing out loud on a money page costs more than it gives.
  */
 function fix(
   mortgage: Mortgage,
   status: MortgageStatus,
   termMonths: number,
   delta: number
-): string {
-  if (delta > 0 && termMonths > 0) {
-    const needed = monthlyPayment(
-      status.balanceToday,
-      mortgage.interestRate,
-      termMonths
-    )
-    const extra = needed - mortgage.monthlyPayment
-    if (extra > 0) {
-      return `${formatPence(extra)} a month more would clear it by the term end. Worth checking the payment on file is current.`
-    }
-  }
-  if (delta < 0) {
-    return `Overpaying brings this forward: every extra pound goes straight at the balance.`
-  }
-  return `This assumes today's rate holds for the whole run, which no rate does.`
-}
-
-function FooterNote({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mt-auto pt-4">
-      <p className="border-t pt-3 text-[12px] leading-snug text-muted-foreground">
-        {children}
-      </p>
-    </div>
+): string | null {
+  if (delta <= 0 || termMonths <= 0) return null
+  const needed = monthlyPayment(
+    status.balanceToday,
+    mortgage.interestRate,
+    termMonths
   )
+  if (needed <= mortgage.monthlyPayment) return null
+  return `${formatPence(needed)} a month clears the term.`
 }
 
 /** One shell for every state, so the card reads the same however it resolves. */
