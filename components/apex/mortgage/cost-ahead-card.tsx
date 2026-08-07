@@ -150,6 +150,23 @@ export function CostAheadCard({
             </g>
           ))}
 
+          {/* The ground under the baseline, then the band between the two
+              curves. That band is not decoration: its area is the gap the
+              footer states, so the extra cost is a shape as well as a
+              number. */}
+          <path
+            d={`${linePath(held.cumulative, x, y)} L${px(x(months))} ${BASE_Y} L${PAD_L} ${BASE_Y} Z`}
+            className="fill-foreground/[0.05]"
+          />
+          {scenario && (
+            <path
+              d={bandPath(scenario.cumulative, held.cumulative, x, y)}
+              className={
+                gap < 0 ? "fill-emerald-500/[0.12]" : "fill-red-500/[0.12]"
+              }
+            />
+          )}
+
           {scenario && (
             <path
               d={linePath(scenario.cumulative, x, y)}
@@ -206,7 +223,7 @@ export function CostAheadCard({
 
           <text
             x={PAD_L}
-            y={VB_H - 6}
+            y={VB_H - 8}
             fontSize={12}
             className="fill-muted-foreground tabular-nums"
           >
@@ -224,7 +241,7 @@ export function CostAheadCard({
         </svg>
       </div>
 
-      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+      <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[11px] text-muted-foreground">
         <Key
           swatch="line"
           className={scenario ? "bg-foreground/40" : "bg-emerald-500"}
@@ -247,21 +264,23 @@ export function CostAheadCard({
       </div>
 
       {compares && gap !== 0 && (
-        <p className="mt-auto border-t pt-3 text-[12px] leading-snug text-muted-foreground">
-          <span
-            className={cn(
-              "font-medium",
-              gap > 0
-                ? "text-red-600 dark:text-red-400"
-                : "text-emerald-600 dark:text-emerald-400"
-            )}
-          >
-            {formatPenceShort(Math.abs(gap))}
-          </span>
-          {gap > 0
-            ? " more interest than if today's rate carried on."
-            : " less interest than if today's rate carried on."}
-        </p>
+        <div className="mt-auto pt-4">
+          <p className="border-t pt-3 text-[12px] leading-snug text-muted-foreground">
+            <span
+              className={cn(
+                "font-medium",
+                gap > 0
+                  ? "text-red-600 dark:text-red-400"
+                  : "text-emerald-600 dark:text-emerald-400"
+              )}
+            >
+              {formatPenceShort(Math.abs(gap))}
+            </span>
+            {gap > 0
+              ? " more interest than if today's rate carried on."
+              : " less interest than if today's rate carried on."}
+          </p>
+        </div>
       )}
     </ApexStatCard>
   )
@@ -379,6 +398,20 @@ function linePath(
     .join(" ")
 }
 
+/** The closed region between two curves: out along one, back along the other. */
+function bandPath(
+  upper: number[],
+  lower: number[],
+  x: (month: number) => number,
+  y: (pence: number) => number
+): string {
+  const back = lower
+    .map((value, month) => `L${px(x(month))} ${px(y(value))}`)
+    .reverse()
+    .join(" ")
+  return `${linePath(upper, x, y)} ${back} Z`
+}
+
 /** Zero up to the peak rounded to a clean step, aiming for three intervals. */
 function niceScale(maxPence: number): { step: number; max: number } {
   const raw = Math.max(1, maxPence) / 3
@@ -417,11 +450,13 @@ function px(value: number): number {
 /** The viewBox width stays near the rendered width so a stated size is the
  *  size you get; strokes additionally pin to screen pixels at any width. */
 const VB_W = 1020
-const VB_H = 178
-const PAD_L = 56
+const VB_H = 190
+const PAD_L = 58
 const PAD_R = 16
-const PAD_T = 12
-const PAD_B = 26
+const PAD_T = 14
+/** Deep enough that the year labels clear the £0 tick sitting on the
+ *  baseline; at 26 the two crowded each other in the corner. */
+const PAD_B = 38
 const PLOT_W = VB_W - PAD_L - PAD_R
 const PLOT_H = VB_H - PAD_T - PAD_B
 const BASE_Y = VB_H - PAD_B
