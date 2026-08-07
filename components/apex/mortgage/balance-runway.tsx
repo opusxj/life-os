@@ -6,6 +6,11 @@ import { Minus, Plus, Route } from "lucide-react"
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import { ApexStatCard } from "@/components/apex/stat-card"
 import { Button } from "@/components/ui/button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { parseDay } from "@/lib/apex/dates"
 import {
   balanceSeries,
@@ -22,17 +27,18 @@ import { formatMonthYear } from "./format"
 
 /**
  * The fork in the road: your balance at today's rate, against your balance if
- * the deal ends and the rate reverts.
+ * the deal ends and the rate reverts, with a stepper setting the second rate.
  *
- * The single-line version was a comfortable fiction. It projected today's
- * rate across the whole term when the rate is contractually guaranteed for a
- * handful of months, and on the seed mortgage 267 of 274 months were guessed.
+ * Drawn deliberately light. A chart at dashboard weight sitting in a card of
+ * 13px text reads as a pasted image, so the marks here are thinner than a
+ * standalone chart would use: 1.75px lines, 3px end dots, 10px axis type.
+ * Where a figure would have been printed on the plot it lives in a hover
+ * instead, which is also what stops the thing feeling inert.
  *
- * Both lines hold the payment constant, which is the whole point. A lender
- * recalculates the payment on reversion so the term still clears, so drawing
- * that would put both lines on top of each other and hide the cost in a
- * figure the chart doesn't show. Fixing the payment makes the cost visible:
- * where it stops covering the interest, the line climbs.
+ * Both lines hold the payment constant. A lender recalculates it on reversion
+ * so the term still clears, which would lay the lines on top of each other
+ * and hide the cost in a figure the chart never shows. Fixed, the cost is
+ * the gap you can see.
  */
 export function BalanceRunway({
   mortgage,
@@ -54,17 +60,11 @@ export function BalanceRunway({
   const termMonths = monthsBetween(now, parseDay(mortgage.termEndsOn))
   const payment = mortgage.monthlyPayment
   const balance = status.balanceToday
-
-  // Interest-only never amortises, so a rate comparison would draw two flat
-  // lines; a cleared balance or a finished term leaves no road at all.
   const flat = mortgage.repaymentType === "interest_only"
   const revertsIn = status.monthsToRateEnd
 
-  // A cleared balance or a finished term leaves no road to draw
   if (balance <= 0 || termMonths < 1) return null
 
-  // A payment already under the interest has no road: the line only rises,
-  // and drawing that as a journey would dignify it.
   if (!flat && payment <= balance * monthlyRate(mortgage.interestRate)) {
     return (
       <Shell mortgage={mortgage} className={className}>
@@ -75,8 +75,8 @@ export function BalanceRunway({
     )
   }
 
-  // Two walks of ~275 months each. Left unmemoized on purpose: the React
-  // Compiler handles it, and a manual useMemo here defeats its analysis.
+  // Two walks of ~275 months. Left unmemoized on purpose: the React Compiler
+  // handles it, and a manual useMemo defeats its analysis.
   const held = flat
     ? [balance, balance]
     : balanceSeries(balance, mortgage.interestRate, payment, termMonths)
@@ -93,9 +93,11 @@ export function BalanceRunway({
         termMonths
       )
     : null
+
   const months = Math.max(held.length - 1, reverted ? reverted.length - 1 : 0)
-  const peak = Math.max(balance, ...(reverted ?? [0]))
-  const { step, max: yMax } = niceScale(peak)
+  const { step, max: yMax } = niceScale(
+    Math.max(balance, ...(reverted ?? [0]))
+  )
 
   const x = (month: number) => PAD_L + (month / months) * PLOT_W
   const y = (pence: number) => BASE_Y - (pence / yMax) * PLOT_H
@@ -105,12 +107,12 @@ export function BalanceRunway({
 
   const heldEnd = held[held.length - 1]
   const revertedEnd = reverted?.[reverted.length - 1] ?? 0
-  const markerX =
-    compares && revertsIn !== null ? x(revertsIn) : null
+  const termLabel = formatMonthYear(mortgage.termEndsOn)
+  const markerX = compares && revertsIn !== null ? x(revertsIn) : null
 
   const sentence = compares
-    ? `At ${mortgage.interestRate}% the balance reaches ${formatPenceShort(heldEnd)} by ${formatMonthYear(mortgage.termEndsOn)}; at ${afterRate}% on the same payment it reaches ${formatPenceShort(revertedEnd)}.`
-    : `${formatPenceShort(balance)} owed today, reaching ${formatPenceShort(heldEnd)} by ${formatMonthYear(mortgage.termEndsOn)}.`
+    ? `At ${mortgage.interestRate}% the balance reaches ${formatPenceShort(heldEnd)} by ${termLabel}; at ${afterRate}% on the same payment it reaches ${formatPenceShort(revertedEnd)}.`
+    : `${formatPenceShort(balance)} owed today, reaching ${formatPenceShort(heldEnd)} by ${termLabel}.`
 
   return (
     <Shell
@@ -122,12 +124,10 @@ export function BalanceRunway({
         ) : undefined
       }
     >
-      {/* The plot sits in its own inset surface so it reads as a panel of the
-          card rather than marks floating in it. */}
-      <div className="rounded-xl bg-muted/40 px-3 pt-3.5 pb-2.5">
+      <div className="rounded-xl bg-muted/40 px-2.5 pt-3 pb-1.5">
         <svg
           viewBox={`0 0 ${VB_W} ${VB_H}`}
-          className="h-auto w-full"
+          className="h-auto w-full overflow-visible"
           role="img"
           aria-label={sentence}
         >
@@ -141,14 +141,14 @@ export function BalanceRunway({
                 x2={VB_W - PAD_R}
                 y2={px(y(value))}
                 strokeWidth={1}
-                className="stroke-border"
+                className="stroke-border/70"
               />
               <text
-                x={PAD_L - 8}
-                y={px(y(value)) + 4}
+                x={PAD_L - 7}
+                y={px(y(value)) + 3}
                 textAnchor="end"
-                fontSize={11}
-                className="fill-muted-foreground tabular-nums"
+                fontSize={10}
+                className="fill-muted-foreground/80 tabular-nums"
               >
                 {axisPounds(value)}
               </text>
@@ -157,14 +157,14 @@ export function BalanceRunway({
 
           <path
             d={`${linePath(held, x, y)} L${px(x(held.length - 1))} ${BASE_Y} L${PAD_L} ${BASE_Y} Z`}
-            className="fill-emerald-500/10"
+            className="fill-emerald-500/[0.07]"
           />
 
           {reverted && (
             <path
               d={linePath(reverted, x, y)}
               fill="none"
-              strokeWidth={2.5}
+              strokeWidth={1.75}
               strokeLinecap="round"
               strokeLinejoin="round"
               className="stroke-red-500"
@@ -174,7 +174,7 @@ export function BalanceRunway({
           <path
             d={linePath(held, x, y)}
             fill="none"
-            strokeWidth={2.5}
+            strokeWidth={1.75}
             strokeLinecap="round"
             strokeLinejoin="round"
             className="stroke-emerald-500"
@@ -186,72 +186,101 @@ export function BalanceRunway({
               y1={PAD_T}
               x2={px(markerX)}
               y2={BASE_Y}
-              strokeWidth={1.5}
-              strokeDasharray="5 5"
-              className="stroke-amber-500/70"
+              strokeWidth={1}
+              strokeDasharray="4 4"
+              className="stroke-amber-500/60"
             />
           )}
 
-          <circle
+          <EndDot
             cx={px(x(held.length - 1))}
             cy={px(y(heldEnd))}
-            r={4.5}
-            strokeWidth={2.5}
-            className="fill-muted stroke-emerald-500"
+            className="stroke-emerald-500"
+            tip={`${formatPenceShort(heldEnd)} left in ${termLabel}`}
           />
           {reverted && (
-            <circle
+            <EndDot
               cx={px(x(reverted.length - 1))}
               cy={px(y(revertedEnd))}
-              r={4.5}
-              strokeWidth={2.5}
-              className="fill-muted stroke-red-500"
+              className="stroke-red-500"
+              tip={`${formatPenceShort(revertedEnd)} left in ${termLabel}`}
             />
           )}
 
           <text
             x={PAD_L}
-            y={VB_H - 6}
-            fontSize={11}
-            className="fill-muted-foreground tabular-nums"
+            y={VB_H - 4}
+            fontSize={10}
+            className="fill-muted-foreground/80 tabular-nums"
           >
             {now.getFullYear()}
           </text>
           <text
             x={VB_W - PAD_R}
-            y={VB_H - 6}
+            y={VB_H - 4}
             textAnchor="end"
-            fontSize={11}
-            className="fill-muted-foreground tabular-nums"
+            fontSize={10}
+            className="fill-muted-foreground/80 tabular-nums"
           >
             {parseDay(mortgage.termEndsOn).getFullYear()}
           </text>
         </svg>
-
-        {/* The key lives with the plot, naming every mark and its landing */}
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t pt-2.5 text-[11px] text-muted-foreground">
-          <Key swatch="line" className="bg-emerald-500">
-            {`keeping ${mortgage.interestRate}% · ${formatPenceShort(heldEnd)} left`}
-          </Key>
-          {reverted && (
-            <Key swatch="line" className="bg-red-500">
-              {`at ${afterRate}% · ${formatPenceShort(revertedEnd)} left`}
-            </Key>
-          )}
-          {markerX !== null && mortgage.rateEndsOn && (
-            <Key swatch="dash" className="border-amber-500">
-              {`deal ends ${formatMonthYear(mortgage.rateEndsOn)}`}
-            </Key>
-          )}
-        </div>
       </div>
 
-      {compares && (
-        <p className="mt-4 border-t pt-3 text-[12px] leading-snug text-muted-foreground">
-          {verdict(payment, revertedEnd, balance, afterRate)}
-        </p>
-      )}
+      {/* Under the plot, outside its surface: names only. The figures live in
+          the endpoint hovers, so the key stays one quiet line. */}
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+        <Key swatch="line" className="bg-emerald-500">
+          {`keeping ${mortgage.interestRate}%`}
+        </Key>
+        {reverted && (
+          <Key swatch="line" className="bg-red-500">
+            {`at ${afterRate}%`}
+          </Key>
+        )}
+        {markerX !== null && mortgage.rateEndsOn && (
+          <Key swatch="dash" className="border-amber-500">
+            {`deal ends ${formatMonthYear(mortgage.rateEndsOn)}`}
+          </Key>
+        )}
+      </div>
     </Shell>
+  )
+}
+
+/**
+ * A small visible dot over a large invisible hit area: 3px reads right at
+ * this weight, but 3px is not a hover target, so the target is 22px.
+ */
+function EndDot({
+  cx,
+  cy,
+  className,
+  tip,
+}: {
+  cx: number
+  cy: number
+  className: string
+  tip: string
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <g className="cursor-help">
+            <circle cx={cx} cy={cy} r={11} fill="transparent" />
+            <circle
+              cx={cx}
+              cy={cy}
+              r={3}
+              strokeWidth={1.75}
+              className={cn("fill-muted", className)}
+            />
+          </g>
+        }
+      />
+      <TooltipContent>{tip}</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -279,7 +308,7 @@ function RateControl({
       >
         <Minus />
       </Button>
-      <span className="w-11 text-center text-[13px] font-medium text-foreground tabular-nums">
+      <span className="w-10 text-center text-[12px] font-medium text-foreground tabular-nums">
         {`${value}%`}
       </span>
       <Button
@@ -309,31 +338,14 @@ function Key({
       <span
         aria-hidden
         className={cn(
-          "w-3.5 shrink-0",
-          swatch === "line" ? "h-0.5 rounded-full" : "border-t-2 border-dashed",
+          "w-3 shrink-0",
+          swatch === "line" ? "h-px rounded-full" : "border-t border-dashed",
           className
         )}
       />
       {children}
     </span>
   )
-}
-
-/** The one conclusion, and it changes as the rate does. */
-function verdict(
-  payment: number,
-  revertedEnd: number,
-  balanceToday: number,
-  afterRate: number
-): string {
-  const monthlyInterest = balanceToday * monthlyRate(afterRate)
-  if (monthlyInterest >= payment) {
-    return `At ${afterRate}% your payment stops covering the interest, so the balance climbs instead of falling.`
-  }
-  if (revertedEnd <= 0) {
-    return `At ${afterRate}% the balance still clears before the term ends.`
-  }
-  return `At ${afterRate}% you would still owe ${formatPenceShort(revertedEnd)} when the term ends.`
 }
 
 function Shell({
@@ -411,11 +423,11 @@ function px(value: number): number {
 }
 
 const VB_W = 560
-const VB_H = 168
-const PAD_L = 46
-const PAD_R = 12
-const PAD_T = 14
-const PAD_B = 24
+const VB_H = 156
+const PAD_L = 42
+const PAD_R = 10
+const PAD_T = 12
+const PAD_B = 20
 const PLOT_W = VB_W - PAD_L - PAD_R
 const PLOT_H = VB_H - PAD_T - PAD_B
 const BASE_Y = VB_H - PAD_B
