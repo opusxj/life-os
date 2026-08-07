@@ -6,7 +6,6 @@ import { CostAheadCard } from "./cost-ahead-card"
 import { EquityCard } from "./equity-card"
 import { MortgageHeadlineCard } from "./headline-card"
 import { LtvCard } from "./ltv-card"
-import { MilestonesCard } from "./milestones-card"
 import { MonthlyCostCard } from "./monthly-cost-card"
 import { MortgageMenu } from "./mortgage-menu"
 import { PaperworkCard } from "./paperwork-card"
@@ -19,8 +18,8 @@ import { WhatIfCard } from "./what-if-card"
  * One mortgage = one stack of isolated cards, each answering one question,
  * read in the order the questions occur to someone: the deal, where you
  * stand, the whole road, the asset, what you can do, the record. Cards that
- * lack their data (LTV, equity, milestones) prompt once or step aside; the
- * stack never renders a broken half-answer.
+ * lack their data (LTV, equity, rent) prompt once or step aside; the stack
+ * never renders a broken half-answer.
  */
 export function MortgageStack({
   mortgage,
@@ -77,7 +76,9 @@ export function MortgageStack({
         <RentCard mortgage={mortgage} status={status} />
       </div>
 
-      {/* What you can do about it, and what happens next if you don't */}
+      {/* What you could pay, beside what you already do. The two belong on one
+          line: the overpayment slider only means anything against the standing
+          monthly cost it would be added to. */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <WhatIfCard
           balance={status.balanceToday}
@@ -86,18 +87,11 @@ export function MortgageStack({
           today={today}
           className="sm:col-span-2"
         />
-        <MilestonesCard mortgage={mortgage} status={status} today={today} />
+        <MonthlyCostCard mortgage={mortgage} />
       </div>
 
-      {/* The record: running costs and the terms on file */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <MonthlyCostCard mortgage={mortgage} />
-        <PaperworkCard
-          mortgage={mortgage}
-          status={status}
-          className="lg:col-span-2"
-        />
-      </div>
+      {/* The record: the terms on file */}
+      <PaperworkCard mortgage={mortgage} status={status} />
     </section>
   )
 }

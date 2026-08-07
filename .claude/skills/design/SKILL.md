@@ -108,9 +108,28 @@ BI restraint. Thin hairline marks read as lifeless here.
 |---|---|
 | Parts of one whole | `SegmentMeter` (the default) |
 | Progress toward a target | `DataProgress` |
+| Independent quantities compared | one `DataProgress` each, all scaled to the largest |
 | Proportion that *is* the card's point | `ArcGauge` (the feature display) |
 | A span of time measured against a deadline | a hairline ruler with markers |
-| Position on a scale | a custom track with band cuts |
+| Discrete tiers you move between | a staircase, one step per tier |
+
+Parts that sum to a whole are `SegmentMeter`; quantities that do not sum are a
+`DataProgress` each. Every bar of either family takes `MeterHead` above it, and
+they all stand `h-3.5` tall. Do not hand-roll a label-above-a-bar: two cards
+writing their own is how a row stops matching, and it is what a user notices
+before they can name it.
+
+**Never give a bar a grey track.** `DataProgress` mixes its track from the bar's
+own colour at 15% for a reason: `bg-muted` sits *darker* than the card in dark
+mode and lighter in light, so a grey track flips polarity between themes, and
+the token already means three other things across these cards. A bar needing a
+track needs `DataProgress`, not a new primitive.
+
+**A drill-down beats a sliver.** When the slice a card is about is a few percent
+of its bar, do not label around it: split the graphic into two bars and let the
+second one be 100% of the first one's relevant part. On the Equity card that
+took a stake from 4.1% of a track (a 12px dot) to 8.2% of one, without inflating
+anything, and it matched how the reader already thinks about the subject.
 
 `ArcGauge` holds its value and the word naming it *both inside the opening*,
 caption directly under the figure: split them across the gauge's edge and
@@ -270,6 +289,32 @@ Real decisions, with the user's words where they instruct. Keep appending.
   "looks so weird."
 - Three variations of the same bar offered as three options: "they are really
   bland. Perhaps we need a different style of statistic?"
+- A graphic whose shape contradicts its meaning. The pricing staircase rose
+  toward the *worst* band, so the reader stood on the summit: "it's misleading
+  given that we are on the highest step which feels like that's a good thing,
+  but it's not." Height must track how good a rung is, and the ladder runs left
+  to right as a climb, because that is the direction everything else is read in.
+- Mismatched label pairs: "cheaper rates" opposite "higher rates". If one end
+  says higher, the other says lower.
+- Hedging a claim instead of removing it. "Cheaper rates at most lenders" under
+  a graphic the app holds no rates for: "how do you know this? Is this true?"
+  If the data cannot support the claim, the claim goes.
+- A closing line opening on "That is": "it feels a bit too 'sentency' and less
+  'data'. The 'That is' just isn't needed." Name the subject: "You currently
+  own 8.2% of your share outright".
+- A ladder of thresholds measured against today. Five of six rungs sat three to
+  twelve years out and the sixth arrived unaided, so the card "feels arbitrary".
+  Anchor a threshold to the moment it is actually used.
+
+**Explaining a term**
+
+An industry term is not explained by a title. "Pricing band" produced "I don't
+really understand what band is, or what it means?" through three revisions
+where every figure on the card was correct. What worked was naming the term
+plainly (the card is now **Loan to value**, which is what a broker will say),
+putting the consequence in the hero, and defining each rung in the units the
+reader already holds: a rung says "loans up to £139,500" on hover, because
+"85%" only ever asks "of what?". See [[audience-new-to-adult-life]] in memory.
 
 **Accepted**
 
@@ -295,7 +340,7 @@ import the exact name, not the short form.
 |---|---|
 | `components/apex/stat-card.tsx` | `ApexStatCard`, `ApexStatValue`, `ApexStatUnit`, `ApexStatFigure`, `ApexStatTag`, `ApexStatHint` |
 | `components/apex/anchor-tints.ts` | `ANCHOR_TINTS` (icon chips), `TAG_TINTS` (pills) |
-| `components/apex/meter.tsx` | `SegmentMeter`, with per-segment tooltips |
+| `components/apex/meter.tsx` | `MeterHead` (name left, amount right, above any bar), `SegmentMeter`, with per-segment tooltips |
 | `components/apex/arc-gauge.tsx` | `ArcGauge`, the feature display |
 | `components/apex/progress.tsx` | `DataProgress`, progress toward a target |
 | `components/apex/page.tsx` | `ApexPage` (the 1100px cap), `ApexPageHeader`, `ApexSection`, `ApexCardGrid`, `ApexPlaceholder` |

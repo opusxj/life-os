@@ -190,7 +190,10 @@ export function LtvCard({
       {/* One marker, at the moment the band gets used. Two (today and the deal
           end) sat a point apart, overlapped, and asked the reader which one
           they were, which is the confusion this card exists to end. */}
-      <div aria-hidden className="relative mt-5 h-9">
+      {/* h-11 is exactly what the stack inside measures (16 + 16 + 12), so the
+          gap above the staircase is the number in the class rather than an
+          overflow that happens to land right. */}
+      <div aria-hidden className="relative mt-4 h-11">
         <span
           className="absolute bottom-0 flex -translate-x-1/2 flex-col items-center text-indigo-600 dark:text-indigo-400"
           style={{ left: markerOffset(ltvPct) }}
@@ -198,10 +201,10 @@ export function LtvCard({
           <span className="text-[11px] leading-4 font-medium whitespace-nowrap tabular-nums">
             {ltvLabel}
           </span>
-          <span className="text-[10px] leading-3 whitespace-nowrap text-muted-foreground">
+          <span className="text-[11px] leading-4 whitespace-nowrap text-muted-foreground">
             {when ?? "today"}
           </span>
-          <ChevronDown className="size-3.5" />
+          <ChevronDown className="size-3" />
         </span>
       </div>
 
@@ -257,7 +260,7 @@ export function LtvCard({
           itself lives in the sentence below, so these stay bare. */}
       <div
         aria-hidden
-        className="mt-1 flex items-baseline justify-between text-[10px] text-muted-foreground"
+        className="mt-1 flex items-baseline justify-between text-[11px] text-muted-foreground"
       >
         <span>Higher rates</span>
         <span>Lower rates</span>
