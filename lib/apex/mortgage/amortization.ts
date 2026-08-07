@@ -204,6 +204,61 @@ export function balanceSeries(
   return series
 }
 
+export type InterestPath = {
+  /** Interest paid in total by month n, pence. Index 0 is 0. */
+  cumulative: number[]
+  /** What the payment becomes once the new rate applies */
+  paymentAfter: number
+}
+
+/**
+ * Interest accumulating over the rest of the term, when the rate changes once
+ * and the payment is recalculated to still clear the term.
+ *
+ * This is the honest model of what a lender does, and it is why a *balance*
+ * chart cannot show what a rate costs: recalculating keeps every scenario
+ * landing on zero at the term, so the whole difference moves into the payment
+ * and the interest. Those are what this returns.
+ */
+export function cumulativeInterestPath(
+  balance: number,
+  ratePct: number,
+  payment: number,
+  changeAt: number,
+  newRatePct: number,
+  totalMonths: number
+): InterestPath {
+  const before = monthlyRate(ratePct)
+  const cumulative = [0]
+  let current = balance
+  let paid = 0
+
+  const held = Math.max(0, Math.min(changeAt, totalMonths))
+  for (let month = 1; month <= held; month += 1) {
+    const interest = current * before
+    paid += interest
+    current = current + interest - payment
+    cumulative.push(Math.round(paid))
+  }
+
+  const remaining = totalMonths - held
+  if (remaining <= 0 || current <= 0) {
+    return { cumulative, paymentAfter: payment }
+  }
+
+  // The lender re-solves the payment so the term still ends on zero
+  const paymentAfter = monthlyPayment(current, newRatePct, remaining)
+  const after = monthlyRate(newRatePct)
+  for (let month = 1; month <= remaining && current > 0; month += 1) {
+    const interest = current * after
+    paid += interest
+    current = current + interest - paymentAfter
+    cumulative.push(Math.round(paid))
+  }
+
+  return { cumulative, paymentAfter }
+}
+
 /**
  * A balance path where the rate changes once, `reversionAt` months in.
  *

@@ -13,12 +13,10 @@ import {
 } from "@/components/ui/tooltip"
 import { parseDay } from "@/lib/apex/dates"
 import {
-  balanceSeries,
-  balanceSeriesWithReversion,
-  monthlyRate,
+  cumulativeInterestPath,
   monthsBetween,
 } from "@/lib/apex/mortgage/amortization"
-import { formatPence, formatPenceShort } from "@/lib/apex/money"
+import { formatPenceShort } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import type { MortgageStatus } from "@/lib/apex/mortgage/status"
 import { cn } from "@/lib/utils"
@@ -26,21 +24,19 @@ import { cn } from "@/lib/utils"
 import { formatMonthYear } from "./format"
 
 /**
- * The fork in the road: your balance at today's rate, against your balance if
- * the deal ends and the rate reverts, with a stepper setting the second rate.
+ * What the rest of this mortgage costs in interest, and what the rate you
+ * land on after the deal does to that.
  *
- * Drawn deliberately light. A chart at dashboard weight sitting in a card of
- * 13px text reads as a pasted image, so the marks here are thinner than a
- * standalone chart would use: 1.75px lines, 3px end dots, 10px axis type.
- * Where a figure would have been printed on the plot it lives in a hover
- * instead, which is also what stops the thing feeling inert.
+ * This card used to plot the balance, which could not answer the question it
+ * was asked. A lender re-solves the payment whenever the rate changes so the
+ * term still ends on zero, which means every rate draws the same balance line
+ * and the whole difference hides in the payment. Interest is where the
+ * difference actually lives, so interest is what gets drawn.
  *
- * Both lines hold the payment constant. A lender recalculates it on reversion
- * so the term still clears, which would lay the lines on top of each other
- * and hide the cost in a figure the chart never shows. Fixed, the cost is
- * the gap you can see.
+ * A cumulative curve also reads at any point, not just its end: run your eye
+ * to a year and you have what you will have paid by then.
  */
-export function BalanceRunway({
+export function CostAheadCard({
   mortgage,
   status,
   today,
@@ -58,46 +54,42 @@ export function BalanceRunway({
 
   const now = parseDay(today)
   const termMonths = monthsBetween(now, parseDay(mortgage.termEndsOn))
-  const payment = mortgage.monthlyPayment
   const balance = status.balanceToday
-  const flat = mortgage.repaymentType === "interest_only"
-  const revertsIn = status.monthsToRateEnd
 
-  if (balance <= 0 || termMonths < 1) return null
+  if (balance <= 0 || termMonths < 2) return null
 
-  if (!flat && payment <= balance * monthlyRate(mortgage.interestRate)) {
-    return (
-      <Shell mortgage={mortgage} className={className}>
-        <p className="text-[13px] font-medium text-destructive">
-          {`The payment doesn't cover the interest, so the balance never falls.`}
-        </p>
-      </Shell>
-    )
-  }
-
-  // Two walks of ~275 months. Left unmemoized on purpose: the React Compiler
-  // handles it, and a manual useMemo defeats its analysis.
-  const held = flat
-    ? [balance, balance]
-    : balanceSeries(balance, mortgage.interestRate, payment, termMonths)
-
+  const changesIn = status.monthsToRateEnd
   const compares =
-    !flat && revertsIn !== null && revertsIn > 0 && revertsIn < termMonths
-  const reverted = compares
-    ? balanceSeriesWithReversion(
+    !status.lumpSumAtTerm &&
+    changesIn !== null &&
+    changesIn > 0 &&
+    changesIn < termMonths
+
+  // The baseline is always "today's rate simply continues". Without a deal
+  // end there is nothing to compare it against, so the card draws one line.
+  const held = cumulativeInterestPath(
+    balance,
+    mortgage.interestRate,
+    mortgage.monthlyPayment,
+    compares ? (changesIn as number) : termMonths,
+    mortgage.interestRate,
+    termMonths
+  )
+  const scenario = compares
+    ? cumulativeInterestPath(
         balance,
         mortgage.interestRate,
+        mortgage.monthlyPayment,
+        changesIn as number,
         afterRate,
-        payment,
-        revertsIn,
         termMonths
       )
     : null
 
-  const months = Math.max(held.length - 1, reverted ? reverted.length - 1 : 0)
-  const { step, max: yMax } = niceScale(
-    Math.max(balance, ...(reverted ?? [0]))
-  )
+  const months = held.cumulative.length - 1
+  const heldTotal = held.cumulative[months]
+  const scenarioTotal = scenario?.cumulative[scenario.cumulative.length - 1] ?? 0
+  const { step, max: yMax } = niceScale(Math.max(heldTotal, scenarioTotal))
 
   const x = (month: number) => PAD_L + (month / months) * PLOT_W
   const y = (pence: number) => BASE_Y - (pence / yMax) * PLOT_H
@@ -105,18 +97,20 @@ export function BalanceRunway({
   const yTicks: number[] = []
   for (let value = 0; value <= yMax; value += step) yTicks.push(value)
 
-  const heldEnd = held[held.length - 1]
-  const revertedEnd = reverted?.[reverted.length - 1] ?? 0
   const termLabel = formatMonthYear(mortgage.termEndsOn)
-  const markerX = compares && revertsIn !== null ? x(revertsIn) : null
+  const markerX = compares ? x(changesIn as number) : null
+  const gap = scenarioTotal - heldTotal
 
   const sentence = compares
-    ? `At ${mortgage.interestRate}% the balance reaches ${formatPenceShort(heldEnd)} by ${termLabel}; at ${afterRate}% on the same payment it reaches ${formatPenceShort(revertedEnd)}.`
-    : `${formatPenceShort(balance)} owed today, reaching ${formatPenceShort(heldEnd)} by ${termLabel}.`
+    ? `Keeping ${mortgage.interestRate}% costs ${formatPenceShort(heldTotal)} in interest by ${termLabel}; at ${afterRate}% it is ${formatPenceShort(scenarioTotal)}.`
+    : `${formatPenceShort(heldTotal)} of interest between now and ${termLabel}.`
 
   return (
-    <Shell
-      mortgage={mortgage}
+    <ApexStatCard
+      label="The cost ahead"
+      description="Interest you will have paid, by year"
+      icon={Route}
+      iconClassName={ANCHOR_TINTS.bill}
       className={className}
       action={
         compares ? (
@@ -156,31 +150,28 @@ export function BalanceRunway({
             </g>
           ))}
 
-          <path
-            d={`${linePath(held, x, y)} L${px(x(held.length - 1))} ${BASE_Y} L${PAD_L} ${BASE_Y} Z`}
-            className="fill-emerald-500/[0.07]"
-          />
-
-          {reverted && (
+          {scenario && (
             <path
-              d={linePath(reverted, x, y)}
+              d={linePath(scenario.cumulative, x, y)}
               fill="none"
               strokeWidth={1.5}
               strokeLinecap="round"
               strokeLinejoin="round"
               vectorEffect="non-scaling-stroke"
-              className="stroke-red-500"
+              className={gap < 0 ? "stroke-emerald-500" : "stroke-red-500"}
             />
           )}
 
           <path
-            d={linePath(held, x, y)}
+            d={linePath(held.cumulative, x, y)}
             fill="none"
             strokeWidth={1.5}
             strokeLinecap="round"
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"
-            className="stroke-emerald-500"
+            className={cn(
+              scenario ? "stroke-foreground/40" : "stroke-emerald-500"
+            )}
           />
 
           {markerX !== null && (
@@ -197,17 +188,19 @@ export function BalanceRunway({
           )}
 
           <EndDot
-            cx={px(x(held.length - 1))}
-            cy={px(y(heldEnd))}
-            className="stroke-emerald-500"
-            tip={`${formatPenceShort(heldEnd)} left in ${termLabel}`}
+            cx={px(x(months))}
+            cy={px(y(heldTotal))}
+            className={cn(
+              scenario ? "stroke-foreground/40" : "stroke-emerald-500"
+            )}
+            tip={`${formatPenceShort(heldTotal)} interest by ${termLabel}`}
           />
-          {reverted && (
+          {scenario && (
             <EndDot
-              cx={px(x(reverted.length - 1))}
-              cy={px(y(revertedEnd))}
-              className="stroke-red-500"
-              tip={`${formatPenceShort(revertedEnd)} left in ${termLabel}`}
+              cx={px(x(scenario.cumulative.length - 1))}
+              cy={px(y(scenarioTotal))}
+              className={gap < 0 ? "stroke-emerald-500" : "stroke-red-500"}
+              tip={`${formatPenceShort(scenarioTotal)} interest by ${termLabel}`}
             />
           )}
 
@@ -231,15 +224,19 @@ export function BalanceRunway({
         </svg>
       </div>
 
-      {/* Under the plot, outside its surface: names only. The figures live in
-          the endpoint hovers, so the key stays one quiet line. */}
       <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-        <Key swatch="line" className="bg-emerald-500">
-          {`keeping ${mortgage.interestRate}%`}
+        <Key
+          swatch="line"
+          className={scenario ? "bg-foreground/40" : "bg-emerald-500"}
+        >
+          {`keeping ${mortgage.interestRate}% · ${formatPenceShort(held.paymentAfter)} a month`}
         </Key>
-        {reverted && (
-          <Key swatch="line" className="bg-red-500">
-            {`at ${afterRate}%`}
+        {scenario && (
+          <Key
+            swatch="line"
+            className={gap < 0 ? "bg-emerald-500" : "bg-red-500"}
+          >
+            {`at ${afterRate}% · ${formatPenceShort(scenario.paymentAfter)} a month`}
           </Key>
         )}
         {markerX !== null && mortgage.rateEndsOn && (
@@ -248,14 +245,30 @@ export function BalanceRunway({
           </Key>
         )}
       </div>
-    </Shell>
+
+      {compares && gap !== 0 && (
+        <p className="mt-auto border-t pt-3 text-[12px] leading-snug text-muted-foreground">
+          <span
+            className={cn(
+              "font-medium",
+              gap > 0
+                ? "text-red-600 dark:text-red-400"
+                : "text-emerald-600 dark:text-emerald-400"
+            )}
+          >
+            {formatPenceShort(Math.abs(gap))}
+          </span>
+          {gap > 0
+            ? " more interest than if today's rate carried on."
+            : " less interest than if today's rate carried on."}
+        </p>
+      )}
+    </ApexStatCard>
   )
 }
 
-/**
- * A small visible dot over a large invisible hit area: 3px reads right at
- * this weight, but 3px is not a hover target, so the target is 22px.
- */
+/** A small visible dot over a large invisible hit area: 3.5px reads right at
+ *  this weight, but 3.5px is not a hover target. */
 function EndDot({
   cx,
   cy,
@@ -289,8 +302,8 @@ function EndDot({
   )
 }
 
-/** The rate you land on if nothing is arranged. Stepped, not typed: this is
- *  a what-if, and a stepper keeps it one thumb away from a new answer. */
+/** The rate you land on when the deal ends. Stepped, not typed: this is a
+ *  what-if, and a stepper keeps it one thumb away from a new answer. */
 function RateControl({
   value,
   onChange,
@@ -353,31 +366,6 @@ function Key({
   )
 }
 
-function Shell({
-  mortgage,
-  action,
-  className,
-  children,
-}: {
-  mortgage: Mortgage
-  action?: React.ReactNode
-  className?: string
-  children: React.ReactNode
-}) {
-  return (
-    <ApexStatCard
-      label="The road ahead"
-      description={`Your balance at ${formatPence(mortgage.monthlyPayment)} a month`}
-      icon={Route}
-      iconClassName={ANCHOR_TINTS.balance}
-      action={action}
-      className={className}
-    >
-      {children}
-    </ApexStatCard>
-  )
-}
-
 function linePath(
   series: number[],
   x: (month: number) => number,
@@ -422,22 +410,12 @@ function trimmed(value: number): string {
   return String(Number(value.toFixed(2)))
 }
 
-/** One decimal keeps the server-rendered path short without visible loss */
 function px(value: number): number {
   return Number(value.toFixed(1))
 }
 
-/**
- * The viewBox width is load-bearing and must stay near the rendered width.
- *
- * With `w-full`, the browser scales the whole coordinate space to fit the
- * container: a 560-wide box in a 1000px card multiplies every length by 1.8,
- * so 10px type renders at 18px and a 1.75px line at 3.1px. Sized against the
- * real width (1100px page cap, less card and surface padding) the scale is
- * ~1 and a stated size is the size you get. Strokes additionally carry
- * `vector-effect="non-scaling-stroke"`, which pins them to screen pixels at
- * any width, so only the geometry flexes on a narrow window.
- */
+/** The viewBox width stays near the rendered width so a stated size is the
+ *  size you get; strokes additionally pin to screen pixels at any width. */
 const VB_W = 1020
 const VB_H = 178
 const PAD_L = 56

@@ -2,7 +2,7 @@
 import { mortgageStatus } from "@/lib/apex/mortgage/status"
 
 import { BalanceCard } from "./balance-card"
-import { BalanceRunway } from "./balance-runway"
+import { CostAheadCard } from "./cost-ahead-card"
 import { EquityCard } from "./equity-card"
 import { MortgageHeadlineCard } from "./headline-card"
 import { LtvCard } from "./ltv-card"
@@ -62,8 +62,8 @@ export function MortgageStack({
         <PayoffCard mortgage={mortgage} status={status} today={today} />
       </div>
 
-      {/* The whole road, one picture */}
-      <BalanceRunway mortgage={mortgage} status={status} today={today} />
+      {/* What the rest of it costs, and what the next rate does to that */}
+      <CostAheadCard mortgage={mortgage} status={status} today={today} />
 
       {/* The asset: what the debt is secured on and what that's worth to you */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
