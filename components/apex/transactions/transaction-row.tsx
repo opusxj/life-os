@@ -13,6 +13,10 @@ import { AvatarBadge, EntityAvatar } from "@/components/apex/entity-avatar"
 import { DataChip } from "@/components/apex/table-shell"
 import { MetaDot } from "@/components/shared/meta-dot"
 import { TableCell, TableRow } from "@/components/ui/table"
+import {
+  formatDayMonthShort,
+  formatDayMonthYearShort,
+} from "@/lib/apex/dates"
 import { formatPence } from "@/lib/apex/money"
 import type {
   TransactionOptions,
@@ -64,10 +68,14 @@ export function TransactionTableRow({
   spaceId,
   options,
   transaction,
+  today,
 }: {
   spaceId: string
   options: TransactionOptions
   transaction: TransactionRowData
+  /** yyyy-mm-dd resolved server-side, so the date cell decides whether to
+   *  show the year identically on the server and after hydration */
+  today: string
 }) {
   const [editOpen, setEditOpen] = React.useState(false)
   const canEdit = transaction.kind !== "adjustment"
@@ -106,7 +114,7 @@ export function TransactionTableRow({
         </TableCell>
 
         <TableCell className="hidden py-2 whitespace-nowrap text-muted-foreground sm:table-cell">
-          {formatDay(transaction.occurredOn)}
+          {formatDay(transaction.occurredOn, today)}
         </TableCell>
 
         <TableCell
@@ -204,19 +212,15 @@ function amountText(row: TransactionRowData): string {
     : formatPence(row.amount)
 }
 
-const DAY_FORMAT = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-})
-const DAY_YEAR_FORMAT = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-})
-
-function formatDay(isoDate: string): string {
-  const date = new Date(`${isoDate}T00:00:00`)
-  return date.getFullYear() === new Date().getFullYear()
-    ? DAY_FORMAT.format(date)
-    : DAY_YEAR_FORMAT.format(date)
+/**
+ * A ledger cell is one of the dense surfaces allowed to abbreviate the month,
+ * but it keeps the ordinal like everything else (lib/apex/dates). The year
+ * only appears when the row falls outside the current one, compared against
+ * the server-resolved `today` so the choice cannot differ between the server
+ * render and hydration.
+ */
+function formatDay(isoDate: string, today: string): string {
+  return isoDate.slice(0, 4) === today.slice(0, 4)
+    ? formatDayMonthShort(isoDate)
+    : formatDayMonthYearShort(isoDate)
 }

@@ -81,6 +81,7 @@ export function TransactionsCard({
   rows,
   totals,
   filtered,
+  today,
 }: {
   spaceId: string
   options: TransactionOptions
@@ -89,6 +90,8 @@ export function TransactionsCard({
   totals: Totals
   /** Whether any non-default filter is active (changes the empty-state copy) */
   filtered: boolean
+  /** yyyy-mm-dd resolved server-side, for the rows' date cells */
+  today: string
 }) {
   if (rows.length === 0) {
     return (
@@ -147,6 +150,7 @@ export function TransactionsCard({
                 spaceId={spaceId}
                 options={options}
                 transaction={row}
+                today={today}
               />
             ))}
           </TableBody>

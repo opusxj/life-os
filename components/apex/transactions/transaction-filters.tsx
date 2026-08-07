@@ -23,6 +23,7 @@ import type {
   TransactionFilters,
   TransactionOptions,
 } from "@/lib/apex/transactions/queries"
+import { formatMonthYear } from "@/lib/apex/dates"
 import { cn } from "@/lib/utils"
 
 /** The kinds worth one tap. Adjustments are system rows — hence "Sync". */
@@ -306,12 +307,12 @@ function FilterField({
   )
 }
 
-const MONTH_FORMAT = new Intl.DateTimeFormat("en-GB", {
-  month: "short",
-  year: "numeric",
-})
-
+/**
+ * "2026-08" → "August 2026". A dropdown has room for the month's name, so it
+ * gets one. Parsing through the shared vocabulary also fixes a latent shift:
+ * a UTC-midnight date formatted in local time lands on the previous month
+ * anywhere west of UTC.
+ */
 function formatMonth(month: string): string {
-  const [year, monthNumber] = month.split("-").map(Number)
-  return MONTH_FORMAT.format(new Date(Date.UTC(year, monthNumber - 1, 1)))
+  return formatMonthYear(`${month}-01`)
 }

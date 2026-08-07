@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
+import { todayKey } from "@/components/apex/due-state"
 import { ApexPage, ApexPageHeader } from "@/components/apex/page"
 import { AddTransactionDialog } from "@/components/apex/transactions/transaction-dialog"
 import { TransactionFilterBar } from "@/components/apex/transactions/transaction-filters"
@@ -68,6 +69,7 @@ export default async function TransactionsPage({
         rows={rows}
         totals={totals}
         filtered={filtered}
+        today={todayKey()}
       />
     </ApexPage>
   )
