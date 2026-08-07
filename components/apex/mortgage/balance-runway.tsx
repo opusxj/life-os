@@ -124,7 +124,7 @@ export function BalanceRunway({
         ) : undefined
       }
     >
-      <div className="rounded-xl bg-muted/40 px-2.5 pt-3 pb-1.5">
+      <div className="mt-1">
         <svg
           viewBox={`0 0 ${VB_W} ${VB_H}`}
           className="h-auto w-full overflow-visible"
@@ -148,8 +148,8 @@ export function BalanceRunway({
                 x={PAD_L - 8}
                 y={px(y(value)) + 4}
                 textAnchor="end"
-                fontSize={11}
-                className="fill-muted-foreground/80 tabular-nums"
+                fontSize={12}
+                className="fill-muted-foreground tabular-nums"
               >
                 {axisPounds(value)}
               </text>
@@ -214,8 +214,8 @@ export function BalanceRunway({
           <text
             x={PAD_L}
             y={VB_H - 6}
-            fontSize={11}
-            className="fill-muted-foreground/80 tabular-nums"
+            fontSize={12}
+            className="fill-muted-foreground tabular-nums"
           >
             {now.getFullYear()}
           </text>
@@ -223,8 +223,8 @@ export function BalanceRunway({
             x={VB_W - PAD_R}
             y={VB_H - 6}
             textAnchor="end"
-            fontSize={11}
-            className="fill-muted-foreground/80 tabular-nums"
+            fontSize={12}
+            className="fill-muted-foreground tabular-nums"
           >
             {parseDay(mortgage.termEndsOn).getFullYear()}
           </text>
@@ -279,7 +279,7 @@ function EndDot({
               r={3.5}
               strokeWidth={1.5}
               vectorEffect="non-scaling-stroke"
-              className={cn("fill-muted", className)}
+              className={cn("fill-card", className)}
             />
           </g>
         }
@@ -439,8 +439,8 @@ function px(value: number): number {
  * any width, so only the geometry flexes on a narrow window.
  */
 const VB_W = 1020
-const VB_H = 175
-const PAD_L = 52
+const VB_H = 178
+const PAD_L = 56
 const PAD_R = 16
 const PAD_T = 12
 const PAD_B = 26
