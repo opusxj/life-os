@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
-import { formatMonthYear } from "./format"
+import { formatMonthYear, spanWords } from "./format"
 
 /**
  * When the debt actually clears, drawn as a race to a finish line.
@@ -252,17 +252,6 @@ function FinishTrack({
 function verdict(delta: number): string {
   if (delta === 0) return "Exactly on term"
   return `${spanWords(Math.abs(delta))} ${delta > 0 ? "late" : "early"}`
-}
-
-/** 28 → "2 years 4 months", 7 → "7 months", 24 → "2 years" */
-function spanWords(months: number): string {
-  const years = Math.floor(months / 12)
-  const rest = months % 12
-  const yearPart = years === 1 ? "1 year" : `${years} years`
-  const monthPart = rest === 1 ? "1 month" : `${rest} months`
-  if (years === 0) return monthPart
-  if (rest === 0) return yearPart
-  return `${yearPart} ${monthPart}`
 }
 
 /**

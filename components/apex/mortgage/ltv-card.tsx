@@ -17,6 +17,12 @@ import {
   projectBalance,
   type RepaymentType,
 } from "@/lib/apex/mortgage/amortization"
+import {
+  bandBalance,
+  bandFor,
+  nextBandDown,
+  PRICING_BANDS,
+} from "@/lib/apex/mortgage/bands"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import {
   lendingBase,
@@ -31,17 +37,6 @@ import {
 import { cn } from "@/lib/utils"
 
 import { formatMonthYear, formatShare } from "./format"
-
-/**
- * The LTV thresholds UK lenders reprice at, best to worst. Below 60 there is
- * nothing left to improve into.
- *
- * A convention, not this lender's terms: nothing on the mortgage says which
- * thresholds Halifax or anyone else uses, and the app holds no rate for any of
- * them. So the copy hedges to "most lenders" wherever it makes the claim, and
- * nowhere on the card promises a saving it cannot size.
- */
-const PRICING_BANDS = [60, 75, 80, 85, 90, 95]
 
 /**
  * The order the steps are drawn in: dearest band first, so the staircase runs
@@ -148,14 +143,7 @@ export function LtvCard({
   const underwater = assessed > lending.value
   const nextBand = underwater ? null : nextBandDown(assessed, lending.value)
 
-  // Compared in pence rather than against the percentage, because nextBandDown
-  // works in pence and a float comparison disagrees with it at equality: paying
-  // exactly the distance the card asks for would otherwise land on a band the
-  // card then refuses to award. Null above 95, outside every band on offer.
-  const currentBand =
-    PRICING_BANDS.find(
-      (band) => assessed <= bandBalance(lending.value, band)
-    ) ?? null
+  const currentBand = bandFor(assessed, lending.value)
 
   const when =
     remortgageIn !== null && mortgage.rateEndsOn
@@ -299,30 +287,6 @@ function baseDescription(lending: LendingBase): string {
   return lending.shared
     ? `Against your ${formatShare(lending.share)}% share, worth ${formatPenceShort(lending.value)}`
     : `Against your ${formatPenceShort(lending.value)} property value`
-}
-
-/** The balance that would put this loan exactly on `band`, in pence. */
-function bandBalance(base: number, band: number): number {
-  return Math.round((base * band) / 100)
-}
-
-/**
- * The nearest band below the current position, worked in pence so the
- * distance shown is exactly the balance movement that reaches it. Null at or
- * below the lowest band.
- */
-function nextBandDown(
-  balance: number,
-  base: number
-): { band: number; balance: number; distance: number } | null {
-  for (let index = PRICING_BANDS.length - 1; index >= 0; index -= 1) {
-    const band = PRICING_BANDS[index]
-    const target = bandBalance(base, band)
-    if (balance > target) {
-      return { band, balance: target, distance: balance - target }
-    }
-  }
-  return null
 }
 
 /**

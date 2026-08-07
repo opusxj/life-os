@@ -81,9 +81,8 @@ export function MortgageStack({
           monthly cost it would be added to. */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <WhatIfCard
-          balance={status.balanceToday}
-          interestRate={mortgage.interestRate}
-          monthlyPayment={mortgage.monthlyPayment}
+          mortgage={mortgage}
+          status={status}
           today={today}
           className="sm:col-span-2"
         />

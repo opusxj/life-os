@@ -83,20 +83,85 @@ export function simulatePayoff(
 }
 
 /**
- * The overpayment what-if: baseline vs `payment + extraMonthly`, both from
- * the simulation so the two figures are directly comparable.
+ * A rate change already on the calendar: the deal ends on a known date and a
+ * different rate runs from there to the term end.
+ */
+export type RateChange = {
+  /** Months from now until the new rate starts */
+  at: number
+  /** The rate that applies from then on */
+  ratePct: number
+  /** Months from now to the contractual term end. The lender re-solves the
+   *  payment against whatever is left of it. */
+  termMonths: number
+}
+
+/**
+ * Payoff and total interest under a payment, optionally carried through a rate
+ * change that is already on the calendar.
+ *
+ * Two things the walk gets right that a single-rate simulation cannot. At the
+ * switch the lender re-solves the contractual payment so the term still clears,
+ * which is why holding one rate for twenty-five years on a deal with seven
+ * months left reports a payoff that never happens. And the overpayment rides on
+ * top of whatever the payment becomes, because an overpayment is a standing
+ * instruction against the payment of the day, not a fixed total.
+ */
+function simulate(
+  principal: number,
+  annualRatePct: number,
+  payment: number,
+  extra: number,
+  change?: RateChange
+): PayoffProjection | null {
+  if (principal <= 0) return { months: 0, totalInterest: 0 }
+
+  let balance = principal
+  let rate = monthlyRate(annualRatePct)
+  let instalment = payment + extra
+  let totalInterest = 0
+  let months = 0
+  // at <= 0 means the change has already happened, and the caller should have
+  // passed the rate it landed on as annualRatePct
+  const switchAt = change && change.at > 0 ? change.at : null
+
+  while (balance > 0 && months < MAX_MONTHS) {
+    if (switchAt !== null && change && months === switchAt) {
+      const remaining = change.termMonths - switchAt
+      if (remaining <= 0) return null
+      instalment = monthlyPayment(balance, change.ratePct, remaining) + extra
+      rate = monthlyRate(change.ratePct)
+    }
+    // Checked every month rather than once up front: a payment that covered
+    // the interest at the old rate may not at the new one
+    if (rate > 0 && instalment <= balance * rate) return null
+    const interest = balance * rate
+    totalInterest += interest
+    balance = balance + interest - instalment
+    months += 1
+  }
+
+  if (balance > 0) return null
+  return { months, totalInterest: Math.round(totalInterest) }
+}
+
+/**
+ * The overpayment what-if: baseline vs `payment + extraMonthly`, both from the
+ * same walk so the two figures are directly comparable, and both through the
+ * same rate change so neither is quoted against a rate that expires.
  */
 export function overpaymentImpact(
   principal: number,
   annualRatePct: number,
   payment: number,
-  extraMonthly: number
+  extraMonthly: number,
+  change?: RateChange
 ): OverpaymentImpact | null {
-  const baseline = simulatePayoff(principal, annualRatePct, payment)
+  const baseline = simulate(principal, annualRatePct, payment, 0, change)
   if (!baseline) return null
   const accelerated =
     extraMonthly > 0
-      ? simulatePayoff(principal, annualRatePct, payment + extraMonthly)
+      ? simulate(principal, annualRatePct, payment, extraMonthly, change)
       : baseline
   if (!accelerated) return null
   return {
