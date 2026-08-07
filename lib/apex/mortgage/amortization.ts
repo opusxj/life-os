@@ -316,6 +316,65 @@ export function monthsToCapitalMajority(
 }
 
 /**
+ * Months of ordinary payments until the balance first falls to `target`.
+ *
+ * A lender's pricing band is a balance threshold, so the honest distance to one
+ * is time and not only money: "£2,850 lower" is work, "by September 2027" is a
+ * date you already have. 0 when the balance is already there; null when the
+ * payment never gets there or the ceiling is hit first.
+ *
+ * Holds one rate for as long as it runs, so it is only safe where no rate
+ * change is known to be coming. That is a real constraint and not a caveat:
+ * this repo's demo row is fixed at 4.79% for seven more months and then reverts
+ * to 6.99%, at which point the old payment stops covering the interest and the
+ * balance turns and climbs, so anything walked past that date at the fixed rate
+ * reports a threshold the loan never reaches. Callers with a deal end either
+ * measure at it, as the Pricing band card does, or do not use this.
+ */
+export function monthsToBalance(
+  balance: number,
+  annualRatePct: number,
+  payment: number,
+  target: number
+): number | null {
+  if (balance <= target) return 0
+  const r = monthlyRate(annualRatePct)
+  if (r > 0 && payment <= balance * r) return null
+
+  // Walks via stepBalance rather than a closed form, so a band date can never
+  // disagree with the balance the charts draw for the same month.
+  let current = balance
+  for (let month = 1; month <= MAX_MONTHS; month += 1) {
+    current = stepBalance(current, r, payment)
+    if (current <= target) return month
+  }
+  return null
+}
+
+/**
+ * The smallest monthly payment that brings `balance` down to `target` within
+ * `months`, in pence. Null when there is no time to do it in, or when the
+ * balance is already there.
+ *
+ * Closed form rather than a search: after n months a balance B at monthly rate
+ * r under payment P stands at B(1+r)^n − P((1+r)^n − 1)/r, so solving that for
+ * the P landing exactly on `target` gives the floor. Callers round up to a
+ * figure someone would actually set up as a standing order.
+ */
+export function paymentToReach(
+  balance: number,
+  annualRatePct: number,
+  months: number,
+  target: number
+): number | null {
+  if (months <= 0 || balance <= target) return null
+  const r = monthlyRate(annualRatePct)
+  if (r === 0) return Math.ceil((balance - target) / months)
+  const growth = (1 + r) ** months
+  return Math.ceil(((balance * growth - target) * r) / (growth - 1))
+}
+
+/**
  * Calendar month `months` from `from` (defaults to now), pinned to the 1st —
  * payoff dates are displayed at month precision, so the day never matters.
  */

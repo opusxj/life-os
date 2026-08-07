@@ -11,8 +11,8 @@ import { MonthlyCostCard } from "./monthly-cost-card"
 import { MortgageMenu } from "./mortgage-menu"
 import { PaperworkCard } from "./paperwork-card"
 import { PayoffCard } from "./payoff-card"
+import { RentCard } from "./rent-card"
 import { ThisMonthCard } from "./this-month-card"
-import { TrueCostCard } from "./true-cost-card"
 import { WhatIfCard } from "./what-if-card"
 
 /**
@@ -65,11 +65,16 @@ export function MortgageStack({
       {/* What the rest of it costs, and what the next rate does to that */}
       <CostAheadCard mortgage={mortgage} status={status} today={today} />
 
-      {/* The asset: what the debt is secured on and what that's worth to you */}
+      {/* The asset, read outward from the debt: what the loan measures against
+          the share you own and what the next remortgage prices that at, then
+          the part of the share already yours, then the part that was never
+          yours and charges rent for it. Equity and rent step aside when the
+          valuation or the rent isn't recorded rather than render an empty
+          card. */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <LtvCard mortgage={mortgage} status={status} />
+        <LtvCard mortgage={mortgage} status={status} today={today} />
         <EquityCard mortgage={mortgage} status={status} />
-        <TrueCostCard mortgage={mortgage} status={status} today={today} />
+        <RentCard mortgage={mortgage} status={status} />
       </div>
 
       {/* What you can do about it, and what happens next if you don't */}

@@ -46,6 +46,12 @@ export function EquityCard({
   // Widths are proportions of the FULL property value. Debt is clamped to
   // the share's value so negative equity never paints over the landlord's
   // slice. Every region answers "what is that?" on hover.
+  //
+  // The colours carry the ownership line rather than three arbitrary greys:
+  // the emerald family is the half you own, solid where it is yours outright
+  // and faded where the mortgage still has a claim on it, and the landlord's
+  // half sits outside that family entirely. So the 50/50 split of a
+  // shared-ownership home is legible before a word of it is read.
   const segments = [
     {
       pct: (Math.max(0, equity) / propertyValue) * 100,
@@ -54,12 +60,12 @@ export function EquityCard({
     },
     {
       pct: (Math.min(balance, shareValue) / propertyValue) * 100,
-      className: "bg-foreground/25",
+      className: "bg-emerald-500/30 dark:bg-emerald-500/40",
       tip: `${formatPenceShort(Math.min(balance, shareValue))} mortgaged`,
     },
     {
       pct: isShared ? 100 - share : 0,
-      className: "bg-muted",
+      className: "bg-muted-foreground/20",
       tip: `Landlord's ${formatShare(100 - share)}%, worth ${formatPenceShort(propertyValue - shareValue)}`,
     },
   ]
@@ -101,11 +107,6 @@ export function EquityCard({
           {isShared
             ? `Your ${formatShare(share)}% share is worth ${formatPenceShort(shareValue)}. The mortgage covers ${formatPenceShort(balance)} of it.`
             : `The mortgage covers ${formatPenceShort(balance)} of it.`}
-        </ApexStatHint>
-      )}
-      {isShared && (
-        <ApexStatHint>
-          {`Your landlord holds the other ${formatShare(100 - share)}%.`}
         </ApexStatHint>
       )}
     </ApexStatCard>
