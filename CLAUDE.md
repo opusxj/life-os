@@ -41,7 +41,7 @@ a semantic mistake behind a cosmetic request, does.
 
 ## Hard rules
 
-- Work from a board ticket; one ticket = one branch (`los-<n>-slug`) = one PR; conventional commits.
+- Work from a board ticket; one ticket = one branch (`life-<n>-slug`, matching the LIFE-n identifier) = one PR; conventional commits.
 - Modules and their nav/accents live in `lib/modules.ts` (registry-driven) — never hardcode module info in shell components.
 - Match the approved design bar (density, per-module accents, spring motion, reduced-motion support, light+dark) — see conventions.
 - Base UI components compose via `render` prop, not `asChild`. Prefer `components/ui` over custom.

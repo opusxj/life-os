@@ -2,15 +2,19 @@
 
 The working system for Life OS: design bar, code rules, and ticket workflow. This is how multiple people/agents work in parallel without stepping on each other or repeating mistakes.
 
-## Copy rules
+## Copy and visual design
 
-Interface text is part of the product, not decoration around it.
+**`.claude/skills/design/SKILL.md` is the source of truth** for interface
+copy, card grammar, the visual dialect, the tint vocabulary, dates, and the
+mockup-first design process. It is a skill rather than a doc so it loads
+automatically whenever UI work starts.
 
-- **Never use an em dash in user-facing copy.** Split the sentence, or use a colon or comma. (Standalone `—` as a "no value" cell placeholder is a symbol, not writing, and is fine.)
-- **Never write something the product doesn't do.** "We'll tell you then" promises a notification that doesn't exist. Copy that softens a screen with a claim we can't honour is worse than a blunt sentence, and in a finance tool it costs trust we don't get back.
-- **Card shape is title, short description, then the information.** The description says what the card is showing and why; the numbers do the rest.
-- **Don't make the biggest text on a card a non-statement.** "Nothing to do yet" as a headline wastes the slot. Lead with the real figure and let the calm framing sit in the description.
-- Plain sentences over clever ones. This audience reads decoration as noise.
+The two rules worth repeating here because they are absolute:
+
+- **Never use an em dash in user-facing copy.** (A standalone `—` as a "no value" cell placeholder is a symbol, not writing, and is fine.)
+- **Never write something the product doesn't do.** Copy that softens a screen with a claim we can't honour is worse than a blunt sentence, and in a finance tool it costs trust we don't get back.
+
+Plain sentences over clever ones. This audience reads decoration as noise.
 
 ## Design bar
 
@@ -21,9 +25,9 @@ The shell's look and feel is the approved standard ("continue like this"). Every
 - **Motion:** Motion (`motion/react`) springs — the house spring is `{ type: "spring", stiffness: 500, damping: 32 }`. Layout changes morph (`layoutId`), interactions get `whileHover`/`whileTap`. Always inside `MotionConfig reducedMotion="user"`. No CSS `transition-*` on transform properties of motion elements.
 - **Components:** use `components/ui` (shadcn base-nova / Base UI) before writing custom. Base UI composes via the `render` prop, not `asChild`.
 - **Module surfaces compose the primitives, not raw markup** (LIFE-32): cards are `ui/Card` (via the shared `components/apex/stat-card.tsx` family for stat-style cards), tables are `ui/Table`, status/kind chips are `ui/Badge`, linear progress is `ui/Progress`, breakdowns use `ui/Separator`, charts use `ui/chart` + recharts. Hand-rolled equivalents don't merge — the one exemption is genuine art (e.g. the bank-card visuals). Cards should feel purposeful, not sparse: icon anchors in headers, quick actions in `CardFooter` strips, totals in `TableFooter` rows.
-- **Module bodies are full-width** — no centered max-width container; grids absorb the space with responsive columns.
+- **Apex bodies cap at 1100px and centre** (`ApexPage`). Nothing renders full-bleed: meters and charts scale badly across a wide screen, and wide screens should get margins rather than stretched components. Other modules are still full-width until they adopt the same shell.
 - **Theme source of truth** (LIFE-35): the tweakcn *claude* theme (`npx shadcn@latest add https://tweakcn.com/r/themes/claude.json`) owns every color/radius/shadow token in `app/globals.css`; next-themes swaps light/dark via the `.dark` class. Local deviations are inline-commented in globals.css (currently: light `--destructive` is a palette-fit red instead of tweakcn's near-black, and `--font-sans`/`--font-mono` stay wired to next/font's Inter + Geist Mono). Never hardcode a surface/text color in a component — data colors (accounts, categories, goals) are the only inline-style colors.
-- **Component architecture:** `components/ui/**` is the generated shadcn system (never hand-patched); `components/<module>/**` composes it per module; `components/shared/**` holds the few deliberate cross-module custom controls, each with a comment stating why no primitive fits. Current exemption list: rail motion tiles (signature accent piece), bank-card art, the savings progress grid, `shared/color-swatches`. Selects are always `ui/Select` (in forms: controlled state + hidden input for FormData; pass `items` so the trigger renders labels); segmented choices are `ui/ToggleGroup`.
+- **Component architecture:** `components/ui/**` is the generated shadcn system (never hand-patched); `components/<module>/**` composes it per module; `components/shared/**` holds the few deliberate cross-module custom controls, each with a comment stating why no primitive fits. Current exemption list: rail motion tiles (signature accent piece), bank-card art, `shared/color-swatches`, `shared/meta-dot`. Apex's own display primitives (`components/apex/meter.tsx`, `arc-gauge.tsx`, and the `stat-card.tsx` family) are documented in the design skill. Selects are always `ui/Select` (in forms: controlled state + hidden input for FormData; pass `items` so the trigger renders labels); segmented choices are `ui/ToggleGroup`.
 - **Both themes:** verify light and dark (press `d`).
 
 ## Code conventions

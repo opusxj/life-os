@@ -397,16 +397,16 @@ export function MortgageSnapshot({
       {months !== null && (
         <div className="mt-2.5">
           {status.stage === "reverted" ? (
-            <ApexStatTag tint="destructive">Your deal ended</ApexStatTag>
+            <ApexStatTag tint="destructive">Your fixed rate ended</ApexStatTag>
           ) : months === 0 ? (
-            <ApexStatTag tint="due">Your deal ends this month</ApexStatTag>
+            <ApexStatTag tint="due">Your fixed rate ends this month</ApexStatTag>
           ) : status.stage === "act" ? (
             <ApexStatTag tint="due">
-              {`Your deal ends in ${pluralMonths(months)}`}
+              {`Your fixed rate ends in ${pluralMonths(months)}`}
             </ApexStatTag>
           ) : (
             <ApexStatHint className="mt-0">
-              {`Your deal ends in ${pluralMonths(months)}`}
+              {`Your fixed rate ends in ${pluralMonths(months)}`}
             </ApexStatHint>
           )}
         </div>

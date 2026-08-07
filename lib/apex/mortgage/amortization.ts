@@ -205,6 +205,35 @@ export function balanceSeries(
 }
 
 /**
+ * A balance path where the rate changes once, `reversionAt` months in.
+ *
+ * The payment is held constant on purpose. A lender would recalculate it so
+ * the term still clears, which is exactly why holding it still is the useful
+ * comparison: it shows what the rate change costs, instead of hiding that
+ * cost inside a new payment. Where the payment no longer covers the interest
+ * the series rises, which is the honest outcome and not a bug.
+ */
+export function balanceSeriesWithReversion(
+  principal: number,
+  ratePct: number,
+  reversionPct: number,
+  payment: number,
+  reversionAt: number,
+  maxMonths: number
+): number[] {
+  const first = monthlyRate(ratePct)
+  const second = monthlyRate(reversionPct)
+  const series = [Math.max(0, principal)]
+  let current = principal
+  for (let month = 1; month <= maxMonths && current > 0; month += 1) {
+    const r = month <= reversionAt ? first : second
+    current = current + current * r - payment
+    series.push(Math.max(0, current))
+  }
+  return series
+}
+
+/**
  * When more of a payment starts clearing debt than paying interest.
  *
  * Capital beats interest once `payment - B·r > B·r`, i.e. once the balance

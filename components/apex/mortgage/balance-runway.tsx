@@ -1,15 +1,19 @@
-import { Route } from "lucide-react"
+"use client"
+
+import * as React from "react"
+import { Minus, Plus, Route } from "lucide-react"
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import { ApexStatCard } from "@/components/apex/stat-card"
+import { Button } from "@/components/ui/button"
+import { parseDay } from "@/lib/apex/dates"
 import {
   balanceSeries,
+  balanceSeriesWithReversion,
   monthlyRate,
   monthsBetween,
-  monthsFromNow,
-  simulatePayoff,
 } from "@/lib/apex/mortgage/amortization"
-import { formatPenceShort } from "@/lib/apex/money"
+import { formatPence, formatPenceShort } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import type { MortgageStatus } from "@/lib/apex/mortgage/status"
 import { cn } from "@/lib/utils"
@@ -17,11 +21,18 @@ import { cn } from "@/lib/utils"
 import { formatMonthYear } from "./format"
 
 /**
- * The whole life of the debt in one picture: the balance from today, at the
- * current payment and rate, to zero or the term end. The legend rail beside
- * the plot names what the picture shows (today, the deal ending, where it
- * lands), so the chart carries no floating annotations: without the rail it
- * read as a pasted image whose marks meant nothing.
+ * The fork in the road: your balance at today's rate, against your balance if
+ * the deal ends and the rate reverts.
+ *
+ * The single-line version was a comfortable fiction. It projected today's
+ * rate across the whole term when the rate is contractually guaranteed for a
+ * handful of months, and on the seed mortgage 267 of 274 months were guessed.
+ *
+ * Both lines hold the payment constant, which is the whole point. A lender
+ * recalculates the payment on reversion so the term still clears, so drawing
+ * that would put both lines on top of each other and hide the cost in a
+ * figure the chart doesn't show. Fixing the payment makes the cost visible:
+ * where it stops covering the interest, the line climbs.
  */
 export function BalanceRunway({
   mortgage,
@@ -35,116 +46,88 @@ export function BalanceRunway({
   today: string
   className?: string
 }) {
+  const [afterRate, setAfterRate] = React.useState(
+    mortgage.reversionRate ?? mortgage.interestRate
+  )
+
   const now = parseDay(today)
   const termMonths = monthsBetween(now, parseDay(mortgage.termEndsOn))
+  const payment = mortgage.monthlyPayment
+  const balance = status.balanceToday
 
-  // A cleared balance or an already-ended term leaves no road to draw
-  if (status.balanceToday <= 0 || termMonths < 1) return null
-
-  // A flat line is only honest for pure interest-only; part and part
-  // amortises here exactly the way projectBalance does.
+  // Interest-only never amortises, so a rate comparison would draw two flat
+  // lines; a cleared balance or a finished term leaves no road at all.
   const flat = mortgage.repaymentType === "interest_only"
+  const revertsIn = status.monthsToRateEnd
 
-  if (
-    !flat &&
-    simulatePayoff(
-      status.balanceToday,
-      mortgage.interestRate,
-      mortgage.monthlyPayment
-    ) === null
-  ) {
-    const coversInterest =
-      mortgage.monthlyPayment >
-      status.balanceToday * monthlyRate(mortgage.interestRate)
+  // A cleared balance or a finished term leaves no road to draw
+  if (balance <= 0 || termMonths < 1) return null
+
+  // A payment already under the interest has no road: the line only rises,
+  // and drawing that as a journey would dignify it.
+  if (!flat && payment <= balance * monthlyRate(mortgage.interestRate)) {
     return (
-      <RunwayShell className={className}>
+      <Shell mortgage={mortgage} className={className}>
         <p className="text-[13px] font-medium text-destructive">
-          {coversInterest
-            ? `Payoff at this payment is more than a century away, so there is no road to draw.`
-            : `The payment doesn't cover the interest, so the balance never falls.`}
+          {`The payment doesn't cover the interest, so the balance never falls.`}
         </p>
-      </RunwayShell>
+      </Shell>
     )
   }
 
-  const { points, months, remaining, cleared } = buildSeries(
-    status.balanceToday,
-    mortgage.interestRate,
-    mortgage.monthlyPayment,
-    termMonths,
-    flat
-  )
+  // Two walks of ~275 months each. Left unmemoized on purpose: the React
+  // Compiler handles it, and a manual useMemo here defeats its analysis.
+  const held = flat
+    ? [balance, balance]
+    : balanceSeries(balance, mortgage.interestRate, payment, termMonths)
 
-  const { step, max: yMax } = niceScale(status.balanceToday)
+  const compares =
+    !flat && revertsIn !== null && revertsIn > 0 && revertsIn < termMonths
+  const reverted = compares
+    ? balanceSeriesWithReversion(
+        balance,
+        mortgage.interestRate,
+        afterRate,
+        payment,
+        revertsIn,
+        termMonths
+      )
+    : null
+  const months = Math.max(held.length - 1, reverted ? reverted.length - 1 : 0)
+  const peak = Math.max(balance, ...(reverted ?? [0]))
+  const { step, max: yMax } = niceScale(peak)
+
   const x = (month: number) => PAD_L + (month / months) * PLOT_W
   const y = (pence: number) => BASE_Y - (pence / yMax) * PLOT_H
 
   const yTicks: number[] = []
   for (let value = 0; value <= yMax; value += step) yTicks.push(value)
 
-  const yearStep =
-    YEAR_STEPS.find((years) => months / 12 / years <= 5) ?? YEAR_STEPS_MAX
-  const xLabels: { x: number; year: number }[] = []
-  for (let month = 0; month <= months; month += yearStep * 12) {
-    xLabels.push({
-      x: x(month),
-      year: new Date(now.getFullYear(), now.getMonth() + month, 1).getFullYear(),
-    })
-  }
+  const heldEnd = held[held.length - 1]
+  const revertedEnd = reverted?.[reverted.length - 1] ?? 0
+  const markerX =
+    compares && revertsIn !== null ? x(revertsIn) : null
 
-  const linePath = points
-    .map(
-      (point, index) =>
-        `${index === 0 ? "M" : "L"}${px(x(point.m))} ${px(y(point.v))}`
-    )
-    .join(" ")
-  const areaPath = `${linePath} L${px(x(months))} ${BASE_Y} L${PAD_L} ${BASE_Y} Z`
-
-  // The rate-end threshold, when it is still ahead and inside the domain.
-  // Dashed is deliberate: it marks a boundary, unlike the solid gridlines.
-  const marker =
-    mortgage.rateEndsOn !== null &&
-    status.monthsToRateEnd !== null &&
-    status.monthsToRateEnd > 0 &&
-    status.monthsToRateEnd < months
-      ? { x: x(status.monthsToRateEnd), when: formatMonthYear(mortgage.rateEndsOn) }
-      : null
-
-  const termEndLabel = formatMonthYear(mortgage.termEndsOn)
-  const endRow = flat
-    ? { label: `Due ${termEndLabel}`, value: formatPenceShort(remaining) }
-    : cleared
-      ? { label: "Paid off", value: formatMonthYear(monthsFromNow(months, now)) }
-      : {
-          label: `At the ${termEndLabel} term end`,
-          value: `${formatPenceShort(Math.round(remaining / 100) * 100)} still owed`,
-        }
-
-  const sentence = `${formatPenceShort(status.balanceToday)} owed today; ${
-    cleared ? `paid off ${endRow.value}` : endRow.value
-  }${marker ? `. The ${mortgage.interestRate}% rate ends ${marker.when}.` : "."}`
+  const sentence = compares
+    ? `At ${mortgage.interestRate}% the balance reaches ${formatPenceShort(heldEnd)} by ${formatMonthYear(mortgage.termEndsOn)}; at ${afterRate}% on the same payment it reaches ${formatPenceShort(revertedEnd)}.`
+    : `${formatPenceShort(balance)} owed today, reaching ${formatPenceShort(heldEnd)} by ${formatMonthYear(mortgage.termEndsOn)}.`
 
   return (
-    <RunwayShell className={className}>
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-        {/* The rail is the legend: every mark in the plot has a named row */}
-        <div className="flex shrink-0 flex-col gap-3.5 sm:w-44">
-          <LegendRow swatch="dot" label="Today">
-            {formatPenceShort(status.balanceToday)}
-          </LegendRow>
-          {marker && (
-            <LegendRow swatch="dash" label="Deal ends">
-              {marker.when}
-            </LegendRow>
-          )}
-          <LegendRow swatch="ring" label={endRow.label}>
-            {endRow.value}
-          </LegendRow>
-        </div>
-
+    <Shell
+      mortgage={mortgage}
+      className={className}
+      action={
+        compares ? (
+          <RateControl value={afterRate} onChange={setAfterRate} />
+        ) : undefined
+      }
+    >
+      {/* The plot sits in its own inset surface so it reads as a panel of the
+          card rather than marks floating in it. */}
+      <div className="rounded-xl bg-muted/40 px-3 pt-3.5 pb-2.5">
         <svg
           viewBox={`0 0 ${VB_W} ${VB_H}`}
-          className="h-auto w-full min-w-0 flex-1"
+          className="h-auto w-full"
           role="img"
           aria-label={sentence}
         >
@@ -161,10 +144,10 @@ export function BalanceRunway({
                 className="stroke-border"
               />
               <text
-                x={PAD_L - 7}
-                y={px(y(value)) + 3}
+                x={PAD_L - 8}
+                y={px(y(value)) + 4}
                 textAnchor="end"
-                fontSize={10}
+                fontSize={11}
                 className="fill-muted-foreground tabular-nums"
               >
                 {axisPounds(value)}
@@ -172,22 +155,24 @@ export function BalanceRunway({
             </g>
           ))}
 
-          {xLabels.map((label) => (
-            <text
-              key={label.year}
-              x={px(label.x)}
-              y={VB_H - 6}
-              textAnchor="middle"
-              fontSize={10}
-              className="fill-muted-foreground tabular-nums"
-            >
-              {label.year}
-            </text>
-          ))}
-
-          <path d={areaPath} className="fill-emerald-500/10" />
           <path
-            d={linePath}
+            d={`${linePath(held, x, y)} L${px(x(held.length - 1))} ${BASE_Y} L${PAD_L} ${BASE_Y} Z`}
+            className="fill-emerald-500/10"
+          />
+
+          {reverted && (
+            <path
+              d={linePath(reverted, x, y)}
+              fill="none"
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="stroke-red-500"
+            />
+          )}
+
+          <path
+            d={linePath(held, x, y)}
             fill="none"
             strokeWidth={2.5}
             strokeLinecap="round"
@@ -195,11 +180,11 @@ export function BalanceRunway({
             className="stroke-emerald-500"
           />
 
-          {marker && (
+          {markerX !== null && (
             <line
-              x1={px(marker.x)}
+              x1={px(markerX)}
               y1={PAD_T}
-              x2={px(marker.x)}
+              x2={px(markerX)}
               y2={BASE_Y}
               strokeWidth={1.5}
               strokeDasharray="5 5"
@@ -208,67 +193,167 @@ export function BalanceRunway({
           )}
 
           <circle
-            cx={PAD_L + PLOT_W}
-            cy={px(y(remaining))}
+            cx={px(x(held.length - 1))}
+            cy={px(y(heldEnd))}
             r={4.5}
-            strokeWidth={2}
-            className="fill-emerald-500 stroke-card"
+            strokeWidth={2.5}
+            className="fill-muted stroke-emerald-500"
           />
+          {reverted && (
+            <circle
+              cx={px(x(reverted.length - 1))}
+              cy={px(y(revertedEnd))}
+              r={4.5}
+              strokeWidth={2.5}
+              className="fill-muted stroke-red-500"
+            />
+          )}
+
+          <text
+            x={PAD_L}
+            y={VB_H - 6}
+            fontSize={11}
+            className="fill-muted-foreground tabular-nums"
+          >
+            {now.getFullYear()}
+          </text>
+          <text
+            x={VB_W - PAD_R}
+            y={VB_H - 6}
+            textAnchor="end"
+            fontSize={11}
+            className="fill-muted-foreground tabular-nums"
+          >
+            {parseDay(mortgage.termEndsOn).getFullYear()}
+          </text>
         </svg>
+
+        {/* The key lives with the plot, naming every mark and its landing */}
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t pt-2.5 text-[11px] text-muted-foreground">
+          <Key swatch="line" className="bg-emerald-500">
+            {`keeping ${mortgage.interestRate}% · ${formatPenceShort(heldEnd)} left`}
+          </Key>
+          {reverted && (
+            <Key swatch="line" className="bg-red-500">
+              {`at ${afterRate}% · ${formatPenceShort(revertedEnd)} left`}
+            </Key>
+          )}
+          {markerX !== null && mortgage.rateEndsOn && (
+            <Key swatch="dash" className="border-amber-500">
+              {`deal ends ${formatMonthYear(mortgage.rateEndsOn)}`}
+            </Key>
+          )}
+        </div>
       </div>
-    </RunwayShell>
+
+      {compares && (
+        <p className="mt-4 border-t pt-3 text-[12px] leading-snug text-muted-foreground">
+          {verdict(payment, revertedEnd, balance, afterRate)}
+        </p>
+      )}
+    </Shell>
   )
 }
 
-/** One legend entry: the mark's swatch, what it is, and its value. */
-function LegendRow({
-  swatch,
-  label,
-  children,
+/** The rate you land on if nothing is arranged. Stepped, not typed: this is
+ *  a what-if, and a stepper keeps it one thumb away from a new answer. */
+function RateControl({
+  value,
+  onChange,
 }: {
-  swatch: "dot" | "dash" | "ring"
-  label: string
-  children: React.ReactNode
+  value: number
+  onChange: (next: number) => void
 }) {
+  const set = (next: number) =>
+    onChange(Math.min(15, Math.max(0.25, Number(next.toFixed(2)))))
+
   return (
-    <div className="flex items-start gap-2.5">
-      <span
-        aria-hidden
-        className={cn(
-          "mt-1 shrink-0",
-          swatch === "dot" && "size-2.5 rounded-full bg-emerald-500",
-          swatch === "ring" &&
-            "size-2.5 rounded-full border-2 border-emerald-500",
-          swatch === "dash" &&
-            "h-0 w-3 translate-y-1 border-t-2 border-dashed border-amber-500"
-        )}
-      />
-      <span className="min-w-0">
-        <span className="block text-[12px] leading-snug text-muted-foreground">
-          {label}
-        </span>
-        <span className="block text-sm font-medium tabular-nums">
-          {children}
-        </span>
+    <span className="flex items-center gap-0.5 rounded-full border py-0.5 pr-0.5 pl-2.5 text-[11px] text-muted-foreground">
+      after the deal
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        className="rounded-full"
+        aria-label="Lower the rate"
+        onClick={() => set(value - 0.25)}
+      >
+        <Minus />
+      </Button>
+      <span className="w-11 text-center text-[13px] font-medium text-foreground tabular-nums">
+        {`${value}%`}
       </span>
-    </div>
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        className="rounded-full"
+        aria-label="Raise the rate"
+        onClick={() => set(value + 0.25)}
+      >
+        <Plus />
+      </Button>
+    </span>
   )
 }
 
-/** One header for every state, so the card reads the same even when empty. */
-function RunwayShell({
+function Key({
+  swatch,
   className,
   children,
 }: {
+  swatch: "line" | "dash"
+  className: string
+  children: React.ReactNode
+}) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span
+        aria-hidden
+        className={cn(
+          "w-3.5 shrink-0",
+          swatch === "line" ? "h-0.5 rounded-full" : "border-t-2 border-dashed",
+          className
+        )}
+      />
+      {children}
+    </span>
+  )
+}
+
+/** The one conclusion, and it changes as the rate does. */
+function verdict(
+  payment: number,
+  revertedEnd: number,
+  balanceToday: number,
+  afterRate: number
+): string {
+  const monthlyInterest = balanceToday * monthlyRate(afterRate)
+  if (monthlyInterest >= payment) {
+    return `At ${afterRate}% your payment stops covering the interest, so the balance climbs instead of falling.`
+  }
+  if (revertedEnd <= 0) {
+    return `At ${afterRate}% the balance still clears before the term ends.`
+  }
+  return `At ${afterRate}% you would still owe ${formatPenceShort(revertedEnd)} when the term ends.`
+}
+
+function Shell({
+  mortgage,
+  action,
+  className,
+  children,
+}: {
+  mortgage: Mortgage
+  action?: React.ReactNode
   className?: string
   children: React.ReactNode
 }) {
   return (
     <ApexStatCard
       label="The road ahead"
-      description="Your balance from today at the current payment and rate"
+      description={`Your balance at ${formatPence(mortgage.monthlyPayment)} a month`}
       icon={Route}
       iconClassName={ANCHOR_TINTS.balance}
+      action={action}
       className={className}
     >
       {children}
@@ -276,58 +361,39 @@ function RunwayShell({
   )
 }
 
-type SeriesPoint = { m: number; v: number }
-
-/**
- * One point per month via the library's balanceSeries, so the chart, the
- * milestones, and projectBalance share a single definition of the monthly
- * step. Interest-only does not amortise, so its series is the flat truth:
- * two points at the same balance.
- */
-function buildSeries(
-  balance: number,
-  annualRatePct: number,
-  payment: number,
-  termMonths: number,
-  flat: boolean
-): { points: SeriesPoint[]; months: number; remaining: number; cleared: boolean } {
-  if (flat) {
-    return {
-      points: [
-        { m: 0, v: balance },
-        { m: termMonths, v: balance },
-      ],
-      months: termMonths,
-      remaining: balance,
-      cleared: false,
-    }
-  }
-  const series = balanceSeries(balance, annualRatePct, payment, termMonths)
-  const points = series.map((value, month) => ({ m: month, v: value }))
-  const remaining = series[series.length - 1]
-  return {
-    points,
-    months: series.length - 1,
-    remaining,
-    cleared: remaining <= 0,
-  }
+function linePath(
+  series: number[],
+  x: (month: number) => number,
+  y: (pence: number) => number
+): string {
+  return series
+    .map(
+      (value, month) =>
+        `${month === 0 ? "M" : "L"}${px(x(month))} ${px(y(value))}`
+    )
+    .join(" ")
 }
 
-/**
- * Y domain: zero up to the balance rounded up to a clean step, aiming for
- * three or four intervals. £142,350 → £50,000 steps up to £150,000.
- */
+/** Zero up to the peak rounded to a clean step, aiming for three intervals. */
 function niceScale(maxPence: number): { step: number; max: number } {
-  const raw = maxPence / 3
+  const raw = Math.max(1, maxPence) / 3
   const magnitude = 10 ** Math.floor(Math.log10(raw))
   const normalized = raw / magnitude
   const nice =
-    normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 2.5 ? 2.5 : normalized <= 5 ? 5 : 10
+    normalized <= 1
+      ? 1
+      : normalized <= 2
+        ? 2
+        : normalized <= 2.5
+          ? 2.5
+          : normalized <= 5
+            ? 5
+            : 10
   const step = nice * magnitude
   return { step, max: Math.ceil(maxPence / step) * step }
 }
 
-/** Axis short forms: 15,000,000p → "£150k", 0 → "£0". Labels only, never state. */
+/** Axis short forms: 15,000,000p → "£150k". Labels only, never state. */
 function axisPounds(pence: number): string {
   const pounds = pence / 100
   if (pounds >= 1_000_000) return `£${trimmed(pounds / 1_000_000)}m`
@@ -339,26 +405,17 @@ function trimmed(value: number): string {
   return String(Number(value.toFixed(2)))
 }
 
-/** One decimal place keeps the server-rendered path short without visible loss */
+/** One decimal keeps the server-rendered path short without visible loss */
 function px(value: number): number {
   return Number(value.toFixed(1))
 }
 
-/** yyyy-mm-dd → local midnight, matching status.ts month arithmetic */
-function parseDay(key: string): Date {
-  return new Date(`${key}T00:00:00`)
-}
-
 const VB_W = 560
-const VB_H = 180
-const PAD_L = 42
-const PAD_R = 10
+const VB_H = 168
+const PAD_L = 46
+const PAD_R = 12
 const PAD_T = 14
-const PAD_B = 22
+const PAD_B = 24
 const PLOT_W = VB_W - PAD_L - PAD_R
 const PLOT_H = VB_H - PAD_T - PAD_B
 const BASE_Y = VB_H - PAD_B
-
-/** Smallest year step that keeps the x axis at five labels or fewer */
-const YEAR_STEPS = [1, 2, 5, 10, 25]
-const YEAR_STEPS_MAX = 25
