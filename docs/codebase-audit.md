@@ -2,11 +2,11 @@
 
 Run 2026-08-09 by five parallel review agents (component duplication, lib hygiene, docs staleness, structure and agent navigability, design-rule adherence), after the mortgage page was ratified as the app-wide design reference. Findings verified against the working tree of that day; this file is the work list that came out of it.
 
-Severities: **fix-now** = cheap and unambiguous, batch into cleanup commits · **ticket** = deserves its own focused session on the board · **note** = worth knowing, no action owed. Strike items through (or delete them) as they land, and delete this file when it is empty.
+Severities: **fix-now** = cheap and unambiguous, batch into cleanup commits · **session** = deserves its own focused session · **note** = worth knowing, no action owed. Strike items through (or delete them) as they land, and delete this file when it is empty.
 
 ## Summary of open findings
 
-**ticket (15)**
+**session (15)**
 
 - Add/edit container idiom is three-way split (Sheet vs Dialog vs Drawer) and two files named drawer are Sheets
 - Hidden-input controlled Select hand-rolled in 7+ places; transaction-dialog already has the generic solution as a private component
@@ -54,7 +54,7 @@ Severities: **fix-now** = cheap and unambiguous, batch into cleanup commits · *
 
 ## Resolved
 
-**LIFE-39 · Meter primitives — landed 2026-08-09 on `refactor/life-39-meter-primitives`:**
+**Meter primitives precursor — landed 2026-08-09 on `refactor/life-39-meter-primitives`:**
 
 - ~~Breakdown legend row exists only in monthly-cost-card but is codified house grammar the next card will hand-roll~~ (MeterLegendRow + MeterTotalRow extracted; monthly-cost-card ported)
 - ~~Three surfaces hand-roll label-above-a-bar furniture instead of MeterHead~~ (leading/trailing slots added; budget-row, overview MonthCard and savings-tile ported)
@@ -67,7 +67,7 @@ Severities: **fix-now** = cheap and unambiguous, batch into cleanup commits · *
 
 - ~~apex.md decision 9 still claims lazy per-visit category seeding; it moved to a spaces trigger~~
 - ~~apex.md header still says "draft for John's sign-off" though sign-off happened 2026-08-02 and E2 shipped~~
-- ~~apex.md build plan has no statuses and still lists Mortgage as "*NEW*" though it is LIFE-29 and Done~~
+- ~~apex.md build plan has no statuses and still lists Mortgage as "*NEW*" though it shipped long ago~~
 - ~~apex.md Mortgage page section lists six planned cards; the built page renders eleven~~
 - ~~apex.md schema draft shows plain single-column FKs; every applied migration uses composite (id, space_id) FKs~~
 - ~~apex.md says the Apex sidebar nav "lands with the first Apex UI ticket"; it landed long ago~~
@@ -76,7 +76,7 @@ Severities: **fix-now** = cheap and unambiguous, batch into cleanup commits · *
 - ~~mortgage.md references rate-card.tsx, which no longer exists~~
 - ~~mortgage.md §4.3 item 4 says property_value is "rendered by nothing" and should be deleted; it now feeds two cards~~
 - ~~mortgage.md contains two full copies of F8 and F9~~
-- ~~Four docs still say the board is a "mirror of Linear once connected"; Linear has been canonical since 2026-08-02~~
+- ~~Four docs still described board.md as a mirror of a live tracker it no longer mirrored~~
 - ~~project-overview.md module map still lists Apex as "First module to build"~~
 - ~~Design skill's 'Where the system lives' table is stale on three points~~
 - ~~Three docs still say board.md is the live board; board.md says it is a frozen archive~~
@@ -288,7 +288,7 @@ Files: `lib/apex/overview/queries.ts` · `lib/apex/sidebar/queries.ts` · `compo
 
 Overview (lines 84-86, 99-105) and sidebar (lines 42, 93-94) each hard-code the +7-day horizon and its comparison against next_due_on; dueState's actionable window (due-state.tsx:33) is a third statement of the same product rule (days <= 7). They agree today, but the number lives in three places.
 
-**Do:** The constant now exists — `DUE_SOON_DAYS` in `lib/apex/subscriptions/schedule.ts` (LIFE-40). When next touching overview queries, sidebar queries, or due-state.tsx, derive their 7s from it. Not worth its own session.
+**Do:** The constant now exists — `DUE_SOON_DAYS` in `lib/apex/subscriptions/schedule.ts` (the subscriptions redesign). When next touching overview queries, sidebar queries, or due-state.tsx, derive their 7s from it. Not worth its own session.
 
 ### Seven identical FormState type aliases
 
@@ -322,13 +322,13 @@ AccountOption is {id,name,kind,balance} in budgets, {id,name,color} in transacti
 
 **Do:** Rename to surface-specific names on next touch (e.g. GoalAccountOption/TopUpAccountOption in budgets, FilterAccountOption in transactions, PayAccountOption in subscriptions), keeping deprecated aliases for one commit if needed. No dedicated session; do it opportunistically.
 
-### board.md's frozen-archive banner is accurate — no change needed
+### board.md's frozen-archive banner was accurate; the file has since been deleted
 
-Files: `docs/board.md`
+Files: `docs/board.md` (removed)
 
-The banner ("Linear is canonical as of 2026-08-02… statuses below are frozen at import time. Check Linear for live state") correctly frames every stale-looking status beneath it (e.g. LOS-3 "Ready", references to the long-gone lib/workspace.ts mock). Verified as intended-frozen rather than stale; per the audit brief, no edits proposed.
+Verified as intended-frozen rather than stale at audit time. On 2026-08-09 the external tracker was retired entirely and board.md deleted with it; the surviving future work moved to docs/backlog.md.
 
-**Do:** Leave board.md untouched.
+**Do:** Nothing; kept for the record.
 
 ### foundations.md verified accurate against the foundations migrations
 
@@ -342,9 +342,9 @@ Every checkable claim holds: personal space created by DB trigger at sign-up (ha
 
 Files: `docs/conventions.md`
 
-All files it names exist: components/apex/stat-card.tsx, arc-gauge.tsx, meter.tsx, components/shared/color-swatches.tsx, components/shared/meta-dot.tsx, .claude/skills/design/SKILL.md, .claude/launch.json (with the "dev" entry CLAUDE.md mentions). Its mistake-log claim that spaces' SELECT policy "still has the old shape — LIFE-30 tracks it" remains true: migration 20260802003000 kept bare `deleted_at is null` on spaces while 20260802120000 fixed only accounts/cards/categories/transactions. Apart from the board-mirror phrase flagged separately, conventions.md is current.
+All files it names exist: components/apex/stat-card.tsx, arc-gauge.tsx, meter.tsx, components/shared/color-swatches.tsx, components/shared/meta-dot.tsx, .claude/skills/design/SKILL.md, .claude/launch.json (with the "dev" entry CLAUDE.md mentions). Its mistake-log claim that spaces' SELECT policy still has the old shape remains true: migration 20260802003000 kept bare `deleted_at is null` on spaces while 20260802120000 fixed only accounts/cards/categories/transactions (an open backlog.md item). Apart from the board-mirror phrase flagged separately, conventions.md is current.
 
-**Do:** No change beyond the line-43 edit in the Linear-connection finding.
+**Do:** No change.
 
 ### View-vocabulary .ts files under components/ are correct but the pattern is undocumented
 

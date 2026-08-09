@@ -2,7 +2,7 @@
 
 Decided with John 2026-08-02. This is the contract for E1 Foundations; schema and auth tickets implement exactly this.
 
-## Accounts & auth (MVP scope — LIFE-17)
+## Accounts & auth (MVP scope)
 
 - Sign-up and sign-in with **email + password**, plus **magic link** sign-in.
 - Sign-up requires **email confirmation code** (OTP) before the account is active.
@@ -22,7 +22,7 @@ Decided with John 2026-08-02. This is the contract for E1 Foundations; schema an
 - Roles per space: **owner / admin / member / guest** (guest ≈ read-only). Simple names in the schema; family-flavored display labels can be a UI decision later.
 - Future (phase 2, schema leaves room, no speculative columns now): modules toggled on/off per space and per member; per-member data visibility toggles; ownership transfer (until then, owners cannot be removed or leave, and deleting an account cascades the spaces that user owns — including shared ones).
 
-## Invites & joining (LIFE-23)
+## Invites & joining
 
 - Join via **email invite** (works for people without accounts yet) or **in-app invite** to an existing user — the latter raises an in-app **notification**.
 - Invites carry the target role, expire after 14 days, and are accepted atomically in the DB (membership + invite status in one step).

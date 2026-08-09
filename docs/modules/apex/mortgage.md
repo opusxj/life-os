@@ -6,7 +6,7 @@ teardown, voice of the user, anti-features & upkeep) — 2026-08-05.
 This doc decides what the Mortgage area is *for*, what it will contain, and — more
 usefully — what it will not.
 
-> **Status 2026-08-09** — the area is built (LIFE-29 plus a design-polish pass) and
+> **Status 2026-08-09** — the area is built (schema, page and a design-polish pass) and
 > is the approved design reference for the whole app. Landed: **F1** largely (payment
 > shock headline, reserve-window meter and stage guidance, LTV band proximity on the
 > Loan to value card), **F6** in full (rounded figures, both numbers with time drawn

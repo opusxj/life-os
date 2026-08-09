@@ -1,6 +1,6 @@
 # Apex — Finance
 
-Module spec (LIFE-7). Status: **signed off 2026-08-02; E2 built** (see the build plan). The schema draft below was the contract for LIFE-18 and the E2 build tickets; the applied migrations in `supabase/migrations/` are now authoritative.
+Module spec. Status: **signed off 2026-08-02; built** (see the build history). The schema draft below was the build contract; the applied migrations in `supabase/migrations/` are now authoritative.
 
 ## Purpose
 
@@ -63,7 +63,7 @@ The showcase page — visual, not analytical:
 
 ### Subscriptions & Bills
 
-Redesigned to the mortgage bar (LIFE-40, 2026-08-09). The shipped page is the
+Redesigned to the mortgage bar (2026-08-09). The shipped page is the
 spec; the shape:
 
 - **Outgoings** (the page's terracotta headline): monthly total, a
@@ -79,12 +79,12 @@ spec; the shape:
   occurrences from the anchor-day projection (`lib/apex/subscriptions/schedule.ts`,
   a TS port of the SQL advance rule). Answers "which month is going to ambush
   me"; a flat schedule says so instead.
-- **Price creep** (LIFE-41, beside The months ahead in a 2+1 row): each
+- **Price creep** (beside The months ahead in a 2+1 row): each
   item's current price against the first price ever paid for it, derived from
   Mark paid's stamped transactions. Red deltas per month, the real charges in
   the mechanism line, an annual total in the footnote. No risers means no
   card; the calendar takes the row back.
-- **Paused state** (LIFE-41, `metadata.paused` — an 80%-rule key): Pause and
+- **Paused state** (`metadata.paused` — an 80%-rule key): Pause and
   Resume live in the row menu. A paused item keeps its table row (dimmed,
   neutral "Paused" pill, no Mark paid, sunk below the live rows) but leaves
   every live answer: card totals, due lists, projections, the table foot, the
@@ -113,7 +113,7 @@ page itself is the approved design reference for every future module surface.
 
 All tables use the [standard base shape](../data-standards.md#standard-table-shape) (`id`, `space_id`, `notes`, `metadata`, `created_by`, soft delete, timestamps, `set_updated_at`) and membership-scoped RLS. Domain columns only below.
 
-> The draft below is the signed-off contract, kept for the rationale; the migrations are authoritative and diverge deliberately. Child-table FKs are composite pairs — `(account_id, space_id)`, `(category_id, space_id)`, `(card_id, account_id)` — against `unique (id, space_id)` on the parent, so a row can never reference another space's data. Columns added since: `transactions.recurring_payment_id` (LIFE-27), `recurring_payments.anchor_day` (migration `20260804210000`), and the mortgage headline fields `repayment_type`, `balance_as_of`, `reversion_rate`, `rate_started_on` (migration `20260805090000`).
+> The draft below is the signed-off contract, kept for the rationale; the migrations are authoritative and diverge deliberately. Child-table FKs are composite pairs — `(account_id, space_id)`, `(category_id, space_id)`, `(card_id, account_id)` — against `unique (id, space_id)` on the parent, so a row can never reference another space's data. Columns added since: `transactions.recurring_payment_id` (migration `20260802130000`), `recurring_payments.anchor_day` (migration `20260804210000`), and the mortgage headline fields `repayment_type`, `balance_as_of`, `reversion_rate`, `rate_started_on` (migration `20260805090000`).
 
 ```sql
 -- accounts: one row per real-world account
@@ -153,7 +153,7 @@ description           text not null,                        -- payee/what: "Tesc
 category_id           uuid references categories (id),
 occurred_on           date not null default current_date,
 transfer_account_id   uuid references accounts (id),        -- destination; required iff kind='transfer'
-recurring_payment_id  uuid references recurring_payments (id) -- set by Mark paid; powers payment history (column added by LIFE-27's migration)
+recurring_payment_id  uuid references recurring_payments (id) -- set by Mark paid; powers payment history (column added by migration 20260802130000)
 ```
 
 ```sql
@@ -226,21 +226,21 @@ rent_monthly     bigint                      -- shared-ownership rent; null when
 
 ## Out of scope (MVP)
 
-CSV import (LIFE-28) · bank feeds/Open Banking · multi-currency · split transactions · receipts/attachments · budget rollover · in-app AI · notifications for due bills and rate expiry (high-value follow-up — the `notifications` table already exists).
+CSV import · bank feeds/Open Banking · multi-currency · split transactions · receipts/attachments · budget rollover · in-app AI · notifications for due bills and rate expiry (high-value follow-up — the `notifications` table already exists).
 
-## Build plan
+## Build history
 
-All shipped (LIFE-n numbers are from the retired board, kept as history):
+All shipped:
 
-| Ticket | Scope per this spec |
-|--------|---------------------|
-| LIFE-18 · Apex schema — Done | Core four: `accounts`, `cards`, `categories`, `transactions` + balance trigger, category seeds, RLS, types regen |
-| LIFE-21 · Accounts & Cards page — Done | Account cards, bank-card visuals, sync/transfer/create flows + Apex nav registry update |
-| LIFE-25 · Transactions page — Done | Table, filters, add-transaction drawer |
-| LIFE-27 · Subscriptions & Bills — Done | `recurring_payments` schema + page + Mark paid |
-| LIFE-22 · Budgets & Savings — Done | `budgets` + `saving_goals` schema + page + progress grid + Top up |
-| LIFE-26 · Overview dashboard — Done | The five dashboard cards (depends on all data existing) |
-| LIFE-29 · Mortgage — Done | `mortgages` schema + page cards + what-if math; polished into the app-wide design reference (see [mortgage.md](apex/mortgage.md)) |
+| Piece | Scope per this spec |
+|-------|---------------------|
+| Apex schema | Core four: `accounts`, `cards`, `categories`, `transactions` + balance trigger, category seeds, RLS, types regen |
+| Accounts & Cards page | Account cards, bank-card visuals, sync/transfer/create flows + Apex nav registry update |
+| Transactions page | Table, filters, add-transaction drawer |
+| Subscriptions & Bills | `recurring_payments` schema + page + Mark paid; redesigned to the mortgage bar 2026-08-09 |
+| Budgets & Savings | `budgets` + `saving_goals` schema + page + Top up |
+| Overview dashboard | The five dashboard cards (depends on all data existing) |
+| Mortgage | `mortgages` schema + page cards + what-if math; polished into the app-wide design reference (see [mortgage.md](apex/mortgage.md)) |
 
 ## Resolved at sign-off (2026-08-02)
 

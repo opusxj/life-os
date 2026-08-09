@@ -1,4 +1,4 @@
-// Pure amortization math for the Mortgage cards (LIFE-29). All money values
+// Pure amortization math for the Mortgage cards. All money values
 // are integer pence in and out; the simulation runs in floats and rounds only
 // at the boundary. Projections are derived, never stored (apex.md decision #10).
 

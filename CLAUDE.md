@@ -8,10 +8,9 @@ Personal/family life operating system: ClickUp-style shell (module rail → cont
 - `docs/data-standards.md` — **80% rule**, JSONB metadata, RLS, schema checklist. No schema merges without it.
 - `docs/conventions.md` — design bar, code rules, how work is scoped and shipped, definition of done
 
-There is no ticket board. Linear was retired 2026-08-09 (it slowed the work
-down); `docs/board.md` and LIFE-n references in code and docs are frozen
-history. Work is scoped in conversation and recorded by its branch, its PR
-description, and the docs.
+There is no ticket board. Work is scoped in conversation and recorded by its
+branch, its PR description, and the docs; open future work lives in
+`docs/backlog.md` and cleanup findings in `docs/codebase-audit.md`.
 
 ## Commands
 
