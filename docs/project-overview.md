@@ -27,7 +27,7 @@ Modules are deliberately **not** broken down upfront. A module gets a spec (`doc
 - **Animation:** Motion (`motion/react`) — springs, layout morphs; reduced-motion respected
 - **Data:** Supabase (Postgres, Auth, RLS) — see [data-standards.md](data-standards.md)
 - **Shell:** floating panels on a muted canvas — top bar, module rail, contextual sidebar + body panel (`components/shell/`)
-- **Tracking:** Linear (canonical since 2026-08-02; [board.md](board.md) is a frozen pre-import archive)
+- **Tracking:** none since 2026-08-09 (Linear retired) — work is recorded by branches, PR descriptions and the docs; [board.md](board.md) is a frozen archive
 
 ## Roadmap order
 
