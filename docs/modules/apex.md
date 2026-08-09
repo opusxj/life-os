@@ -79,6 +79,17 @@ spec; the shape:
   occurrences from the anchor-day projection (`lib/apex/subscriptions/schedule.ts`,
   a TS port of the SQL advance rule). Answers "which month is going to ambush
   me"; a flat schedule says so instead.
+- **Price creep** (LIFE-41, beside The months ahead in a 2+1 row): each
+  item's current price against the first price ever paid for it, derived from
+  Mark paid's stamped transactions. Red deltas per month, the real charges in
+  the mechanism line, an annual total in the footnote. No risers means no
+  card; the calendar takes the row back.
+- **Paused state** (LIFE-41, `metadata.paused` — an 80%-rule key): Pause and
+  Resume live in the row menu. A paused item keeps its table row (dimmed,
+  neutral "Paused" pill, no Mark paid, sunk below the live rows) but leaves
+  every live answer: card totals, due lists, projections, the table foot, the
+  overview due list and the sidebar badge. Resume rolls a stale due date
+  forward to the first occurrence on or after today via the anchor rule.
 - **One table, kinds interleaved soonest-first** (ratified deviation from the
   pre-build two-list sketch): name, category, next due, **last paid** (read
   from the transactions Mark paid stamps), amount, with the monthly total in

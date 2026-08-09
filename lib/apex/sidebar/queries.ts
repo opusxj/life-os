@@ -2,6 +2,7 @@ import {
   getTransactionOptions,
   type TransactionOptions,
 } from "@/lib/apex/transactions/queries"
+import { isRecurringPaused } from "@/lib/apex/subscriptions/queries"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 export type ApexSidebarAccount = {
@@ -61,11 +62,15 @@ export async function getApexSidebarData(
         .then(({ data }) => data ?? []),
       supabase
         .from("recurring_payments")
-        .select("id, name, amount, next_due_on, account_id")
+        .select("id, name, amount, next_due_on, account_id, metadata")
         .eq("space_id", spaceId)
         .is("deleted_at", null)
         .order("next_due_on", { ascending: true })
-        .then(({ data }) => data ?? []),
+        // Paused items are not due, so they feed neither the badge nor the
+        // footer's next-up line
+        .then(({ data }) =>
+          (data ?? []).filter((row) => !isRecurringPaused(row.metadata))
+        ),
       supabase
         .from("budgets")
         .select("category_id, amount")
