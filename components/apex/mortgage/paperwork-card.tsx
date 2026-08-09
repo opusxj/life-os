@@ -6,7 +6,6 @@ import type {
   Mortgage,
   MortgageRepaymentType,
 } from "@/lib/apex/mortgage/queries"
-import type { MortgageStatus } from "@/lib/apex/mortgage/status"
 import { cn } from "@/lib/utils"
 
 import { formatMonthYear, formatShare } from "./format"
@@ -15,19 +14,23 @@ import { formatMonthYear, formatShare } from "./format"
  * Every stored fact about the mortgage, visible in one quiet place.
  *
  * An audit found fields we collect but never show anywhere. This card is the
- * fix: deliberately flat, no verdict, no hero figure. Its job is completeness,
- * so the user can check what's on file against a statement in one look.
- * Derived figures (balance today, payoff date) belong to the other cards.
+ * fix: no verdicts, no hero figure, its job is completeness, so the user can
+ * check what's on file against a statement in one look. The facts sit in
+ * three columns because a mortgage statement is really three documents in
+ * one: the loan you took, the deal currently pricing it, and the property it
+ * is secured on. Each column is named in tinted words from the page
+ * vocabulary (sky the committed cost, amber the deal that ends, indigo the
+ * asset). Derived figures (balance today, payoff date) belong to the other
+ * cards.
  */
 export function PaperworkCard({
   mortgage,
   className,
 }: {
   mortgage: Mortgage
-  status: MortgageStatus
   className?: string
 }) {
-  const entries = paperworkEntries(mortgage)
+  const groups = paperworkGroups(mortgage)
 
   return (
     <ApexStatCard
@@ -36,24 +39,37 @@ export function PaperworkCard({
       icon={FileText}
       className={className}
     >
-      <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5 sm:grid-cols-3">
-        {entries.map((entry, index) => (
-          <div key={`${entry.label}-${index}`}>
-            <dt className="text-[11px] leading-snug text-muted-foreground/80">
-              {entry.label}
-            </dt>
-            <dd
-              className={cn(
-                "mt-0.5 text-[13px] leading-snug",
-                entry.numeric && "tabular-nums",
-                entry.value === null && "text-muted-foreground italic"
-              )}
-            >
-              {entry.value ?? "Not set"}
-            </dd>
-          </div>
+      {/* The colour lives in the heading words and nowhere else. Washed
+          panels read as cards nested in a card, rails as lined sections, and
+          pill titles competed with the card's own header; tinted words carry
+          the grouping without adding any furniture at all. */}
+      <div className="mt-1.5 grid gap-x-5 gap-y-4 sm:grid-cols-3">
+        {groups.map((group) => (
+          <section key={group.title}>
+            <h3 className={cn("text-[12px] font-medium", group.heading)}>
+              {group.title}
+            </h3>
+            <dl className="mt-2.5 space-y-2">
+              {group.entries.map((entry) => (
+                <div key={entry.label}>
+                  <dt className="text-[11px] leading-snug text-muted-foreground/80">
+                    {entry.label}
+                  </dt>
+                  <dd
+                    className={cn(
+                      "mt-0.5 text-[13px] leading-snug",
+                      entry.numeric && "tabular-nums",
+                      entry.value === null && "text-muted-foreground italic"
+                    )}
+                  >
+                    {entry.value ?? "Not set"}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
         ))}
-      </dl>
+      </div>
     </ApexStatCard>
   )
 }
@@ -66,8 +82,15 @@ type PaperworkEntry = {
   numeric?: boolean
 }
 
-function paperworkEntries(mortgage: Mortgage): PaperworkEntry[] {
-  const candidates: (PaperworkEntry | null)[] = [
+type PaperworkGroup = {
+  title: string
+  /** The heading's strong text step of the group's hue, light and dark */
+  heading: string
+  entries: PaperworkEntry[]
+}
+
+function paperworkGroups(mortgage: Mortgage): PaperworkGroup[] {
+  const loan: (PaperworkEntry | null)[] = [
     { label: "Lender", value: mortgage.lender },
     {
       label: "Original loan",
@@ -75,10 +98,23 @@ function paperworkEntries(mortgage: Mortgage): PaperworkEntry[] {
       numeric: true,
     },
     {
+      label: "Repayment type",
+      value: REPAYMENT_LABEL[mortgage.repaymentType],
+    },
+    {
+      label: "Term ends",
+      value: formatMonthYear(mortgage.termEndsOn),
+      numeric: true,
+    },
+  ]
+
+  const deal: (PaperworkEntry | null)[] = [
+    {
       label: "Rate",
       value: `${formatRate(mortgage.interestRate)} ${mortgage.rateType}`,
       numeric: true,
     },
+    ratePeriodEntry(mortgage.rateStartedOn, mortgage.rateEndsOn),
     {
       label: "Monthly payment",
       value: formatPence(mortgage.monthlyPayment),
@@ -94,13 +130,19 @@ function paperworkEntries(mortgage: Mortgage): PaperworkEntry[] {
           : formatRate(mortgage.reversionRate),
       numeric: true,
     },
-    ratePeriodEntry(mortgage.rateStartedOn, mortgage.rateEndsOn),
+    // Null stays visible for the same reason: the Overpaying card assumes the
+    // norm and points here until it is recorded.
     {
-      label: "Term ends",
-      value: formatMonthYear(mortgage.termEndsOn),
+      label: "Overpayment cap",
+      value:
+        mortgage.overpaymentAllowancePct === null
+          ? null
+          : `${formatShare(mortgage.overpaymentAllowancePct)}% a year`,
       numeric: true,
     },
-    { label: "Repayment", value: REPAYMENT_LABEL[mortgage.repaymentType] },
+  ]
+
+  const property: (PaperworkEntry | null)[] = [
     // Null stays visible: LTV and equity are gated on it.
     {
       label: "Property value",
@@ -132,7 +174,27 @@ function paperworkEntries(mortgage: Mortgage): PaperworkEntry[] {
     })),
   ]
 
-  return candidates.filter((entry): entry is PaperworkEntry => entry !== null)
+  return [
+    {
+      title: "The loan",
+      heading: "text-sky-700 dark:text-sky-400",
+      entries: present(loan),
+    },
+    {
+      title: "The deal",
+      heading: "text-amber-700 dark:text-amber-400",
+      entries: present(deal),
+    },
+    {
+      title: "The property",
+      heading: "text-indigo-700 dark:text-indigo-400",
+      entries: present(property),
+    },
+  ]
+}
+
+function present(entries: (PaperworkEntry | null)[]): PaperworkEntry[] {
+  return entries.filter((entry): entry is PaperworkEntry => entry !== null)
 }
 
 /** 4.79 → "4.79%", 4.5 → "4.5%" — no float noise, no trailing zeros */
@@ -147,8 +209,8 @@ const REPAYMENT_LABEL: Record<MortgageRepaymentType, string> = {
 }
 
 /**
- * "Apr 2022 to Mar 2027"; a missing start collapses to "To Mar 2027" rather
- * than inventing one. No dates at all and the row disappears.
+ * "April 2022 to March 2027"; a missing start collapses to "To March 2027"
+ * rather than inventing one. No dates at all and the row disappears.
  */
 function ratePeriodEntry(
   start: string | null,

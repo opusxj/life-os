@@ -90,7 +90,7 @@ export function MortgageStack({
       </div>
 
       {/* The record: the terms on file */}
-      <PaperworkCard mortgage={mortgage} status={status} />
+      <PaperworkCard mortgage={mortgage} />
     </section>
   )
 }
