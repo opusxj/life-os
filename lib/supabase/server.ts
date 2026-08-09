@@ -25,7 +25,7 @@ export async function createServerSupabase() {
             )
           } catch {
             // setAll from a Server Component is a no-op; middleware
-            // (LIFE-17) owns session refresh.
+            // owns session refresh.
           }
         },
       },

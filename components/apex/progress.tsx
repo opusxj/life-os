@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 /**
  * ui/Progress with the indicator taking a data color (category, goal,
  * account). The shared answer to "colored bar" across Apex — promoted from the
- * LIFE-32 overview rework after three areas independently needed it.
+ * overview rework after three areas independently needed it.
  *
  * Ratified dialect (.claude/skills/design): the bar is chunky and rounded,
  * and its track is a pastel step of its own color rather than gray, so state
