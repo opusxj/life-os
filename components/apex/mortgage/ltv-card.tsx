@@ -26,6 +26,7 @@ import {
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import {
   lendingBase,
+  overpaymentAllowance,
   type LendingBase,
   type MortgageStatus,
 } from "@/lib/apex/mortgage/status"
@@ -60,14 +61,6 @@ const STEP_HEIGHTS = [34, 47, 60, 73, 86, 100]
 /** The staircase's own gap, in the two forms the marker maths needs. */
 const STEP_GAP = "0.25rem"
 const TOTAL_GAP = "1.25rem"
-
-/**
- * The 10% norm on fixed deals, same hedge the Overpayment what-if card carries:
- * overpay more than this share of the balance in a year and most lenders charge
- * an early repayment charge. Above it, this card states the distance and stops
- * rather than proposing a payment that could cost money to make.
- */
-const ALLOWANCE_PCT = 0.1
 
 /**
  * What band will a lender price me in, and what would move me down one?
@@ -418,7 +411,11 @@ function actionLine(
 
   // Above the early repayment allowance the figure stops being an option, so
   // the card states the threshold and says nothing it would have to caveat.
-  if (extra * 12 > status.balanceToday * ALLOWANCE_PCT) return bare
+  // Shared with the Overpaying card's ceiling: the deal's own recorded cap
+  // when the user supplied one, the hedged 10% norm otherwise.
+  if (extra * 12 > overpaymentAllowance(mortgage, status.balanceToday).yearly) {
+    return bare
+  }
 
   // The date lives on the marker, so the sentence names the event instead of
   // printing March 2027 twice.

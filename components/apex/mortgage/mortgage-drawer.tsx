@@ -207,6 +207,23 @@ export function MortgageDrawer({
               </FormField>
             </FieldPair>
 
+            <FieldPair>
+              {/* The deal's own early-repayment-charge cap; the Overpaying
+                  card hedges to the 10% norm until this is filled in. */}
+              <FormField
+                label="Overpayment cap % a year"
+                name="overpaymentAllowancePct"
+              >
+                <Input
+                  id="mortgage-overpaymentAllowancePct"
+                  name="overpaymentAllowancePct"
+                  inputMode="decimal"
+                  placeholder="10"
+                  defaultValue={mortgage?.overpaymentAllowancePct ?? undefined}
+                />
+              </FormField>
+            </FieldPair>
+
             {state?.error && (
               <p
                 role="alert"

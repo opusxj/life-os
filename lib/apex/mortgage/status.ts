@@ -183,6 +183,39 @@ function parseDay(key: string): Date {
   return new Date(`${key}T00:00:00`)
 }
 
+export type OverpaymentAllowance = {
+  /** Pence a year before an early repayment charge, rounded to whole pounds */
+  yearly: number
+  /** The percent the figure was computed from */
+  pct: number
+  /** True when the deal's own recorded cap was used rather than the norm */
+  isOwn: boolean
+}
+
+/** The fixed-deal norm when a deal's own cap isn't recorded. */
+export const DEFAULT_ALLOWANCE_PCT = 10
+
+/**
+ * How much can be overpaid in a year before most deals charge for it. One
+ * definition here so the what-if slider's ceiling and the Loan to value card's
+ * suggestion guard cannot disagree. Uses the deal's own recorded cap when the
+ * user has supplied one; otherwise the 10%-of-balance norm, and callers hedge
+ * their copy accordingly ("most deals") because the norm is not THIS deal.
+ */
+export function overpaymentAllowance(
+  mortgage: Pick<Mortgage, "overpaymentAllowancePct">,
+  balancePence: number
+): OverpaymentAllowance {
+  const pct = mortgage.overpaymentAllowancePct
+  const isOwn = pct !== null
+  const applied = pct ?? DEFAULT_ALLOWANCE_PCT
+  return {
+    yearly: Math.round((balancePence * applied) / 100 / 100) * 100,
+    pct: applied,
+    isOwn,
+  }
+}
+
 export type LendingBase = {
   /** What the loan is secured against, pence */
   value: number

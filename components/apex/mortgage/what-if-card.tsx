@@ -5,12 +5,10 @@ import { TrendingDown } from "lucide-react"
 import { useMotionValueEvent, useReducedMotion, useSpring } from "motion/react"
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
-import { MeterHead } from "@/components/apex/meter"
-import { DataProgress } from "@/components/apex/progress"
 import {
   ApexStatCard,
+  ApexStatFigure,
   ApexStatHint,
-  ApexStatTag,
   ApexStatUnit,
   ApexStatValue,
 } from "@/components/apex/stat-card"
@@ -20,50 +18,48 @@ import {
   monthsBetween,
   monthsFromNow,
   overpaymentImpact,
-  paymentToReach,
-  projectBalance,
   type RateChange,
 } from "@/lib/apex/mortgage/amortization"
-import { nextBandDown } from "@/lib/apex/mortgage/bands"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
-import { lendingBase, type MortgageStatus } from "@/lib/apex/mortgage/status"
+import {
+  overpaymentAllowance,
+  type MortgageStatus,
+} from "@/lib/apex/mortgage/status"
 import { formatPence, formatPenceShort } from "@/lib/apex/money"
 import { cn } from "@/lib/utils"
 
-import { formatMonthYear, spanWords } from "./format"
+import { FinishTrack } from "./finish-track"
+import { formatMonthYear, formatShare, spanWords } from "./format"
 
-/** The slider's ceiling, in pence a month. */
-const MAX_EXTRA = 100_000
-/** Drag granularity: £25. Presets set exact values regardless. */
+/** Drag granularity: £25. */
 const STEP = 2_500
 const HOUSE_SPRING = { stiffness: 500, damping: 32 }
-
-/**
- * The 10% norm on fixed deals: overpay more than this share of the balance in
- * a year and most lenders charge an early repayment charge. We never know THIS
- * deal's allowance, so the copy hedges ("most deals") rather than asserts.
- */
-const ALLOWANCE_PCT = 0.1
 
 /** Faint emerald wash — the one playable card on the page gets its own surface. */
 const PLAY_SURFACE =
   "bg-emerald-500/[0.04] ring-emerald-500/15 dark:bg-emerald-500/[0.07] dark:ring-emerald-500/25"
 
 /**
- * What would overpaying do? Pure client-side amortization — the presets and the
- * slider drive the maths live and nothing is ever stored (apex.md decision #10).
+ * What would overpaying do? Pure client-side amortization — the slider drives
+ * the maths live and nothing is ever stored (apex.md decision #10).
  *
- * The projection turns over at the deal end rather than holding today's rate for
- * the life of the loan. On this repo's own demo row that was not a rounding
- * matter: quoting 4.79% for twenty-five years on a deal with seven months left
- * understated the saving by £7,473 and overstated the time by nine months.
+ * The saving leads in pounds and the years are drawn. The hero is the rounded
+ * interest saved, the months ride beneath it in one quiet line (two figures
+ * side by side read as clutter; taste log), and the same finish-flag ruler the
+ * Paid off card taught plots both finishes, so dragging the slider slides the
+ * flag and grows the dashed run of road you no longer travel. mortgage.md §F6
+ * wants both numbers shown with time as the hook; here the ruler IS the time,
+ * so the words can lead with money. The interest figure is rounded hard for
+ * §F6's other reason: the same inputs across a plausible rate band swing it
+ * several-fold, and pence precision would be confidence the model cannot
+ * support. The exact payoff month lives on the flag's hover, demoted from
+ * claim to detail.
  *
- * The presets are the point of the rework. A bare slider over a thousand pounds
- * in twenty-five pound steps is forty-one positions and no opinion, which is a
- * poor thing to hand someone meeting overpayments for the first time. Rounding
- * the payment up to the next hundred is what people actually do; the band preset
- * is the exact figure the Loan to value card names, so the two cards agree by
- * construction rather than by coincidence.
+ * The projection turns over at the deal end rather than holding today's rate
+ * for the life of the loan. On this repo's own demo row that was not a
+ * rounding matter: quoting 4.79% for twenty-five years on a deal with seven
+ * months left understated the saving by £7,473 and overstated the time by
+ * nine months.
  */
 export function WhatIfCard({
   mortgage,
@@ -78,9 +74,14 @@ export function WhatIfCard({
   today: string
   className?: string
 }) {
-  const [extra, setExtra] = React.useState(10_000)
+  const [chosen, setExtra] = React.useState(10_000)
 
   const now = parseDay(today)
+  const allowance = overpaymentAllowance(mortgage, status.balanceToday)
+  const maxExtra = safeCeiling(allowance.yearly)
+  // A smaller balance can shrink the ceiling under whatever was last chosen
+  const extra = Math.min(chosen, maxExtra)
+
   const change = rateChange(mortgage, status, now)
   const impact = overpaymentImpact(
     status.balanceToday,
@@ -90,12 +91,11 @@ export function WhatIfCard({
     change
   )
 
-  const allowance = Math.round((status.balanceToday * ALLOWANCE_PCT) / 100) * 100
-  const presets = buildPresets(mortgage, status)
+  const basis = projectionBasis(mortgage, status)
 
   if (!impact) {
     return (
-      <Shell className={className}>
+      <Shell description={basis} className={className}>
         <ApexStatValue className="text-muted-foreground">—</ApexStatValue>
         <ApexStatHint>Needs a payment that covers the interest</ApexStatHint>
       </Shell>
@@ -103,154 +103,133 @@ export function WhatIfCard({
   }
 
   const payoff = formatMonthYear(monthsFromNow(impact.accelerated.months, now))
-  // What the instruction actually asks of you, over the life it now has
-  const committed = extra * impact.accelerated.months
-  const scale = Math.max(committed, impact.interestSaved, 1)
-  const overAllowance = extra * 12 > allowance
+  const baselineLabel = formatMonthYear(
+    monthsFromNow(impact.baseline.months, now)
+  )
 
   return (
-    <Shell className={className}>
-      {/* Dragged to nothing, the figure is not a saving and should not wear the
-          colour of one; the hint below turns into the invitation instead. */}
-      <ApexStatValue
-        className={
-          extra > 0
-            ? "text-emerald-600 dark:text-emerald-400"
-            : "text-muted-foreground"
-        }
-      >
-        <AnimatedPounds pence={impact.interestSaved} />{" "}
-        <ApexStatUnit>interest saved</ApexStatUnit>
-      </ApexStatValue>
+    <Shell description={basis} className={className}>
+      {/* At rest the hero is the payment you already make: the baseline every
+          figure on the card is measured against, and a real number where a
+          grey zero said nothing. The rest of the anatomy stays put either way,
+          because an empty state that hides the ruler hides what the card is
+          for. */}
+      {extra === 0 ? (
+        <ApexStatValue>
+          <ApexStatFigure>{formatPence(mortgage.monthlyPayment)}</ApexStatFigure>{" "}
+          <ApexStatUnit>a month today</ApexStatUnit>
+        </ApexStatValue>
+      ) : (
+        <ApexStatValue
+          className={
+            impact.interestSaved > 0
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-muted-foreground"
+          }
+        >
+          <ApexStatUnit>Around</ApexStatUnit>{" "}
+          <AnimatedPounds pence={roundSaving(impact.interestSaved)} />{" "}
+          <ApexStatUnit>less interest</ApexStatUnit>
+        </ApexStatValue>
+      )}
+      {/* Time rides under the money in one quiet line; the ruler below draws
+          the same years as a length, which is where the emphasis lives. */}
       <ApexStatHint>
         {extra === 0
-          ? "Pick an amount, or drag, to try an overpayment"
-          : `Paid off ${spanWords(impact.monthsSaved)} sooner, in ${payoff}`}
+          ? "Drag to try an overpayment"
+          : `${spanWords(impact.monthsSaved)} sooner, paying ${formatPence(mortgage.monthlyPayment + extra)} a month.`}
       </ApexStatHint>
 
-      {/* Amounts that mean something, before the open-ended one */}
-      {presets.length > 0 && (
-        <div className="mt-3.5 flex flex-wrap gap-1.5">
-          {presets.map((preset) => (
-            <button
-              key={preset.label}
-              type="button"
-              onClick={() => setExtra(preset.extra)}
-              className={cn(
-                "rounded-full border px-2.5 py-1 text-[11px] transition-colors",
-                "hover:bg-emerald-500/10 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-                extra === preset.extra
-                  ? "border-emerald-500/40 bg-emerald-500/15 font-medium text-emerald-700 dark:text-emerald-300"
-                  : "text-muted-foreground"
-              )}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
+      {/* The saving as a length. The solid run is the road you travel, the
+          dashed run is road you no longer have to, and the gap grows under
+          the thumb. Same ruler as the Paid off card, on purpose: a graphic
+          the page already taught is understood before it is read. */}
+      {impact.baseline.months > 0 && (
+        <FinishTrack
+          finishPct={(impact.accelerated.months / impact.baseline.months) * 100}
+          markerPct={100}
+          overshoot={false}
+          tone="good"
+          startLabel="Today"
+          finishLabel={baselineLabel}
+          markerTip="Where today's payment finishes"
+          flagTip={`Clears ${payoff}`}
+          label={`Today to ${payoff} with the overpayment, against ${baselineLabel} at today's payment.`}
+        />
       )}
 
-      <div className="flex items-center gap-2.5 pt-2.5">
-        {/* The track carries its own limits: where the next pricing band is
-            reached, and where most deals start charging for the privilege.
-            A ceiling you can see coming beats one that fires a warning. */}
-        <span className="relative flex-1">
-          <Slider
-            value={[extra]}
-            min={0}
-            max={MAX_EXTRA}
-            step={STEP}
-            onValueChange={(value) =>
-              setExtra(Array.isArray(value) ? value[0] : value)
-            }
-            className="*:py-2 [&_[data-slot=slider-range]]:bg-emerald-500"
-            aria-label="Extra monthly overpayment"
-          />
-          {presets
-            .filter((preset) => preset.mark)
-            .map((preset) => (
-              <span
-                key={preset.label}
-                aria-hidden
-                className={cn(
-                  "pointer-events-none absolute top-1/2 h-3 w-px -translate-y-1/2",
-                  preset.mark
-                )}
-                style={{ left: `${(preset.extra / MAX_EXTRA) * 100}%` }}
-              />
-            ))}
-          {allowance / 12 < MAX_EXTRA && (
-            <span
-              aria-hidden
-              className="pointer-events-none absolute top-1/2 h-3 w-px -translate-y-1/2 bg-amber-500"
-              style={{ left: `${(allowance / 12 / MAX_EXTRA) * 100}%` }}
-            />
-          )}
+      {/* The track runs from nothing to the most you can overpay without a
+          charge, so every position on it is safe and the far end answers "how
+          much am I allowed". */}
+      <div className="relative mt-4 pt-7">
+        {/* The chosen amount rides the thumb instead of sitting in a pill
+            beside the track: while dragging, the eye is on the thumb, and a
+            static pill to the right read as a second fact off to the side.
+            Fixed width so it doesn't jitter as digits change; centred on the
+            thumb itself (whose centre travels the track minus its 12px), and
+            clamp() pins it inside the card at both ends. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute top-0 w-16 rounded-full bg-emerald-500/15 py-0.5 text-center text-[11px] font-medium whitespace-nowrap text-emerald-800 tabular-nums dark:bg-emerald-500/20 dark:text-emerald-300"
+          style={{
+            left: `clamp(0px, calc((100% - 12px) * ${thumbPct(extra, maxExtra) / 100} + 6px - 32px), calc(100% - 64px))`,
+          }}
+        >
+          {`+${formatPenceShort(extra)}`}
         </span>
-        <ApexStatTag tint="balance" className="w-31 shrink-0 justify-center">
-          {`${formatPence(extra)} a month`}
-        </ApexStatTag>
+        <Slider
+          value={[extra]}
+          min={0}
+          max={maxExtra}
+          step={STEP}
+          onValueChange={(value) =>
+            setExtra(Array.isArray(value) ? value[0] : value)
+          }
+          className="*:py-2 [&_[data-slot=slider-range]]:bg-emerald-500"
+          aria-label="Extra monthly overpayment"
+        />
+      </div>
+      {/* The track as a labelled scale: it runs from no overpayment to the
+          yearly cap, so the marks are shares of the balance a year, bare. The
+          word "cap" and the hedge live in the footer, which only exists while
+          the figure is assumed. */}
+      <div className="relative mt-1 h-4 text-[11px] text-muted-foreground tabular-nums">
+        <span className="absolute left-0">0%</span>
+        <span className="absolute left-1/2 -translate-x-1/2">
+          {`${formatShare(allowance.pct / 2)}%`}
+        </span>
+        <span className="absolute right-0">
+          {`${formatShare(allowance.pct)}%`}
+        </span>
       </div>
 
-      {/* What it asks of you, against what it gives back. The saving alone is
-          half the picture: it is bought with a standing order that runs for
-          most of the term, and that belongs on the same card at the same size. */}
-      {extra > 0 && (
-        <div
-          role="img"
-          aria-label={`${formatPence(extra)} a month for ${spanWords(impact.accelerated.months)} commits ${formatPenceShort(committed)} and saves ${formatPenceShort(impact.interestSaved)} in interest.`}
-        >
-          <MeterHead
-            className="mt-4"
-            name={`What it commits, over ${spanWords(impact.accelerated.months)}`}
-            amount={formatPenceShort(committed)}
-          />
-          <DataProgress
-            value={(committed / scale) * 100}
-            color="var(--color-muted-foreground)"
-          />
-          <MeterHead
-            className="mt-3.5"
-            name="What it saves"
-            amount={formatPenceShort(impact.interestSaved)}
-          />
-          <DataProgress
-            value={(impact.interestSaved / scale) * 100}
-            color="var(--color-emerald-500)"
-          />
+      {/* Purely the action, only while there is one to take; the LTV card's
+          prompt grammar. A recorded cap needs no prose at all. */}
+      {!allowance.isOwn && (
+        <div className="mt-auto pt-4">
+          <p className="border-t pt-3 text-[12px] leading-snug text-muted-foreground">
+            Edit the mortgage to add your current cap.
+          </p>
         </div>
       )}
-
-      <div className="mt-auto pt-4">
-        <p
-          className={cn(
-            "border-t pt-3 text-[12px] leading-snug",
-            overAllowance
-              ? "font-medium text-amber-600 dark:text-amber-400"
-              : "text-muted-foreground"
-          )}
-        >
-          {overAllowance
-            ? `${formatPenceShort(extra * 12)} a year is above the 10% allowance most deals give. Check your deal before overpaying this much.`
-            : `Most deals allow ${formatPenceShort(allowance)} a year before an early repayment charge.`}
-        </p>
-      </div>
     </Shell>
   )
 }
 
 /** One shell for every state, so the card reads the same however it resolves. */
 function Shell({
+  description,
   className,
   children,
 }: {
+  description: string
   className?: string
   children: React.ReactNode
 }) {
   return (
     <ApexStatCard
       label="Overpaying"
-      description="Nothing here is saved"
+      description={description}
       icon={TrendingDown}
       iconClassName={ANCHOR_TINTS.balance}
       className={cn(PLAY_SURFACE, className)}
@@ -260,87 +239,60 @@ function Shell({
   )
 }
 
-type Preset = {
-  label: string
-  /** Pence a month */
-  extra: number
-  /** A class for its mark on the slider track, when it earns one */
-  mark?: string
+/**
+ * Where the figures come from, which is the whole job of a provenance line.
+ *
+ * It used to read "Nothing here is saved", meaning nothing is written to your
+ * mortgage. On a card whose hero reads "£29,327 interest saved" thirty pixels
+ * below, that is one word in two senses and it landed as a contradiction: "what
+ * does that even mean?". The reassurance was worth little anyway, since the card
+ * has no form and no save to worry about, and it was displacing the one thing
+ * this slot is for. Naming the rate change also says out loud that the
+ * projection survives it, which is the fact that used to be wrong here.
+ */
+function projectionBasis(mortgage: Mortgage, status: MortgageStatus): string {
+  const at = status.monthsToRateEnd
+  if (
+    at !== null &&
+    at > 0 &&
+    mortgage.reversionRate !== null &&
+    mortgage.rateEndsOn
+  ) {
+    return `At today's payment, through your ${formatMonthYear(mortgage.rateEndsOn)} rate change`
+  }
+  return "At today's payment and rate"
+}
+
+/** Where the thumb sits along the track, for the bubble that rides it. */
+function thumbPct(extra: number, maxExtra: number): number {
+  if (maxExtra <= 0) return 0
+  return Math.min(100, Math.max(0, (extra / maxExtra) * 100))
 }
 
 /**
- * Amounts worth offering, cheapest thought first.
+ * The slider's ceiling: the most you can overpay in a month without most deals
+ * charging for it.
  *
- * Rounding the payment up to the next hundred is the overpayment people
- * actually make, because it is the one you can hold in your head. The band
- * preset is the figure the Loan to value card prints, computed the same way
- * from the same helpers, so the cards cannot drift apart.
+ * Bounding the control at the allowance rather than at a round number means
+ * every position on the track is safe, which is a calmer thing to hand someone
+ * than a slider whose upper reach is a trap sprung by a warning. It also makes
+ * the far end the answer to "how much am I actually allowed", so that question
+ * needs no extra furniture. The floor keeps a usable range on a small balance.
  */
-function buildPresets(mortgage: Mortgage, status: MortgageStatus): Preset[] {
-  const presets: Preset[] = []
-
-  const roundUp =
-    Math.ceil((mortgage.monthlyPayment + 1) / 10_000) * 10_000 -
-    mortgage.monthlyPayment
-  if (roundUp > 0 && roundUp <= MAX_EXTRA) {
-    presets.push({
-      label: `Round up to ${formatPenceShort(mortgage.monthlyPayment + roundUp)}`,
-      extra: roundUp,
-    })
-  }
-
-  presets.push({ label: formatPenceShort(10_000), extra: 10_000 })
-
-  const band = bandPreset(mortgage, status)
-  if (band && !presets.some((preset) => preset.extra === band.extra)) {
-    presets.push(band)
-  }
-  return presets
+function safeCeiling(allowance: number): number {
+  return Math.max(2_500, Math.floor(allowance / 12 / 100) * 100)
 }
 
 /**
- * The overpayment that reaches the next pricing band before the deal ends.
- *
- * Measured at the deal end, not at some point years out, for the reason the
- * Loan to value card is: past that date the rate changes and the projection
- * stops meaning anything. Null when there is no deal to remortgage out of, no
- * band left above, or the figure is off the slider.
+ * Round hard, per mortgage.md §F6: the model's rate assumptions swing this
+ * figure several-fold, so the stated saving keeps only the confidence the
+ * projection earns. The "or so" beside the figure carries the same hedge in
+ * words.
  */
-function bandPreset(
-  mortgage: Mortgage,
-  status: MortgageStatus
-): Preset | null {
-  const lending = lendingBase(mortgage)
-  const months = status.monthsToRateEnd
-  if (lending === null || months === null || months <= 0) return null
-  if (mortgage.repaymentType !== "repayment") return null
-
-  const assessed = projectBalance(
-    status.balanceToday,
-    mortgage.interestRate,
-    mortgage.monthlyPayment,
-    months,
-    mortgage.repaymentType
-  )
-  const next = nextBandDown(assessed, lending.value)
-  if (next === null) return null
-
-  const needed = paymentToReach(
-    status.balanceToday,
-    mortgage.interestRate,
-    months,
-    next.balance
-  )
-  if (needed === null) return null
-
-  const extra = Math.ceil((needed - mortgage.monthlyPayment) / 100) * 100
-  if (extra <= 0 || extra > MAX_EXTRA) return null
-
-  return {
-    label: `${formatPenceShort(extra)}, reaches ${next.band}%`,
-    extra,
-    mark: "bg-indigo-500 dark:bg-indigo-400",
-  }
+function roundSaving(pence: number): number {
+  if (pence >= 1_000_000) return Math.round(pence / 100_000) * 100_000
+  if (pence >= 100_000) return Math.round(pence / 10_000) * 10_000
+  return Math.round(pence / 1_000) * 1_000
 }
 
 /** The reversion the projection has to survive, when one is on the calendar. */
@@ -370,7 +322,7 @@ function AnimatedPounds({ pence }: { pence: number }) {
   }, [pence, reducedMotion, spring])
 
   // Whole pounds in flight: intermediate pence would flash false precision
-  // ("£3,412.37") and jitter the hero's width between two round rest states
+  // ("£3,412.37") and jitter the figure's width between two round rest states
   useMotionValueEvent(spring, "change", (latest) =>
     setDisplay(Math.round(latest / 100) * 100)
   )

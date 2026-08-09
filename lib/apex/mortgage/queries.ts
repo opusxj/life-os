@@ -33,6 +33,10 @@ export type Mortgage = {
   propertyValue: number | null
   equitySharePct: number | null
   rentMonthly: number | null
+  /** This deal's overpayment cap, % of balance a year; null = not recorded,
+   *  cards fall back to the hedged 10% norm. Metadata until the 80% rule says
+   *  otherwise (apex.md lists it as a metadata candidate). */
+  overpaymentAllowancePct: number | null
   extras: MortgageExtra[]
 }
 
@@ -82,8 +86,20 @@ function toMortgage(row: Tables<"mortgages">): Mortgage {
     equitySharePct:
       row.equity_share_pct === null ? null : Number(row.equity_share_pct),
     rentMonthly: row.rent_monthly,
+    overpaymentAllowancePct: allowancePctFromMetadata(row.metadata),
     extras: extrasFromMetadata(row.metadata),
   }
+}
+
+/** The `overpayment_allowance_pct` metadata key, when it holds a sane percent. */
+function allowancePctFromMetadata(
+  metadata: Tables<"mortgages">["metadata"]
+): number | null {
+  const object = metadataObject(metadata)
+  if (object === null) return null
+  const value = object["overpayment_allowance_pct"]
+  if (typeof value !== "number" || value <= 0 || value > 100) return null
+  return value
 }
 
 function toRateType(value: string): MortgageRateType {
@@ -99,18 +115,27 @@ function toRepaymentType(value: string): MortgageRepaymentType {
 function extrasFromMetadata(
   metadata: Tables<"mortgages">["metadata"]
 ): MortgageExtra[] {
+  const object = metadataObject(metadata)
+  if (object === null) return []
+  const extras: MortgageExtra[] = []
+  for (const { key, label, annual } of EXTRA_KEYS) {
+    const value = object[key]
+    if (typeof value !== "number" || value <= 0) continue
+    extras.push({ label, monthly: annual ? Math.round(value / 12) : value })
+  }
+  return extras
+}
+
+/** JSONB can legally hold anything; only a plain object is readable here. */
+function metadataObject(
+  metadata: Tables<"mortgages">["metadata"]
+): Record<string, unknown> | null {
   if (
     typeof metadata !== "object" ||
     metadata === null ||
     Array.isArray(metadata)
   ) {
-    return []
+    return null
   }
-  const extras: MortgageExtra[] = []
-  for (const { key, label, annual } of EXTRA_KEYS) {
-    const value = metadata[key]
-    if (typeof value !== "number" || value <= 0) continue
-    extras.push({ label, monthly: annual ? Math.round(value / 12) : value })
-  }
-  return extras
+  return metadata
 }

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache"
 import { parsePoundsToPence } from "@/lib/apex/money"
 import { getWorkspace } from "@/lib/data/workspace"
 import { createServerSupabase } from "@/lib/supabase/server"
-import type { TablesInsert } from "@/lib/supabase/types"
+import type { Json, Tables, TablesInsert } from "@/lib/supabase/types"
 
 export type MortgageFormState =
   { error?: string; success?: boolean } | undefined
@@ -25,6 +25,7 @@ export async function createMortgage(
   const supabase = await createServerSupabase()
   const { error } = await supabase.from("mortgages").insert({
     ...parsed.values,
+    metadata: withAllowance({}, parsed.allowancePct),
     space_id: workspace.activeSpace.id,
     created_by: workspace.user.id,
   } satisfies TablesInsert<"mortgages">)
@@ -51,15 +52,21 @@ export async function updateMortgage(
   // must not make a six-month-old figure start claiming to be today's.
   const { data: existing } = await supabase
     .from("mortgages")
-    .select("balance")
+    .select("balance, metadata")
     .eq("id", id)
     .is("deleted_at", null)
     .maybeSingle()
 
-  const values =
-    existing && existing.balance !== parsed.values.balance
-      ? { ...parsed.values, balance_as_of: serverToday() }
-      : parsed.values
+  const values = {
+    ...parsed.values,
+    // The cap lives in metadata beside keys this form doesn't own (ground
+    // rent, service charge), so merge rather than replace. The drawer prefills
+    // the field, which is what makes a blank an intentional removal.
+    metadata: withAllowance(existing?.metadata ?? {}, parsed.allowancePct),
+    ...(existing && existing.balance !== parsed.values.balance
+      ? { balance_as_of: serverToday() }
+      : {}),
+  }
 
   const { error, count } = await supabase
     .from("mortgages")
@@ -152,6 +159,8 @@ type ParsedMortgage =
         equity_share_pct: number | null
         rent_monthly: number | null
       }
+      /** % of balance a year; metadata, not a column, so carried separately */
+      allowancePct: number | null
     }
 
 function parseMortgageForm(formData: FormData): ParsedMortgage {
@@ -229,7 +238,24 @@ function parseMortgageForm(formData: FormData): ParsedMortgage {
     return { error: "Enter the monthly rent as an amount, or leave it blank." }
   }
 
+  const allowanceRaw = String(
+    formData.get("overpaymentAllowancePct") ?? ""
+  ).trim()
+  let allowancePct: number | null = null
+  if (allowanceRaw) {
+    allowancePct = /^\d{1,3}(\.\d{1,2})?$/.test(allowanceRaw)
+      ? parseFloat(allowanceRaw)
+      : null
+    if (allowancePct === null || allowancePct <= 0 || allowancePct > 100) {
+      return {
+        error:
+          "Enter the overpayment cap as a percentage up to 100, or leave it blank.",
+      }
+    }
+  }
+
   return {
+    allowancePct,
     values: {
       name,
       lender,
@@ -250,6 +276,27 @@ function parseMortgageForm(formData: FormData): ParsedMortgage {
 function parseDate(value: FormDataEntryValue | null): string | null {
   const raw = String(value ?? "").trim()
   return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : null
+}
+
+/**
+ * Existing metadata with the overpayment cap set, or removed when cleared.
+ * Everything else in the object (ground rent, staircasing notes, whatever the
+ * AI entry path wrote) passes through untouched — this form owns one key.
+ */
+function withAllowance(
+  metadata: Tables<"mortgages">["metadata"],
+  allowancePct: number | null
+): Json {
+  const base =
+    typeof metadata === "object" && metadata !== null && !Array.isArray(metadata)
+      ? { ...metadata }
+      : {}
+  if (allowancePct === null) {
+    delete base["overpayment_allowance_pct"]
+  } else {
+    base["overpayment_allowance_pct"] = allowancePct
+  }
+  return base
 }
 
 /** yyyy-mm-dd in the server's timezone. These columns are calendar days rather

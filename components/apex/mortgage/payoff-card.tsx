@@ -15,13 +15,9 @@ import { parseDay } from "@/lib/apex/dates"
 import { formatPence, formatPenceShort } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import type { MortgageStatus } from "@/lib/apex/mortgage/status"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
+import { FinishTrack } from "./finish-track"
 import { formatMonthYear, spanWords } from "./format"
 
 /**
@@ -65,7 +61,8 @@ export function PayoffCard({
           tone="warn"
           startLabel="Today"
           finishLabel={termLabel}
-          markerLabel={termLabel}
+          markerTip={`Term ends ${termLabel}`}
+          label={`Today to ${termLabel}, when the balance falls due.`}
         />
         <FooterNote>
           {mortgage.repaymentType === "interest_only"
@@ -118,7 +115,8 @@ export function PayoffCard({
         startLabel="Today"
         // The right-hand label is whatever the track actually ends on
         finishLabel={delta > 0 ? payoffLabel : termLabel}
-        markerLabel={termLabel}
+        markerTip={`Term ends ${termLabel}`}
+        label={`Today to ${delta > 0 ? payoffLabel : termLabel}, against the ${termLabel} term end.`}
       />
 
       <FooterNote>{fix(mortgage, status, termMonths, delta)}</FooterNote>
@@ -134,115 +132,6 @@ function FooterNote({ children }: { children: React.ReactNode }) {
       <p className="border-t pt-3 text-[12px] leading-snug text-muted-foreground">
         {children}
       </p>
-    </div>
-  )
-}
-
-/**
- * A ruler, not a meter. Deliberately a thinner class of graphic than the
- * segment bars elsewhere on the page: this card measures a span of years
- * rather than dividing a whole, and a hairline with markers reads as a
- * calendar where a fat rounded bar reads as progress toward a target.
- *
- * Solid to whichever comes first, dashed beyond it, because a dashed run is
- * road that was never meant to be travelled. The flag is planted where the
- * debt clears; the ring is the term end you were contracted to.
- */
-function FinishTrack({
-  finishPct,
-  markerPct,
-  overshoot,
-  tone,
-  startLabel,
-  finishLabel,
-  markerLabel,
-}: {
-  /** 0 to 100: where the debt clears along the track */
-  finishPct: number
-  /** 0 to 100: the contractual term end */
-  markerPct: number
-  overshoot: boolean
-  tone: "good" | "bad" | "warn"
-  startLabel: string
-  finishLabel: string
-  markerLabel: string
-}) {
-  const finish = Math.min(100, Math.max(0, finishPct))
-  const marker = Math.min(100, Math.max(0, markerPct))
-  const solid = Math.min(finish, marker)
-  const flagTone =
-    tone === "bad"
-      ? "text-red-600 dark:text-red-400"
-      : tone === "warn"
-        ? "text-amber-600 dark:text-amber-400"
-        : "text-emerald-600 dark:text-emerald-400"
-
-  return (
-    <div className="mt-5">
-      {/* The right margin is the flag's room, so it never clips at 100% */}
-      <div
-        role="img"
-        aria-label={`Today to ${finishLabel}, against the ${markerLabel} term end.`}
-        className="relative mr-5 h-5"
-      >
-        {/* Start tick */}
-        <span
-          aria-hidden
-          className="absolute top-1/2 h-2.5 w-0.5 -translate-y-1/2 rounded-full bg-border"
-        />
-
-        {/* The run you are contracted for */}
-        <span
-          aria-hidden
-          className="absolute top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-emerald-500"
-          style={{ width: `${solid}%` }}
-        />
-
-        {/* Beyond the finish or beyond the term: road that shouldn't be there */}
-        {finish !== marker && (
-          <span
-            aria-hidden
-            className={cn(
-              "absolute top-1/2 -translate-y-1/2 border-t-2 border-dashed",
-              overshoot ? "border-red-500" : "border-border"
-            )}
-            style={{
-              left: `${solid}%`,
-              width: `${Math.abs(finish - marker)}%`,
-            }}
-          />
-        )}
-
-        {/* The term end: a ring on the line, explaining itself on hover */}
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <span
-                className="absolute top-1/2 size-2.5 cursor-help rounded-full border-2 border-foreground/40 bg-card"
-                style={{
-                  left: `${marker}%`,
-                  transform: `translateX(-${marker}%) translateY(-50%)`,
-                }}
-              />
-            }
-          />
-          <TooltipContent>{`Term ends ${markerLabel}`}</TooltipContent>
-        </Tooltip>
-
-        {/* The finish: the pole lands on the line, the flag flies right into
-            the margin, so it never clips however late the payoff runs */}
-        <span
-          className="absolute bottom-1/2"
-          style={{ left: `${finish}%` }}
-        >
-          <Flag aria-hidden className={cn("size-4", flagTone)} />
-        </span>
-      </div>
-
-      <div className="mt-1.5 flex justify-between text-[11px] text-muted-foreground tabular-nums">
-        <span>{startLabel}</span>
-        <span>{finishLabel}</span>
-      </div>
     </div>
   )
 }
