@@ -44,7 +44,7 @@ a semantic mistake behind a cosmetic request, does.
 
 ## Hard rules
 
-- **`main` is production** (the family uses the app); never commit to it directly. One focused change = one branch (`<type>/short-slug`, e.g. `feat/staircasing`) = one PR; conventional commits. See conventions.md "Branches: main is live".
+- **`main` is production** (the family uses the app). Work lands directly on `main`, but **nothing is pushed until the definition of done passes** (typecheck, lint, browser check) — the push is the deploy, so the push is the gate. Conventional commits. Migrations stay deliberate, never drive-by. See conventions.md "Main is live".
 - Modules and their nav/accents live in `lib/modules.ts` (registry-driven) — never hardcode module info in shell components.
 - Match the approved design bar (density, per-module accents, spring motion, reduced-motion support, light+dark) — see conventions.
 - Base UI components compose via `render` prop, not `asChild`. Prefer `components/ui` over custom.

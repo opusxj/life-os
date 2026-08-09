@@ -51,39 +51,37 @@ The discipline a board would enforce still holds:
 1. **Scope in conversation.** A piece of work is **agent-sized**: one focused
    session, independently shippable. Bigger ambitions get broken down before
    any code.
-2. **Branch** (see [Branches](#branches-main-is-live) below):
-   `<type>/short-slug`. One focused change = one branch = one PR.
-3. **Build** within the agreed scope. If you must touch shared files
-   (`lib/modules.ts`, shell components, schema), keep those edits minimal and
-   self-contained — they're the collision hot-spots.
-4. **Verify** the definition of done, then commit (conventional style:
-   `feat:`, `fix:`, `docs:`, `chore:`).
-5. **The PR description is the record**: what shipped, what was verified, any
-   follow-ups worth naming. Follow-ups too big for the PR go into
-   [backlog.md](backlog.md) or [codebase-audit.md](codebase-audit.md).
+2. **Build on `main`** within the agreed scope. If you must touch shared
+   files (`lib/modules.ts`, shell components, schema), keep those edits
+   minimal and self-contained — they're the collision hot-spots.
+3. **Verify the definition of done, then push.** The gate runs before every
+   push, because a push deploys (see below). Commits are conventional style:
+   `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`.
+4. **The commit message is the record**: what shipped and what was verified.
+   Follow-ups too big for it go into [backlog.md](backlog.md) or
+   [codebase-audit.md](codebase-audit.md).
 
-## Branches: main is live
+## Main is live
 
 The family uses the app day to day, so **`main` is production and must always
-be shippable**. Work lands on `main` only through a branch and a PR that has
-passed the definition of done. (History note: everything up to 2026-08-09 was
-committed straight to `main`; that stops here.)
+be shippable**. Since 2026-08-09 work lands directly on `main` — the
+branch-and-PR round trip slowed a mostly-solo project more than it protected
+it. The protection that remains is the pre-push gate:
 
-- **Branch names carry the change type, then a short slug:**
-  `<type>/short-slug` — e.g. `feat/staircasing`, `fix/spaces-soft-delete`.
-  The type matches the conventional-commit type of the work: `feat` (new
-  behaviour), `fix` (something wrong made right), `chore` (tooling, deps,
-  config), `docs` (documentation only), `refactor` (no behaviour change).
-- One focused change = one branch = one PR; rebase on `main` rather than
-  merging it in; delete the branch after merge. If a change grows past one
-  focused session, split it.
-- **Migrations get extra care**: the Supabase project is the live family
-  database. A migration merges only with the schema checklist passed, and is
-  applied deliberately, never as a drive-by.
+- **Nothing is pushed until the definition of done passes.** Local commits
+  along the way are fine; the push is the deploy, so the push is the gate.
+- **Migrations still get extra care**: the Supabase project is the live
+  family database. A migration ships only with the
+  [schema checklist](data-standards.md#schema-review-checklist) passed, and
+  is applied deliberately, never as a drive-by. Risky schema work is the one
+  case where a short-lived branch is still worth it.
+- **Branches remain a tool, not a rule**: parallel agent workstreams isolate
+  on branches/worktrees and land on `main` once verified; experiments
+  likewise. Name them `<type>/short-slug` if used.
 
-**Definition of done:**
+**Definition of done (the pre-push gate):**
 
-- [ ] The agreed scope met (as stated in chat and the PR description)
+- [ ] The agreed scope met (as stated in chat)
 - [ ] `npm run typecheck` and `npm run lint` pass
 - [ ] Verified in the running app (browser), light + dark if UI
 - [ ] Schema changes pass the [schema review checklist](data-standards.md#schema-review-checklist)
@@ -92,9 +90,9 @@ committed straight to `main`; that stops here.)
 
 **Parallel work rules:**
 
-- Two workstreams must not share a branch.
+- Two workstreams must not share a working tree; parallel agents get worktrees.
 - Module work stays inside its module's routes/components/tables; foundations work owns the shared shell/schema.
-- If a change unexpectedly needs a shared-file edit, split that edit into its own small PR so others can rebase quickly.
+- If a change unexpectedly needs a shared-file edit, land that edit first, small and alone, so others can rebase quickly.
 
 ## Recurring-mistake log
 
