@@ -63,14 +63,19 @@ export function RentCard({
       iconClassName={ANCHOR_TINTS.bill}
       className={className}
     >
-      <ApexStatValue>
-        <ApexStatFigure>{formatPence(rent)}</ApexStatFigure>{" "}
-        <ApexStatUnit>a month</ApexStatUnit>
-      </ApexStatValue>
-
-      <ApexStatTag tint="bill" className="mt-2.5">
-        {`${formatPenceShort(rent * 12)} a year`}
-      </ApexStatTag>
+      {/* The two periods of one figure, on one line: the monthly amount you
+          pay and the yearly total it comes to. Stacked, the pill read as a
+          second fact; side by side it reads as the same fact at a longer
+          range, which is the whole reason it is here. */}
+      <div className="flex items-baseline justify-between gap-3">
+        <ApexStatValue>
+          <ApexStatFigure>{formatPence(rent)}</ApexStatFigure>{" "}
+          <ApexStatUnit>a month</ApexStatUnit>
+        </ApexStatValue>
+        <ApexStatTag tint="bill" className="shrink-0">
+          {`${formatPenceShort(rent * 12)} a year`}
+        </ApexStatTag>
+      </div>
 
       {compare !== null && (
         // Two independent quantities compared, not parts of one whole, so they
