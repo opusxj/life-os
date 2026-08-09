@@ -63,8 +63,26 @@ The showcase page — visual, not analytical:
 
 ### Subscriptions & Bills
 
-- **Header cards:** monthly subscriptions total · monthly bills total · next payment due
-- Two lists in one table, split by kind — **subscription** (optional: Netflix, Disney+) vs **bill** (committed: mortgage, electricity, council tax, car). Each row: name, amount, cadence, next due, paying account. Due/overdue rows get the Mark paid action inline.
+Redesigned to the mortgage bar (LIFE-40, 2026-08-09). The shipped page is the
+spec; the shape:
+
+- **Outgoings** (the page's terracotta headline): monthly total, a
+  bills/subscriptions segment meter with legend rows, and an "Annually" total
+  row in the ratified outline-swatch grammar. One kind only drops the meter.
+- **Due next** (amber): first payment on the schedule in the house
+  due-language, a "more due within a week" hint when it applies, and a
+  footnote teaching what Mark paid does.
+- **Subscriptions** (violet): each subscription priced by the year, one bar
+  each scaled to the largest (top 5 + "Everything else"), because "£7.99 a
+  month" hides "£95.88 a year".
+- **The months ahead** (sky, full width): twelve stacked columns of real
+  occurrences from the anchor-day projection (`lib/apex/subscriptions/schedule.ts`,
+  a TS port of the SQL advance rule). Answers "which month is going to ambush
+  me"; a flat schedule says so instead.
+- **One table, kinds interleaved soonest-first** (ratified deviation from the
+  pre-build two-list sketch): name, category, next due, **last paid** (read
+  from the transactions Mark paid stamps), amount, with the monthly total in
+  a real table foot. Due/overdue rows keep the inline Mark paid.
 
 ### Budgets & Savings
 

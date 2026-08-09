@@ -12,6 +12,8 @@ export type RecurringPayment = {
   cadence: RecurringCadence
   /** yyyy-mm-dd */
   nextDueOn: string
+  /** Intended day of month (1-31); the advance rule rebuilds from this */
+  anchorDay: number | null
   accountId: string | null
   accountName: string | null
   categoryId: string | null
@@ -49,7 +51,7 @@ export async function getSubscriptionsPageData(
       supabase
         .from("recurring_payments")
         .select(
-          "id, name, kind, amount, cadence, next_due_on, account_id, category_id"
+          "id, name, kind, amount, cadence, next_due_on, anchor_day, account_id, category_id"
         )
         .eq("space_id", spaceId)
         .is("deleted_at", null)
@@ -89,6 +91,7 @@ export async function getSubscriptionsPageData(
       amount: row.amount,
       cadence: toCadence(row.cadence),
       nextDueOn: row.next_due_on,
+      anchorDay: row.anchor_day,
       accountId: row.account_id,
       accountName: account?.name ?? null,
       categoryId: row.category_id,
@@ -99,6 +102,36 @@ export async function getSubscriptionsPageData(
   })
 
   return { payments, accounts, categories }
+}
+
+/**
+ * Latest Mark paid per item (yyyy-mm-dd), from the transactions it stamps.
+ * Its own fetch rather than part of getSubscriptionsPageData, because the
+ * overview reuses that function for its due list and must not inherit a
+ * ledger scan it never reads. Newest first, so the first row seen per id is
+ * the latest; the cap covers years of household history.
+ */
+export async function getRecurringLastPaid(
+  spaceId: string
+): Promise<Record<string, string>> {
+  const supabase = await createServerSupabase()
+  const { data } = await supabase
+    .from("transactions")
+    .select("recurring_payment_id, occurred_on")
+    .eq("space_id", spaceId)
+    .not("recurring_payment_id", "is", null)
+    .is("deleted_at", null)
+    .order("occurred_on", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1000)
+
+  const lastPaid: Record<string, string> = {}
+  for (const row of data ?? []) {
+    if (row.recurring_payment_id && !(row.recurring_payment_id in lastPaid)) {
+      lastPaid[row.recurring_payment_id] = row.occurred_on
+    }
+  }
+  return lastPaid
 }
 
 const PERIODS_PER_MONTH: Record<RecurringCadence, number> = {
@@ -114,6 +147,18 @@ export function monthlyPence(
   cadence: RecurringCadence
 ): number {
   return Math.round(amount * PERIODS_PER_MONTH[cadence])
+}
+
+const PERIODS_PER_YEAR: Record<RecurringCadence, number> = {
+  weekly: 52,
+  monthly: 12,
+  quarterly: 4,
+  yearly: 1,
+}
+
+/** What a year of renewals costs, exact — whole periods, no rounding. */
+export function annualPence(amount: number, cadence: RecurringCadence): number {
+  return amount * PERIODS_PER_YEAR[cadence]
 }
 
 function toCadence(value: string): RecurringCadence {

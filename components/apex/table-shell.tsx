@@ -64,10 +64,15 @@ export function TableCardHeader({
 export const TABLE_HEAD =
   "h-9 bg-card text-[12px] font-normal text-muted-foreground shadow-[inset_0_-1px_0_0_var(--color-border)]"
 
+/** The totals-row dress on its own, for tables on normally scrolling pages:
+ *  sticky bottom-0 pins to the nearest scrollport, which on a non-fill page
+ *  is the shell's main, so a pinned foot would float over the page padding. */
+export const TABLE_STATIC_FOOT =
+  "bg-card shadow-[inset_0_1px_0_0_var(--color-border)]"
+
 /** Pinned variants — only for a table that owns its own scroll region. */
 export const TABLE_PINNED_HEAD = `${TABLE_HEAD} sticky top-0 z-10`
-export const TABLE_FOOT =
-  "sticky bottom-0 z-10 bg-card shadow-[inset_0_1px_0_0_var(--color-border)]"
+export const TABLE_FOOT = `sticky bottom-0 z-10 ${TABLE_STATIC_FOOT}`
 
 /**
  * A tinted pill carrying a data colour — categories, tags, anything with its

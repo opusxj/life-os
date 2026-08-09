@@ -20,6 +20,7 @@ import { RecurringDrawer } from "@/components/apex/subscriptions/recurring-drawe
 import {
   DataChip,
   TABLE_HEAD,
+  TABLE_STATIC_FOOT,
   TableCard,
   TableCardHeader,
 } from "@/components/apex/table-shell"
@@ -35,11 +36,13 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
 import { cancelRecurringPayment } from "@/lib/apex/subscriptions/actions"
+import { formatDayMonthShort } from "@/lib/apex/dates"
 import { formatPence, formatPenceShort } from "@/lib/apex/money"
 import type {
   AccountOption,
@@ -83,6 +86,7 @@ export type RecurringRow = RecurringPayment & {
 export function RecurringTable({
   payments,
   monthlyTotal,
+  lastPaid,
   accounts,
   categories,
   spaceId,
@@ -90,8 +94,10 @@ export function RecurringTable({
 }: {
   /** Soonest due first — the query's order, kinds interleaved */
   payments: RecurringRow[]
-  /** Combined cadence-normalized pence per month; the toolbar total */
+  /** Combined cadence-normalized pence per month; the totals-row figure */
   monthlyTotal: number
+  /** Latest Mark paid per payment id (yyyy-mm-dd) */
+  lastPaid: Record<string, string>
   accounts: AccountOption[]
   categories: CategoryOption[]
   spaceId: string
@@ -121,15 +127,10 @@ export function RecurringTable({
 
   return (
     <>
+      {/* One statement of each fact: the count lives in the page header and
+          the monthly total in the foot, where the Amount column reads it. */}
       <TableCard>
-        <TableCardHeader title="All recurring" count={`(${payments.length})`}>
-          <span className="flex items-center gap-2 text-[13px] whitespace-nowrap">
-            <span className="text-muted-foreground">Monthly total</span>
-            <span className="font-medium tabular-nums">
-              {formatPence(monthlyTotal)}
-            </span>
-          </span>
-        </TableCardHeader>
+        <TableCardHeader title="All recurring" />
 
         <Table>
           <TableHeader className="[&_tr]:border-b-0">
@@ -139,6 +140,9 @@ export function RecurringTable({
                 Category
               </TableHead>
               <TableHead className={TABLE_HEAD}>Next due</TableHead>
+              <TableHead className={cn(TABLE_HEAD, "hidden md:table-cell")}>
+                Last paid
+              </TableHead>
               <TableHead className={cn(TABLE_HEAD, "pr-2 text-right")}>
                 Amount
               </TableHead>
@@ -192,6 +196,15 @@ export function RecurringTable({
 
                   <TableCell className="py-2">
                     <DueStateBadge state={due} />
+                  </TableCell>
+
+                  {/* The trust column: the reader can see the checklist
+                      actually happened. Mark paid stamps every transaction it
+                      writes with this row's id; this is that stamp, surfaced. */}
+                  <TableCell className="hidden py-2 text-[12px] text-muted-foreground md:table-cell">
+                    {lastPaid[payment.id]
+                      ? formatDayMonthShort(lastPaid[payment.id])
+                      : "—"}
                   </TableCell>
 
                   <TableCell className="py-2 pr-2 text-right whitespace-nowrap tabular-nums">
@@ -255,6 +268,37 @@ export function RecurringTable({
               )
             })}
           </TableBody>
+          {/* Static dress, not TABLE_FOOT: this table rides a normally
+              scrolling page, so a sticky foot would pin to the shell's
+              viewport instead of sitting under its rows. */}
+          <TableFooter className="border-t-0 bg-transparent font-normal">
+            <TableRow className="hover:bg-transparent">
+              <TableCell
+                className={cn(
+                  TABLE_STATIC_FOOT,
+                  "py-2.5 pl-3 text-[12px] text-muted-foreground"
+                )}
+              >
+                Scaled to a month
+              </TableCell>
+              <TableCell
+                className={cn(TABLE_STATIC_FOOT, "hidden md:table-cell")}
+              />
+              <TableCell className={TABLE_STATIC_FOOT} />
+              <TableCell
+                className={cn(TABLE_STATIC_FOOT, "hidden md:table-cell")}
+              />
+              <TableCell
+                className={cn(
+                  TABLE_STATIC_FOOT,
+                  "py-2.5 pr-2 text-right font-medium whitespace-nowrap tabular-nums"
+                )}
+              >
+                {formatPence(monthlyTotal)}
+              </TableCell>
+              <TableCell className={TABLE_STATIC_FOOT} />
+            </TableRow>
+          </TableFooter>
         </Table>
       </TableCard>
 

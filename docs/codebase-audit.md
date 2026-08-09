@@ -6,14 +6,13 @@ Severities: **fix-now** = cheap and unambiguous, batch into cleanup commits · *
 
 ## Summary of open findings
 
-**ticket (17)**
+**ticket (15)**
 
 - Add/edit container idiom is three-way split (Sheet vs Dialog vs Drawer) and two files named drawer are Sheets
 - Hidden-input controlled Select hand-rolled in 7+ places; transaction-dialog already has the generic solution as a private component
 - Field wrapper (space-y-1.5 + 13px Label) hand-rolled ~45 times while components/ui/field.tsx sits entirely unused
 - MoneyInput is shared from an awkward home while ten other money fields hand-roll a different money grammar
 - useActionState close-and-refresh glue duplicated in ~12 forms
-- Breakdown legend row exists only in monthly-cost-card but is codified house grammar the next card will hand-roll
 - Query modules disagree on error handling: one throws, six swallow into empty/zero UI
 - todayKey lives in components/apex/due-state.tsx, and the local-date-key function exists in four copies
 - Client-clock violations: bank-card expiryState and goal-card paceHint/monthsToTarget
@@ -21,12 +20,11 @@ Severities: **fix-now** = cheap and unambiguous, batch into cleanup commits · *
 - Soft-delete stamping is implemented five times
 - data-standards.md is missing two standards the migrations now rely on: composite (id, space_id) child FKs and the update-guard trigger
 - todayKey (the server clock) lives in a component file, imported by every Apex page
-- Three surfaces hand-roll label-above-a-bar furniture instead of MeterHead
 - Two different money-out hues: rose in transactions/cashflow, red/destructive everywhere else
 - Transfer's sky colour is a raw hex repeated in three places, and "sky = transfer" is not in the vocabulary
 - Card grid gap unreconciled: skill says gap-4, ApexCardGrid and two hand-written grids ship gap-3.5
 
-**note (26)**
+**note (25)**
 
 - Runtime color-mix tint recipes drift across four chip components
 - Empty-state border drift: budgets borders its Empty, every other surface renders it bare
@@ -38,7 +36,6 @@ Severities: **fix-now** = cheap and unambiguous, batch into cleanup commits · *
 - Seven identical FormState type aliases
 - Duplicated yyyy-mm-dd validators across actions files
 - requireContext/getWorkspace is a heavy way to resolve spaceId+userId in actions
-- goal-card formats dates with date-fns instead of the house dates vocabulary
 - Three query modules export colliding option-type names with different shapes
 - board.md's frozen-archive banner is accurate — no change needed
 - foundations.md verified accurate against the foundations migrations
@@ -56,6 +53,15 @@ Severities: **fix-now** = cheap and unambiguous, batch into cleanup commits · *
 - Clean sweeps worth recording: em dashes, hard-written dots, unbuilt-behaviour claims
 
 ## Resolved
+
+**LIFE-39 · Meter primitives — landed 2026-08-09 on `refactor/life-39-meter-primitives`:**
+
+- ~~Breakdown legend row exists only in monthly-cost-card but is codified house grammar the next card will hand-roll~~ (MeterLegendRow + MeterTotalRow extracted; monthly-cost-card ported)
+- ~~Three surfaces hand-roll label-above-a-bar furniture instead of MeterHead~~ (leading/trailing slots added; budget-row, overview MonthCard and savings-tile ported)
+
+**Stale on re-check 2026-08-09 (already true in current code):**
+
+- ~~goal-card formats dates with date-fns instead of the house dates vocabulary~~ — goal-card.tsx now imports formatMonthYear/parseDay from lib/apex/dates and carries no date-fns import
 
 **Documentation staleness — fixed 2026-08-09, same session as the audit:**
 
@@ -145,14 +151,6 @@ The same eight-line wrapper — useActionState around a server action, on `resul
 
 **Do:** Extract `useSaveAction(serverAction, onSuccess)` into lib/apex (client hook returning `[state, action, pending]`, calling onSuccess then router.refresh() on success). Adopt it in the twelve sites; update-balance-popover then has to state explicitly if skipping refresh is intentional. Do it alongside or after the ApexFormSheet scaffold so the forms shrink once, not twice.
 
-### Breakdown legend row exists only in monthly-cost-card but is codified house grammar the next card will hand-roll
-
-Files: `components/apex/mortgage/monthly-cost-card.tsx` · `components/apex/meter.tsx` · `.claude/skills/design/SKILL.md`
-
-monthly-cost-card.tsx:81-96 hand-rolls the legend row (MeterSwatch + truncating 13px label left, 13px medium tabular amount right, justify-between) and :104-113 the total row variant (outline swatch on the hairline). The design skill (SKILL.md:94-96, 403-405) ratifies this exact grammar — "a breakdown's total row wears the legend's own grammar" — but no component owns it, unlike MeterHead/MeterSwatch which were extracted for precisely this reason ("it stopped matching the moment a second card wrote its own", meter.tsx:11-13). this-month-card.tsx:82-91 uses a different under-the-bar layout, which is deliberate and should not be forced into this shape.
-
-**Do:** Add `MeterLegendRow({ swatchClassName, label, amount })` and a `MeterTotalRow` (or a `total` prop rendering the outline swatch + border-t) to meter.tsx, port monthly-cost-card, and reference them from the skill's section-8 table. Leave this-month-card's ends-of-bar caption alone — it is a different display, not a drifted copy.
-
 ### Query modules disagree on error handling: one throws, six swallow into empty/zero UI
 
 Files: `lib/apex/accounts/queries.ts` · `lib/apex/budgets/queries.ts` · `lib/apex/transactions/queries.ts` · `lib/apex/subscriptions/queries.ts` · `lib/apex/overview/queries.ts` · `lib/apex/sidebar/queries.ts` · `lib/apex/mortgage/queries.ts`
@@ -208,14 +206,6 @@ Files: `components/apex/due-state.tsx` · `lib/apex/dates.ts` · `app/(shell)/ap
 todayKey() (due-state.tsx:70) is a pure date helper with no JSX, yet five server pages import their clock from a components/ file. The design skill even names it 'the server clock every card is passed', so the misplacement is documented rather than accidental, but it still breaks the stated layering rule ('data access goes through lib/ helpers') in spirit: lib/apex/dates.ts is explicitly 'the house date vocabulary' and is where an agent would look for a yyyy-mm-dd today helper. dueState() (pure logic) shares the file with DueStateBadge (UI), which is a deliberate 'one due-language' cohesion choice and defensible.
 
 **Do:** Smallest move: relocate todayKey to lib/apex/dates.ts, update the five import sites plus due-state.tsx (which can re-export it during transition or drop it), and update the skill table rows for due-state.tsx and dates.ts. Leave dueState/DueStateBadge together as the documented one-due-language file. If the owner prefers zero code motion, the fallback is a one-line note in conventions.md that due-state.tsx intentionally co-locates the clock with the due language, but the move is cheap (6 files, mechanical) and removes a standing layering exception.
-
-### Three surfaces hand-roll label-above-a-bar furniture instead of MeterHead
-
-Files: `components/apex/budgets/budget-row.tsx` · `components/apex/overview/cards.tsx` · `components/apex/overview/savings-tile.tsx` · `components/apex/meter.tsx`
-
-The skill: 'Every bar of either family takes MeterHead above it... Do not hand-roll a label-above-a-bar: two cards writing their own is how a row stops matching.' MeterHead is 11px name / 12px amount (meter.tsx:26-36). Violations, each with different furniture: budget-row.tsx:64-93 (13px medium name + 13px "£spent of £amount" + swatch dot + over-tag above DataProgress); overview/cards.tsx:286-311 MonthCard rows (13px name + muted "£x of £y" right, swatch dot, above DataProgress); savings-tile.tsx:33-47 (13px medium name + "72% saved" right above DataProgress). Three pages, three different heads over the same bar primitive.
-
-**Do:** Extend MeterHead in components/apex/meter.tsx with optional leading (swatch dot) and trailing (tag) slots while keeping its 11px/12px type, then replace the hand-rolled head rows in budget-row.tsx, overview/cards.tsx MonthCard, and savings-tile.tsx with it. One focused session; verify all three surfaces in both themes.
 
 ### Two different money-out hues: rose in transactions/cashflow, red/destructive everywhere else
 
@@ -298,7 +288,7 @@ Files: `lib/apex/overview/queries.ts` · `lib/apex/sidebar/queries.ts` · `compo
 
 Overview (lines 84-86, 99-105) and sidebar (lines 42, 93-94) each hard-code the +7-day horizon and its comparison against next_due_on; dueState's actionable window (due-state.tsx:33) is a third statement of the same product rule (days <= 7). They agree today, but the number lives in three places.
 
-**Do:** When touching either file, hoist a DUE_SOON_DAYS = 7 constant (natural home: lib/apex/subscriptions/queries.ts next to the recurring types, or the future dates module) and derive all three from it. Not worth its own session.
+**Do:** The constant now exists — `DUE_SOON_DAYS` in `lib/apex/subscriptions/schedule.ts` (LIFE-40). When next touching overview queries, sidebar queries, or due-state.tsx, derive their 7s from it. Not worth its own session.
 
 ### Seven identical FormState type aliases
 
@@ -323,14 +313,6 @@ Files: `lib/apex/budgets/actions.ts` · `lib/apex/mortgage/actions.ts` · `lib/d
 budgets' requireContext (lines 10-19) and mortgage's createMortgage (line 22) call getWorkspace(), which runs profile, spaces, invites RPC, members, and (for admins) pending-invite queries — five round trips to obtain activeSpace.id and user.id. Other Apex actions take spaceId from the form instead (one auth.getUser() call), trusting RLS to reject wrong spaces; two patterns coexist for the same need.
 
 **Do:** Add a light getActiveContext() in lib/data/workspace.ts that does auth.getUser() plus the cookie read and one spaces lookup (or reuses the RLS-validates-membership trick from setActiveSpace), and point requireContext and createMortgage at it. Decide deliberately whether form-supplied spaceId or server-resolved spaceId is the house rule — currently both exist.
-
-### goal-card formats dates with date-fns instead of the house dates vocabulary
-
-Files: `components/apex/budgets/goal-card.tsx` · `lib/apex/dates.ts`
-
-goal-card.tsx imports format from date-fns (line 5) to render the target month as "MMM yyyy" (line 79), and inlines the parseDay idiom (`new Date(`${goal.targetOn}T00:00:00`)`). lib/apex/dates.ts is explicitly the house date vocabulary (formatMonthYear gives "March 2027") and documents abbreviation as a dense-surfaces-only concession; this is the only Apex surface bypassing it, and the only date-fns usage in the module.
-
-**Do:** Replace with formatMonthYear(goal.targetOn) if the pill can afford the long month, or add a formatMonthYearShort to lib/apex/dates.ts if it cannot, and drop the date-fns import. Fold into the client-clock ticket for goal-card since the same lines are being touched.
 
 ### Three query modules export colliding option-type names with different shapes
 
