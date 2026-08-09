@@ -36,6 +36,20 @@ export function MeterHead({
   )
 }
 
+/**
+ * The small square that ties a legend row to its segment. Shared for the same
+ * reason as MeterHead: legend furniture that matches across cards is what lets
+ * two meters on one page read as one system.
+ */
+export function MeterSwatch({ className }: { className: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn("size-2 shrink-0 rounded-[3px]", className)}
+    />
+  )
+}
+
 export type MeterSegment = {
   /** Share of the whole, 0 to 100 */
   pct: number
@@ -71,11 +85,14 @@ export function SegmentMeter({
     >
       {visible.map((segment) => (
         <Tooltip key={segment.tip}>
+          {/* min-w keeps a small share findable: a 1-2% segment renders a few
+              pixels wide and reads as nothing at all, which fails the bar's
+              one job. The tooltip still tells the true share. */}
           <TooltipTrigger
             render={
               <span
                 className={cn(
-                  "h-full cursor-help rounded-full",
+                  "h-full min-w-2.5 cursor-help rounded-full",
                   segment.className
                 )}
                 style={{ width: `${segment.pct}%` }}

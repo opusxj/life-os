@@ -1,7 +1,7 @@
 import { Banknote } from "lucide-react"
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
-import { SegmentMeter } from "@/components/apex/meter"
+import { MeterSwatch, SegmentMeter } from "@/components/apex/meter"
 import { ApexStatCard } from "@/components/apex/stat-card"
 import {
   monthsFromNow,
@@ -11,7 +11,6 @@ import {
 import { formatPence, formatPenceShort } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import type { MortgageStatus } from "@/lib/apex/mortgage/status"
-import { cn } from "@/lib/utils"
 
 import { formatMonthYear } from "./format"
 
@@ -82,11 +81,11 @@ export function ThisMonthCard({
               share each one is stays a hover away. */}
           <div className="mt-2 flex items-center justify-between text-[12px] text-muted-foreground tabular-nums">
             <span className="flex items-center gap-1.5">
-              <Swatch className="bg-emerald-500" />
+              <MeterSwatch className="bg-emerald-500" />
               {formatPence(split.capital)}
             </span>
             <span className="flex items-center gap-1.5">
-              <Swatch className="bg-amber-500/70" />
+              <MeterSwatch className="bg-amber-500/70" />
               {formatPence(split.interest)}
             </span>
           </div>
@@ -106,15 +105,6 @@ export function ThisMonthCard({
       )}
 
     </ApexStatCard>
-  )
-}
-
-function Swatch({ className }: { className: string }) {
-  return (
-    <span
-      aria-hidden
-      className={cn("size-2 shrink-0 rounded-[3px]", className)}
-    />
   )
 }
 
