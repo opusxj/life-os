@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { RefreshCw } from "lucide-react"
 
 import { MoneyInput } from "@/components/apex/accounts/account-form-sheet"
+import { FormError } from "@/components/shared/form-error"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
@@ -65,11 +66,7 @@ export function SyncBalancePopover({ account }: { account: Account }) {
               autoFocus
             />
           </div>
-          {state?.error && (
-            <p role="alert" className="text-[13px] text-destructive">
-              {state.error}
-            </p>
-          )}
+          <FormError plain>{state?.error}</FormError>
           <Button type="submit" size="sm" className="w-full" disabled={pending}>
             {pending ? "Syncing…" : "Set balance"}
           </Button>

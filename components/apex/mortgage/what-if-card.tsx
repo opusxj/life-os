@@ -6,6 +6,7 @@ import { useMotionValueEvent, useReducedMotion, useSpring } from "motion/react"
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import {
+  ApexCardFootnote,
   ApexStatCard,
   ApexStatFigure,
   ApexStatHint,
@@ -14,6 +15,7 @@ import {
 } from "@/components/apex/stat-card"
 import { Slider } from "@/components/ui/slider"
 import { parseDay } from "@/lib/apex/dates"
+import { HOUSE_SPRING } from "@/lib/motion"
 import {
   monthsBetween,
   monthsFromNow,
@@ -33,7 +35,6 @@ import { formatMonthYear, formatShare, spanWords } from "./format"
 
 /** Drag granularity: £25. */
 const STEP = 2_500
-const HOUSE_SPRING = { stiffness: 500, damping: 32 }
 
 /** Faint emerald wash — the one playable card on the page gets its own surface. */
 const PLAY_SURFACE =
@@ -206,11 +207,7 @@ export function WhatIfCard({
       {/* Purely the action, only while there is one to take; the LTV card's
           prompt grammar. A recorded cap needs no prose at all. */}
       {!allowance.isOwn && (
-        <div className="mt-auto pt-4">
-          <p className="border-t pt-3 text-[12px] leading-snug text-muted-foreground">
-            Edit the mortgage to add your current cap.
-          </p>
-        </div>
+        <ApexCardFootnote>Edit the mortgage to add your current cap.</ApexCardFootnote>
       )}
     </Shell>
   )

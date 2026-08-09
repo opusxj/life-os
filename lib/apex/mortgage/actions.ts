@@ -1,9 +1,9 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
-
 import { parsePoundsToPence } from "@/lib/apex/money"
+import { revalidateApex } from "@/lib/apex/revalidate"
 import { getWorkspace } from "@/lib/data/workspace"
+import { friendlyDbError } from "@/lib/supabase/errors"
 import { createServerSupabase } from "@/lib/supabase/server"
 import type { Json, Tables, TablesInsert } from "@/lib/supabase/types"
 
@@ -32,7 +32,7 @@ export async function createMortgage(
 
   if (error) return { error: friendlyDbError(error.message) }
 
-  revalidatePath("/apex/mortgage")
+  revalidateApex()
   return { success: true }
 }
 
@@ -77,7 +77,7 @@ export async function updateMortgage(
   if (error) return { error: friendlyDbError(error.message) }
   if (count === 0) return { error: "Mortgage not found." }
 
-  revalidatePath("/apex/mortgage")
+  revalidateApex()
   return { success: true }
 }
 
@@ -114,7 +114,7 @@ export async function updateMortgageBalance(
   if (error) return { error: friendlyDbError(error.message) }
   if (count === 0) return { error: "Mortgage not found." }
 
-  revalidatePath("/apex/mortgage")
+  revalidateApex()
   return { success: true }
 }
 
@@ -138,7 +138,7 @@ export async function deleteMortgage(id: string): Promise<{ error?: string }> {
   if (error) return { error: friendlyDbError(error.message) }
   if (count === 0) return { error: "Mortgage not found." }
 
-  revalidatePath("/apex/mortgage")
+  revalidateApex()
   return {}
 }
 
@@ -307,7 +307,3 @@ function serverToday(): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
-function friendlyDbError(message?: string) {
-  if (!message) return "Something went wrong. Try again."
-  return message.replace(/^.*?exception:\s*/i, "")
-}

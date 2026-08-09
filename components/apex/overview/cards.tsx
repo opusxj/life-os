@@ -260,7 +260,7 @@ export function MonthCard({
 }) {
   return (
     <ApexStatCard
-      label="This month"
+      label="Budgets"
       description={`Spent so far in ${monthLabel}, biggest budgets first`}
       icon={ChartPie}
       iconClassName={ANCHOR_TINTS.bill}
@@ -391,7 +391,7 @@ export function MortgageSnapshot({
       className={className}
     >
       <ApexStatValue>
-        {formatPenceShort(status.balanceToday)}{" "}
+        <ApexStatFigure>{formatPenceShort(status.balanceToday)}</ApexStatFigure>{" "}
         <ApexStatUnit>still owed</ApexStatUnit>
       </ApexStatValue>
       {months !== null && (

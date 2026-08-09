@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { Plus } from "lucide-react"
 
+import { FormError } from "@/components/shared/form-error"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -112,14 +113,7 @@ export function NewBudgetDialog({
                 />
               </div>
 
-              {state?.error && (
-                <p
-                  role="alert"
-                  className="rounded-lg bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
-                >
-                  {state.error}
-                </p>
-              )}
+              <FormError>{state?.error}</FormError>
 
               <DialogFooter>
                 <Button

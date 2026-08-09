@@ -16,6 +16,7 @@ import { NewBudgetDialog } from "@/components/apex/budgets/new-budget-dialog"
 import { DataProgress } from "@/components/apex/progress"
 import {
   ApexStatCard,
+  ApexStatFigure,
   ApexStatHint,
   ApexStatValue,
 } from "@/components/apex/stat-card"
@@ -91,15 +92,26 @@ export default async function BudgetsPage() {
               iconClassName={ANCHOR_TINTS.primary}
             >
               <ApexStatValue className={cn(over && "text-destructive")}>
-                {over
-                  ? `Over by ${formatPenceShort(-headroom)}`
-                  : `${formatPenceShort(headroom)} left`}
+                {over ? (
+                  <>
+                    Over by{" "}
+                    <ApexStatFigure negative>
+                      {formatPenceShort(-headroom)}
+                    </ApexStatFigure>
+                  </>
+                ) : (
+                  <>
+                    <ApexStatFigure>{formatPenceShort(headroom)}</ApexStatFigure>{" "}
+                    left
+                  </>
+                )}
               </ApexStatValue>
               <DataProgress
                 value={spentPercent}
                 color={over ? "var(--destructive)" : "var(--primary)"}
                 dim={over}
                 tick={monthTick}
+                tickLabel={`${monthTick}% through the month`}
                 aria-label="Spent of budgeted this month"
                 className="mt-2"
               />

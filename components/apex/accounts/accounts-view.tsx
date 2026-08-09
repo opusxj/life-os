@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { CreditCard, Landmark, Plus } from "lucide-react"
+import { MotionConfig } from "motion/react"
 
 import { AccountCard } from "@/components/apex/accounts/account-card"
 import { AccountFormSheet } from "@/components/apex/accounts/account-form-sheet"
@@ -104,7 +105,9 @@ export function AccountsView({
           </EmptyContent>
         </Empty>
       ) : (
-        <>
+        // One wrapper covers both card hovers, per conventions: motion always
+        // sits inside MotionConfig reducedMotion="user"
+        <MotionConfig reducedMotion="user">
           <ApexSection label="Accounts">
             <ApexCardGrid>
               {accounts.map((account) => (
@@ -175,7 +178,7 @@ export function AccountsView({
               )}
             </div>
           </ApexSection>
-        </>
+        </MotionConfig>
       )}
 
       {accountForm.open && (

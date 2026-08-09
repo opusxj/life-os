@@ -2,6 +2,7 @@
 
 import { formatPence, parsePoundsToPence } from "@/lib/apex/money"
 import { revalidateApex } from "@/lib/apex/revalidate"
+import { friendlyDbError } from "@/lib/supabase/errors"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 export type ApexFormState = { error?: string; success?: boolean } | undefined
@@ -332,7 +333,3 @@ async function softDelete(
   return {}
 }
 
-function friendlyDbError(message?: string) {
-  if (!message) return "Something went wrong. Try again."
-  return message.replace(/^.*?exception:\s*/i, "")
-}

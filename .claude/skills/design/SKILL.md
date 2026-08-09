@@ -53,8 +53,9 @@ Every stat card, top to bottom:
 3. **The information** — one hero figure, or the card's one graphic.
 4. **At most one supporting line**, and only where the graphic cannot speak.
    If its figures already appear on the card, delete it.
-5. **Optionally a closing note**, separated by a hairline (`border-t pt-3`)
-   at 12px muted, pushed to the base with `mt-auto pt-4`.
+5. **Optionally a closing note** (`ApexCardFootnote`), separated by a
+   hairline (`border-t pt-3`) at 12px muted, pushed to the base with
+   `mt-auto pt-4`.
 
 Rules that follow:
 
@@ -81,9 +82,8 @@ BI restraint. Thin hairline marks read as lifeless here.
 
 - **Breathing room**: 20px card padding (`--card-spacing: --spacing(5)`) and
   `rounded-2xl`, which is 14.4px in this theme since every radius derives
-  from `--radius`, not Tailwind's stock scale. Grids are `gap-4`; note
-  `ApexCardGrid` still ships `gap-3.5` and pages that use it inherit that,
-  so the two want reconciling. Space is what makes the references calm.
+  from `--radius`, not Tailwind's stock scale. Grids are `gap-4`. Space is
+  what makes the references calm.
 - **Colour occupies area**: indicators are thick and rounded. Arcs at ~14px
   stroke, meters at `h-3.5` with visible gaps between fully-rounded segments.
   The pastel track is part of the design, not an absence.
@@ -411,7 +411,7 @@ import the exact name, not the short form.
 
 | File | Exports |
 |---|---|
-| `components/apex/stat-card.tsx` | `ApexStatCard`, `ApexStatValue`, `ApexStatUnit`, `ApexStatFigure`, `ApexStatTag`, `ApexStatHint` |
+| `components/apex/stat-card.tsx` | `ApexStatCard` (its `iconColor` tints the chip from an entity's own hex), `ApexStatValue`, `ApexStatUnit`, `ApexStatFigure` (`negative` fades pence by opacity so they keep the warning colour), `ApexStatTag`, `ApexStatHint`, `ApexStatChip` (the runtime-hex 38px chip), `ApexCardFootnote` (the base-pinned closing note; `asRow` for a legend-grammar total row) |
 | `components/apex/anchor-tints.ts` | `ANCHOR_TINTS` (icon chips), `TAG_TINTS` (pills) |
 | `components/apex/meter.tsx` | `MeterHead` (name left, amount right, above any bar), `SegmentMeter` with per-segment tooltips and a min-width floor so a 1–2% share stays findable, `MeterSwatch` (the legend square that ties a row to its segment) |
 | `components/apex/arc-gauge.tsx` | `ArcGauge`, the feature display |
@@ -419,12 +419,14 @@ import the exact name, not the short form.
 | `components/apex/mortgage/finish-track.tsx` | `FinishTrack`, the finish-flag ruler shared by Paid off (static) and Overpaying (flag animated on the house spring): solid run travelled, dashed run not, ring for the measured finish, flag for where the debt clears |
 | `components/apex/page.tsx` | `ApexPage` (the 1100px cap), `ApexPageHeader`, `ApexSection`, `ApexCardGrid`, `ApexPlaceholder` |
 | `components/apex/table-shell.tsx` | `TableCard`, `TableScroll`, `TableCardHeader`, `DataChip`, `TABLE_HEAD`, `TABLE_PINNED_HEAD`, `TABLE_FOOT`. Deliberately no toolbar: controls belong in the page header, the card holds rows and only rows. |
-| `components/apex/due-state.tsx` | `dueState`, `DueStateBadge`, `todayKey` — the one due-language, and the server clock every card is passed |
+| `components/apex/due-state.tsx` | `dueState`, `DueStateBadge`, `duePill` (the same language as a `TAG_TINTS` pill), `todayKey` (re-exported from `lib/apex/dates`) — the one due-language, and the server clock every card is passed |
 | `components/apex/entity-avatar.tsx` | `EntityAvatar`, `AvatarBadge` |
 | `components/apex/confirm-dialog.tsx` | The destructive-action gate: nothing fires straight from a menu item |
 | `components/shared/meta-dot.tsx` | `MetaDot` separator |
-| `lib/apex/dates.ts` | The date vocabulary, plus `parseDay` and `ordinal` |
+| `components/shared/form-error.tsx` | `FormError`, the one form-error voice (renders nothing until there is a message, owns `role="alert"` and the boxed destructive treatment; `plain` drops the box for tight popovers) |
+| `lib/apex/dates.ts` | The date vocabulary, plus `parseDay`, `ordinal`, and the key producers `todayKey`/`dayKeyAgo` (local parts, never UTC) |
 | `lib/apex/money.ts` | `formatPence`, `formatPenceShort`, integer pence |
+| `lib/motion.ts` | `HOUSE_SPRING`, the one spring tuning every animation runs on |
 
 Mortgage cards import dates via `components/apex/mortgage/format.ts`, which
 re-exports from `lib/apex/dates` and adds `pluralMonths`, `spanWords` and

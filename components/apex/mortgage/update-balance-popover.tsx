@@ -3,6 +3,7 @@
 import * as React from "react"
 import type { VariantProps } from "class-variance-authority"
 
+import { FormError } from "@/components/shared/form-error"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -96,11 +97,7 @@ export function UpdateBalancePopover({
               required
             />
           </div>
-          {state?.error && (
-            <p role="alert" className="text-[13px] text-destructive">
-              {state.error}
-            </p>
-          )}
+          <FormError plain>{state?.error}</FormError>
           <Button type="submit" size="sm" className="w-full" disabled={pending}>
             {pending ? "Saving…" : "Save balance"}
           </Button>

@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 
 import { MoneyInput } from "@/components/apex/accounts/account-form-sheet"
+import { FormError } from "@/components/shared/form-error"
 import { MetaDot } from "@/components/shared/meta-dot"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -155,14 +156,7 @@ export function TransferSheet({
               />
             </div>
 
-            {state?.error && (
-              <p
-                role="alert"
-                className="rounded-lg bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
-              >
-                {state.error}
-              </p>
-            )}
+            <FormError>{state?.error}</FormError>
           </div>
 
           <SheetFooter className="flex-row justify-end">

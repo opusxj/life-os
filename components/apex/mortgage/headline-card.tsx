@@ -2,7 +2,7 @@
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import { SegmentMeter } from "@/components/apex/meter"
-import { ApexStatCard } from "@/components/apex/stat-card"
+import { ApexStatCard, ApexStatFigure } from "@/components/apex/stat-card"
 import { MetaDot } from "@/components/shared/meta-dot"
 import { parseDay } from "@/lib/apex/dates"
 import { monthsBetween } from "@/lib/apex/mortgage/amortization"
@@ -149,16 +149,15 @@ function mechanism(mortgage: Mortgage, status: MortgageStatus): string {
   return `Your ${rate} ${verb} ${formatFullDate(mortgage.rateEndsOn)} and ${mortgage.lender} ${moves} you to its ${mortgage.reversionRate}% standard rate.`
 }
 
-/** One labelled figure, pence faded so the pounds carry the comparison. */
+/** One labelled figure, pence faded so the pounds carry the comparison.
+ *  25px, not ApexStatValue's 26: paired payment columns are their own rung
+ *  on the density ladder, deliberately a step under the lone hero. */
 function PaymentColumn({ label, pence }: { label: string; pence: number }) {
-  const text = formatPence(pence)
-  const dot = text.lastIndexOf(".")
   return (
     <div>
       <div className="text-[12px] text-muted-foreground">{label}</div>
       <div className="mt-0.5 font-heading text-[25px] leading-8 font-semibold tabular-nums">
-        {text.slice(0, dot)}
-        <span className="text-muted-foreground/60">{text.slice(dot)}</span>
+        <ApexStatFigure>{formatPence(pence)}</ApexStatFigure>
       </div>
     </div>
   )

@@ -2,12 +2,13 @@ import { Banknote } from "lucide-react"
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import { MeterSwatch, SegmentMeter } from "@/components/apex/meter"
-import { ApexStatCard } from "@/components/apex/stat-card"
+import { ApexCardFootnote, ApexStatCard } from "@/components/apex/stat-card"
 import {
   monthsFromNow,
   monthsToCapitalMajority,
   paymentSplit,
 } from "@/lib/apex/mortgage/amortization"
+import { parseDay } from "@/lib/apex/dates"
 import { formatPence, formatPenceShort } from "@/lib/apex/money"
 import type { Mortgage } from "@/lib/apex/mortgage/queries"
 import type { MortgageStatus } from "@/lib/apex/mortgage/status"
@@ -92,18 +93,7 @@ export function ThisMonthCard({
         </>
       )}
 
-      {/* Settles at the card's base: mt-auto takes the slack, pt-4 keeps a
-          minimum gap when there is none to take. A hairline is all the
-          separation this needs, since a filled strip is what the footer slot
-          uses for actions and prose in one miscues as a toolbar. */}
-      {crossoverLine && (
-        <div className="mt-auto pt-4">
-          <p className="border-t pt-3 text-[12px] leading-snug text-muted-foreground">
-            {crossoverLine}
-          </p>
-        </div>
-      )}
-
+      <ApexCardFootnote>{crossoverLine}</ApexCardFootnote>
     </ApexStatCard>
   )
 }
@@ -164,8 +154,6 @@ function crossover(
     return "More than half of every payment now reduces the debt."
   }
 
-  const when = formatMonthYear(
-    monthsFromNow(months, new Date(`${today}T00:00:00`))
-  )
+  const when = formatMonthYear(monthsFromNow(months, parseDay(today)))
   return `Half your payment won't reduce the debt until ${when}.`
 }

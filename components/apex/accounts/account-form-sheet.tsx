@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 
 import { ACCOUNT_KINDS, APEX_COLORS } from "@/components/apex/accounts/meta"
 import { ColorSwatches } from "@/components/shared/color-swatches"
+import { FormError } from "@/components/shared/form-error"
 import { MetaDot } from "@/components/shared/meta-dot"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -157,14 +158,7 @@ export function AccountFormSheet({
               </div>
             )}
 
-            {state?.error && (
-              <p
-                role="alert"
-                className="rounded-lg bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
-              >
-                {state.error}
-              </p>
-            )}
+            <FormError>{state?.error}</FormError>
           </div>
 
           <SheetFooter className="flex-row justify-end">

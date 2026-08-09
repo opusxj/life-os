@@ -14,11 +14,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { homeModule, modules, type LifeModule } from "@/lib/modules"
+import { HOUSE_SPRING } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
 const railModules = [homeModule, ...modules]
-
-const spring = { type: "spring", stiffness: 500, damping: 32 } as const
 
 export function Rail() {
   const pathname = usePathname()
@@ -118,7 +117,7 @@ function RailModule({
         <motion.span
           whileHover={{ scale: 1.08, y: -1 }}
           whileTap={{ scale: 0.92 }}
-          transition={spring}
+          transition={HOUSE_SPRING}
           className={cn(
             "relative flex size-8 items-center justify-center rounded-lg",
             !active &&
@@ -128,7 +127,7 @@ function RailModule({
           {active && (
             <motion.span
               layoutId="rail-active-tile"
-              transition={spring}
+              transition={HOUSE_SPRING}
               className={cn("absolute inset-0 rounded-lg", mod.accent.tile)}
             />
           )}
@@ -178,7 +177,7 @@ function RailAction({ icon: Icon, label }: { icon: LucideIcon; label: string }) 
       <motion.span
         whileHover={{ scale: 1.08, y: -1 }}
         whileTap={{ scale: 0.92 }}
-        transition={spring}
+        transition={HOUSE_SPRING}
         className="flex size-8 items-center justify-center rounded-lg transition-colors group-hover:bg-white/10 group-focus-visible:bg-white/10"
       >
         <Icon className="size-4 text-neutral-400 transition-colors group-hover:text-white group-focus-visible:text-white" />

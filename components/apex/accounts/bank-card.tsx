@@ -11,8 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import type { BankCard as BankCardRow } from "@/lib/apex/accounts/queries"
-
-const spring = { type: "spring", stiffness: 500, damping: 32 } as const
+import { HOUSE_SPRING } from "@/lib/motion"
 
 type ExpiryState = "ok" | "soon" | "expired"
 
@@ -49,7 +48,7 @@ export function BankCard({
   return (
     <motion.div
       whileHover={{ y: -3, rotate: -0.4 }}
-      transition={spring}
+      transition={HOUSE_SPRING}
       data-bank-card={card.name}
       className="group relative isolate flex aspect-[1.586/1] w-full flex-col overflow-hidden rounded-2xl p-4 text-white shadow-lg shadow-black/15"
       style={{
