@@ -1,3 +1,4 @@
+import { formatMonthYear } from "@/lib/apex/dates"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 export type Budget = {
@@ -49,10 +50,7 @@ function currentMonthBounds(now = new Date()) {
   const nextYear = month === 11 ? year + 1 : year
   const nextMonth = month === 11 ? 0 : month + 1
   const end = `${nextYear}-${pad(nextMonth + 1)}-01`
-  const label = now.toLocaleDateString("en-GB", {
-    month: "long",
-    year: "numeric",
-  })
+  const label = formatMonthYear(now)
   return { start, end, label }
 }
 

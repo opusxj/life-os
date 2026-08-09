@@ -4,6 +4,7 @@ import {
   type Budget,
   type SavingGoal,
 } from "@/lib/apex/budgets/queries"
+import { formatMonthYear } from "@/lib/apex/dates"
 import { getMortgages, type Mortgage } from "@/lib/apex/mortgage/queries"
 import {
   getSubscriptionsPageData,
@@ -118,10 +119,7 @@ function lastSixMonths(now = new Date()): CashflowMonth[] {
     return {
       month: `${date.getFullYear()}-${pad(date.getMonth() + 1)}`,
       label: date.toLocaleDateString("en-GB", { month: "short" }),
-      longLabel: date.toLocaleDateString("en-GB", {
-        month: "long",
-        year: "numeric",
-      }),
+      longLabel: formatMonthYear(date),
       inflow: 0,
       outflow: 0,
     }

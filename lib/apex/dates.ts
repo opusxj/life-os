@@ -82,6 +82,13 @@ export function formatDayMonthYearShort(date: string | Date): string {
   return `${ordinal(value.getDate())} ${MONTH_SHORT.format(value)} ${value.getFullYear()}`
 }
 
+/** "2026-08-02" → "August". Bare month, when the year is obvious from context. */
+export function formatMonth(date: string | Date): string {
+  const value = resolve(date)
+  if (!value) return "—"
+  return MONTH_LONG.format(value)
+}
+
 /** "2027-03-31" → "March 2027" */
 export function formatMonthYear(date: string | Date): string {
   const value = resolve(date)

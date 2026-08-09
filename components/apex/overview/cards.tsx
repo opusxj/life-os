@@ -13,6 +13,7 @@ import {
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import { dueState, DueStateBadge } from "@/components/apex/due-state"
+import { MeterHead } from "@/components/apex/meter"
 import { pluralMonths } from "@/components/apex/mortgage/format"
 import { CashflowChart } from "@/components/apex/overview/cashflow-chart"
 import { SavingsTile } from "@/components/apex/overview/savings-tile"
@@ -283,25 +284,33 @@ export function MonthCard({
                 : Math.min(100, (budget.spent / budget.amount) * 100)
             return (
               <div key={budget.id}>
-                <div className="flex items-center gap-2 text-[13px]">
-                  <span
-                    className="size-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: budget.category.color }}
-                  />
-                  <span className="truncate">{budget.category.name}</span>
-                  {over ? (
-                    <ApexStatTag
-                      tint="destructive"
-                      className="ml-auto shrink-0"
-                    >
-                      {`${formatPenceShort(budget.spent - budget.amount)} over`}
-                    </ApexStatTag>
-                  ) : (
-                    <span className="ml-auto text-[13px] text-muted-foreground tabular-nums">
-                      {`${formatPenceShort(budget.spent)} of ${formatPenceShort(budget.amount)}`}
-                    </span>
-                  )}
-                </div>
+                <MeterHead
+                  className="mb-0 items-center"
+                  leading={
+                    <span
+                      className="size-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: budget.category.color }}
+                    />
+                  }
+                  name={budget.category.name}
+                  nameClassName="truncate text-[13px] text-foreground"
+                  trailing={
+                    over && (
+                      <ApexStatTag
+                        tint="destructive"
+                        className="ml-auto shrink-0"
+                      >
+                        {`${formatPenceShort(budget.spent - budget.amount)} over`}
+                      </ApexStatTag>
+                    )
+                  }
+                  amount={
+                    over
+                      ? null
+                      : `${formatPenceShort(budget.spent)} of ${formatPenceShort(budget.amount)}`
+                  }
+                  amountClassName="ml-auto text-[13px] font-normal text-muted-foreground"
+                />
                 <DataProgress
                   value={pct}
                   color={over ? "var(--destructive)" : budget.category.color}

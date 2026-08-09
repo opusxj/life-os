@@ -4,6 +4,7 @@ import * as React from "react"
 import { Plus } from "lucide-react"
 
 import { TopUpDrawer } from "@/components/apex/budgets/goal-card"
+import { MeterHead } from "@/components/apex/meter"
 import { DataProgress } from "@/components/apex/progress"
 import { ApexStatTag } from "@/components/apex/stat-card"
 import { Button } from "@/components/ui/button"
@@ -30,15 +31,20 @@ export function SavingsTile({
   return (
     <Card size="sm" className="gap-0 rounded-xl py-3">
       <CardContent className="px-3">
-        <div className="flex items-baseline justify-between gap-2">
-          <p className="truncate text-[13px] font-medium">{goal.name}</p>
-          <p className="shrink-0 text-[13px] text-muted-foreground">
-            <span className="font-semibold text-foreground tabular-nums">
-              {`${percent}%`}
-            </span>
-            {" saved"}
-          </p>
-        </div>
+        <MeterHead
+          className="mb-0"
+          name={goal.name}
+          nameClassName="truncate text-[13px] font-medium text-foreground"
+          amount={
+            <>
+              <span className="font-semibold text-foreground tabular-nums">
+                {`${percent}%`}
+              </span>
+              {" saved"}
+            </>
+          }
+          amountClassName="shrink-0 text-[13px] font-normal text-muted-foreground"
+        />
         <DataProgress
           value={fraction * 100}
           color={goal.color}

@@ -413,7 +413,7 @@ import the exact name, not the short form.
 |---|---|
 | `components/apex/stat-card.tsx` | `ApexStatCard` (its `iconColor` tints the chip from an entity's own hex), `ApexStatValue`, `ApexStatUnit`, `ApexStatFigure` (`negative` fades pence by opacity so they keep the warning colour), `ApexStatTag`, `ApexStatHint`, `ApexStatChip` (the runtime-hex 38px chip), `ApexCardFootnote` (the base-pinned closing note; `asRow` for a legend-grammar total row) |
 | `components/apex/anchor-tints.ts` | `ANCHOR_TINTS` (icon chips), `TAG_TINTS` (pills) |
-| `components/apex/meter.tsx` | `MeterHead` (name left, amount right, above any bar), `SegmentMeter` with per-segment tooltips and a min-width floor so a 1–2% share stays findable, `MeterSwatch` (the legend square that ties a row to its segment) |
+| `components/apex/meter.tsx` | `MeterHead` (name left, amount right, above any bar; optional `leading`/`trailing` slots for an identity dot or a tag, `amount` takes a node), `SegmentMeter` with per-segment tooltips and a min-width floor so a 1–2% share stays findable (a segment paints via Tailwind `className` or runtime-hex `color`), `MeterSwatch` (the legend square that ties a row to its segment; `color` for runtime hex), `MeterLegendRow` (the breakdown legend row: swatch, truncating label left, amount right), `MeterTotalRow` (the all-of-the-above total in the legend's grammar; composes inside `ApexCardFootnote asRow`) |
 | `components/apex/arc-gauge.tsx` | `ArcGauge`, the feature display |
 | `components/apex/progress.tsx` | `DataProgress`, progress toward a target |
 | `components/apex/mortgage/finish-track.tsx` | `FinishTrack`, the finish-flag ruler shared by Paid off (static) and Overpaying (flag animated on the house spring): solid run travelled, dashed run not, ring for the measured finish, flag for where the debt clears |
@@ -424,7 +424,7 @@ import the exact name, not the short form.
 | `components/apex/confirm-dialog.tsx` | The destructive-action gate: nothing fires straight from a menu item |
 | `components/shared/meta-dot.tsx` | `MetaDot` separator |
 | `components/shared/form-error.tsx` | `FormError`, the one form-error voice (renders nothing until there is a message, owns `role="alert"` and the boxed destructive treatment; `plain` drops the box for tight popovers) |
-| `lib/apex/dates.ts` | The date vocabulary, plus `parseDay`, `ordinal`, and the key producers `todayKey`/`dayKeyAgo` (local parts, never UTC) |
+| `lib/apex/dates.ts` | The date vocabulary including `formatMonth` (the bare spelled month), plus `parseDay`, `ordinal`, and the key producers `todayKey`/`dayKeyAgo` (local parts, never UTC) |
 | `lib/apex/money.ts` | `formatPence`, `formatPenceShort`, integer pence |
 | `lib/motion.ts` | `HOUSE_SPRING`, the one spring tuning every animation runs on |
 
