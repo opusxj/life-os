@@ -40,13 +40,35 @@ The shell's look and feel is the approved standard ("continue like this"). Every
 
 ## Ticket workflow
 
-Linear is the board (mirrored in [board.md](board.md) until connected). Tickets are **agent-sized**: one focused session, independently shippable.
+Linear is the board, canonical since 2026-08-02 ([board.md](board.md) is the frozen pre-import archive — use it only for ticket history and the LOS→LIFE mapping). Tickets are **agent-sized**: one focused session, independently shippable.
 
 1. **Pick** a ticket that is `Ready` and unassigned, whose dependencies are done. Assign it to yourself / note the agent claiming it.
-2. **Branch** `life-<ticket>-short-slug` (e.g. `life-15-foundations-schema`), matching the Linear identifier. One ticket = one branch = one PR.
+2. **Branch** (see [Branches](#branches-main-is-live) below): `<type>/life-<n>-short-slug`, e.g. `feat/life-38-staircasing`. One ticket = one branch = one PR.
 3. **Build** within the ticket's stated scope. If you must touch shared files (`lib/modules.ts`, shell components, schema), keep those edits minimal and self-contained — they're the collision hot-spots.
 4. **Verify** the definition of done, then commit (conventional style: `feat:`, `fix:`, `docs:`, `chore:`).
 5. **Close** with a comment: what shipped, what was verified, any follow-up tickets created.
+
+## Branches: main is live
+
+The family uses the app day to day, so **`main` is production and must always
+be shippable**. Work lands on `main` only through a branch and a PR that has
+passed the definition of done. (History note: everything up to 2026-08-09 was
+committed straight to `main`; that stops here.)
+
+- **Branch names carry the change type, then the ticket:**
+  `<type>/life-<n>-short-slug` — e.g. `feat/life-38-staircasing`,
+  `fix/life-30-spaces-soft-delete`. The type matches the conventional-commit
+  type of the work: `feat` (new behaviour), `fix` (something wrong made
+  right), `chore` (tooling, deps, config), `docs` (documentation only),
+  `refactor` (no behaviour change).
+- Small untracked fixes that genuinely need no ticket use `<type>/short-slug`
+  (e.g. `fix/slider-tag-wrap`) — but if it grows past one focused session,
+  it gets a ticket.
+- One ticket = one branch = one PR; rebase on `main` rather than merging it
+  in; delete the branch after merge.
+- **Migrations get extra care**: the Supabase project is the live family
+  database. A migration merges only with the schema checklist passed, and is
+  applied deliberately, never as a drive-by.
 
 **Definition of done:**
 
@@ -73,3 +95,4 @@ When the same mistake happens twice, it gets an entry here and (if warranted) a 
 - 2026-08-02 · Strict `react-hooks/set-state-in-effect` lint errors in generated shadcn files · Generated `components/ui/**` files get lint-rule exceptions in `eslint.config.mjs`; never hand-patch generated files.
 - 2026-08-02 · Soft-delete UPDATE rejected by RLS ("new row violates row-level security policy"): Postgres applies the SELECT policy to an UPDATE's new row, so `deleted_at is null` in the select policy blocked soft deletion itself · Select policies use `deleted_at is null or deleted_by = auth.uid()` (standard updated in data-standards.md); `spaces` still has the old shape — LIFE-30 tracks it.
 - 2026-08-02 · A spring-animated number looked "stuck" under headless verification and was nearly filed as a bug — `requestAnimationFrame` never ticks in a non-composited Browser pane, so Motion values freeze while plain React renders still update · When verifying animated output headless, assert the un-animated state path (labels, dates, DOM values) and probe rAF before blaming the component.
+- 2026-08-09 · Every scrolling Apex page silently lost its bottom padding: the shell's `main` is a flex row, so the page div stretched to the viewport and long content overflowed past its own padded box — `pb-10` had never rendered anywhere · A child of a flex scroll container that should size to its content needs `self-start` (ApexPage non-fill now carries it); when padding "isn't showing", measure the box before adding more padding.

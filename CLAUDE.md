@@ -7,7 +7,7 @@ Personal/family life operating system: ClickUp-style shell (module rail → cont
 - `docs/project-overview.md` — concepts (spaces, users, modules), module map, roadmap
 - `docs/data-standards.md` — **80% rule**, JSONB metadata, RLS, schema checklist. No schema merges without it.
 - `docs/conventions.md` — design bar, code rules, ticket workflow, definition of done
-- `docs/board.md` — epics/tickets (mirror of Linear once connected)
+- `docs/board.md` — archived ticket breakdown; Linear (team LifeOS, LIFE-n) is canonical. Without Linear access, ask rather than trust board.md statuses.
 
 ## Commands
 
@@ -41,7 +41,7 @@ a semantic mistake behind a cosmetic request, does.
 
 ## Hard rules
 
-- Work from a board ticket; one ticket = one branch (`life-<n>-slug`, matching the LIFE-n identifier) = one PR; conventional commits.
+- **`main` is production** (the family uses the app); never commit to it directly. Work from a board ticket on a branch: one ticket = one branch (`<type>/life-<n>-slug`, e.g. `feat/life-38-staircasing`) = one PR; conventional commits. See conventions.md "Branches: main is live".
 - Modules and their nav/accents live in `lib/modules.ts` (registry-driven) — never hardcode module info in shell components.
 - Match the approved design bar (density, per-module accents, spring motion, reduced-motion support, light+dark) — see conventions.
 - Base UI components compose via `render` prop, not `asChild`. Prefer `components/ui` over custom.
