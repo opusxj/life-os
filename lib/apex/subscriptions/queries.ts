@@ -12,6 +12,8 @@ export type RecurringPayment = {
   cadence: RecurringCadence
   /** yyyy-mm-dd */
   nextDueOn: string
+  /** Intended day of month (1-31); the advance rule rebuilds from this */
+  anchorDay: number | null
   accountId: string | null
   accountName: string | null
   categoryId: string | null
@@ -36,6 +38,8 @@ export type SubscriptionsPageData = {
   accounts: AccountOption[]
   /** Expense categories only — Mark paid posts an expense */
   categories: CategoryOption[]
+  /** Latest Mark paid per item (yyyy-mm-dd), from the transactions it wrote */
+  lastPaidByPaymentId: Record<string, string>
 }
 
 /** Recurring payments plus the account/category options the drawer needs. */
@@ -44,12 +48,16 @@ export async function getSubscriptionsPageData(
 ): Promise<SubscriptionsPageData> {
   const supabase = await createServerSupabase()
 
-  const [{ data: paymentRows }, { data: accountRows }, { data: categoryRows }] =
-    await Promise.all([
+  const [
+    { data: paymentRows },
+    { data: accountRows },
+    { data: categoryRows },
+    { data: paidRows },
+  ] = await Promise.all([
       supabase
         .from("recurring_payments")
         .select(
-          "id, name, kind, amount, cadence, next_due_on, account_id, category_id"
+          "id, name, kind, amount, cadence, next_due_on, anchor_day, account_id, category_id"
         )
         .eq("space_id", spaceId)
         .is("deleted_at", null)
@@ -68,6 +76,17 @@ export async function getSubscriptionsPageData(
         .eq("kind", "expense")
         .is("deleted_at", null)
         .order("name", { ascending: true }),
+      // Every Mark paid stamps its transaction with the payment id; newest
+      // first, so the first row seen per id is the latest. A household ledger
+      // keeps this list small enough to reduce here rather than in an RPC.
+      supabase
+        .from("transactions")
+        .select("recurring_payment_id, occurred_on")
+        .eq("space_id", spaceId)
+        .not("recurring_payment_id", "is", null)
+        .is("deleted_at", null)
+        .order("occurred_on", { ascending: false })
+        .order("created_at", { ascending: false }),
     ])
 
   const accounts: AccountOption[] = accountRows ?? []
@@ -89,6 +108,7 @@ export async function getSubscriptionsPageData(
       amount: row.amount,
       cadence: toCadence(row.cadence),
       nextDueOn: row.next_due_on,
+      anchorDay: row.anchor_day,
       accountId: row.account_id,
       accountName: account?.name ?? null,
       categoryId: row.category_id,
@@ -98,7 +118,14 @@ export async function getSubscriptionsPageData(
     }
   })
 
-  return { payments, accounts, categories }
+  const lastPaidByPaymentId: Record<string, string> = {}
+  for (const row of paidRows ?? []) {
+    if (row.recurring_payment_id && !(row.recurring_payment_id in lastPaidByPaymentId)) {
+      lastPaidByPaymentId[row.recurring_payment_id] = row.occurred_on
+    }
+  }
+
+  return { payments, accounts, categories, lastPaidByPaymentId }
 }
 
 const PERIODS_PER_MONTH: Record<RecurringCadence, number> = {
@@ -114,6 +141,18 @@ export function monthlyPence(
   cadence: RecurringCadence
 ): number {
   return Math.round(amount * PERIODS_PER_MONTH[cadence])
+}
+
+const PERIODS_PER_YEAR: Record<RecurringCadence, number> = {
+  weekly: 52,
+  monthly: 12,
+  quarterly: 4,
+  yearly: 1,
+}
+
+/** What a year of renewals costs, exact — whole periods, no rounding. */
+export function annualPence(amount: number, cadence: RecurringCadence): number {
+  return amount * PERIODS_PER_YEAR[cadence]
 }
 
 function toCadence(value: string): RecurringCadence {
