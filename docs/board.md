@@ -1,6 +1,6 @@
 # Project Board
 
-> **Linear is canonical as of 2026-08-02** — team `LifeOS`, epics imported as projects E0–E7, dependencies as native "blocked by" relations. This file is the original breakdown kept as an archive; statuses below are frozen at import time. Check Linear for live state.
+> **Linear is canonical as of 2026-08-02** — team `LifeOS`, epics imported as projects E0–E7, dependencies as native "blocked by" relations. This file is the original breakdown kept as an archive; statuses below are frozen at import time. **Update 2026-08-09: Linear itself was retired — there is no live board anywhere.** Work is recorded by branches, PR descriptions and the docs (see conventions.md).
 
 | Board ref → Linear | | | |
 |---|---|---|---|

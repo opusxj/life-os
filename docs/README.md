@@ -1,13 +1,13 @@
 # Life OS Documentation
 
-Canonical documentation for Life OS. The repo is the source of truth for standards; the board lives in Linear (canonical since 2026-08-02, team `LifeOS`; [board.md](board.md) is the frozen pre-import archive).
+Canonical documentation for Life OS. The repo is the source of truth for standards. There is no ticket board: Linear was retired 2026-08-09; work is scoped in conversation and recorded by branches, PR descriptions, and these docs (see [conventions.md](conventions.md)).
 
 **Required reading before working on any ticket:**
 
 1. [project-overview.md](project-overview.md) — what Life OS is, the module map, architecture
 2. [data-standards.md](data-standards.md) — how every table must be designed (80% rule, JSONB metadata, RLS)
 3. [conventions.md](conventions.md) — design bar, code conventions, ticket workflow, definition of done
-4. [board.md](board.md) — the original epic/ticket breakdown (frozen archive; live state is in Linear, and the LOS→LIFE mapping lives at the top of the file)
+4. [board.md](board.md) — the original epic/ticket breakdown (frozen archive from the retired board era; the LOS→LIFE mapping lives at the top of the file)
 
 **Working documents:**
 

@@ -230,7 +230,7 @@ CSV import (LIFE-28) · bank feeds/Open Banking · multi-currency · split trans
 
 ## Build plan
 
-All shipped (statuses live in Linear):
+All shipped (LIFE-n numbers are from the retired board, kept as history):
 
 | Ticket | Scope per this spec |
 |--------|---------------------|

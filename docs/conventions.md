@@ -38,15 +38,29 @@ The shell's look and feel is the approved standard ("continue like this"). Every
 - Server components by default; `"use client"` only where interaction/hooks demand it.
 - Data access goes through `lib/` helpers, never inline SQL/queries in components.
 
-## Ticket workflow
+## How work is scoped and shipped
 
-Linear is the board, canonical since 2026-08-02 ([board.md](board.md) is the frozen pre-import archive — use it only for ticket history and the LOS→LIFE mapping). Tickets are **agent-sized**: one focused session, independently shippable.
+There is no ticket board. Linear was retired on 2026-08-09 because the
+ceremony (create ticket, shuffle statuses) was slowing the work down without
+adding anything the branch, the PR, and the docs don't already record.
+[board.md](board.md) and the LIFE-n numbers in code comments and docs are
+frozen history; never resurrect them for new work.
 
-1. **Pick** a ticket that is `Ready` and unassigned, whose dependencies are done. Assign it to yourself / note the agent claiming it.
-2. **Branch** (see [Branches](#branches-main-is-live) below): `<type>/life-<n>-short-slug`, e.g. `feat/life-38-staircasing`. One ticket = one branch = one PR.
-3. **Build** within the ticket's stated scope. If you must touch shared files (`lib/modules.ts`, shell components, schema), keep those edits minimal and self-contained — they're the collision hot-spots.
-4. **Verify** the definition of done, then commit (conventional style: `feat:`, `fix:`, `docs:`, `chore:`).
-5. **Close** with a comment: what shipped, what was verified, any follow-up tickets created.
+What replaces it is the discipline the board enforced, minus the ceremony:
+
+1. **Scope in conversation.** A piece of work is **agent-sized**: one focused
+   session, independently shippable. Bigger ambitions get broken down before
+   any code.
+2. **Branch** (see [Branches](#branches-main-is-live) below):
+   `<type>/short-slug`. One focused change = one branch = one PR.
+3. **Build** within the agreed scope. If you must touch shared files
+   (`lib/modules.ts`, shell components, schema), keep those edits minimal and
+   self-contained — they're the collision hot-spots.
+4. **Verify** the definition of done, then commit (conventional style:
+   `feat:`, `fix:`, `docs:`, `chore:`).
+5. **The PR description is the record**: what shipped, what was verified, any
+   follow-ups worth naming. Larger open work lives in
+   [codebase-audit.md](codebase-audit.md)-style docs, not a board.
 
 ## Branches: main is live
 
@@ -55,24 +69,23 @@ be shippable**. Work lands on `main` only through a branch and a PR that has
 passed the definition of done. (History note: everything up to 2026-08-09 was
 committed straight to `main`; that stops here.)
 
-- **Branch names carry the change type, then the ticket:**
-  `<type>/life-<n>-short-slug` — e.g. `feat/life-38-staircasing`,
-  `fix/life-30-spaces-soft-delete`. The type matches the conventional-commit
-  type of the work: `feat` (new behaviour), `fix` (something wrong made
-  right), `chore` (tooling, deps, config), `docs` (documentation only),
-  `refactor` (no behaviour change).
-- Small untracked fixes that genuinely need no ticket use `<type>/short-slug`
-  (e.g. `fix/slider-tag-wrap`) — but if it grows past one focused session,
-  it gets a ticket.
-- One ticket = one branch = one PR; rebase on `main` rather than merging it
-  in; delete the branch after merge.
+- **Branch names carry the change type, then a short slug:**
+  `<type>/short-slug` — e.g. `feat/staircasing`, `fix/spaces-soft-delete`.
+  The type matches the conventional-commit type of the work: `feat` (new
+  behaviour), `fix` (something wrong made right), `chore` (tooling, deps,
+  config), `docs` (documentation only), `refactor` (no behaviour change).
+  (Pre-2026-08-09 branches carry `life-<n>` ticket numbers from the retired
+  board; that's history, not the pattern.)
+- One focused change = one branch = one PR; rebase on `main` rather than
+  merging it in; delete the branch after merge. If a change grows past one
+  focused session, split it.
 - **Migrations get extra care**: the Supabase project is the live family
   database. A migration merges only with the schema checklist passed, and is
   applied deliberately, never as a drive-by.
 
 **Definition of done:**
 
-- [ ] Acceptance criteria on the ticket met
+- [ ] The agreed scope met (as stated in chat and the PR description)
 - [ ] `npm run typecheck` and `npm run lint` pass
 - [ ] Verified in the running app (browser), light + dark if UI
 - [ ] Schema changes pass the [schema review checklist](data-standards.md#schema-review-checklist)
@@ -81,9 +94,9 @@ committed straight to `main`; that stops here.)
 
 **Parallel work rules:**
 
-- Two workstreams must not share a branch or ticket.
+- Two workstreams must not share a branch.
 - Module work stays inside its module's routes/components/tables; foundations work owns the shared shell/schema.
-- If a ticket unexpectedly needs a shared-file change, split that change into its own small ticket/PR so others can rebase quickly.
+- If a change unexpectedly needs a shared-file edit, split that edit into its own small PR so others can rebase quickly.
 
 ## Recurring-mistake log
 
