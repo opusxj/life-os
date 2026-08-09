@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/empty"
 import {
   annualPence,
+  getRecurringLastPaid,
   getSubscriptionsPageData,
   monthlyPence,
 } from "@/lib/apex/subscriptions/queries"
@@ -33,10 +34,12 @@ export default async function SubscriptionsPage() {
   const workspace = await getWorkspace()
   if (!workspace) redirect("/sign-in")
 
-  const { payments, accounts, categories, lastPaidByPaymentId } =
-    await getSubscriptionsPageData(workspace.activeSpace.id)
-
   const spaceId = workspace.activeSpace.id
+  const [{ payments, accounts, categories }, lastPaidByPaymentId] =
+    await Promise.all([
+      getSubscriptionsPageData(spaceId),
+      getRecurringLastPaid(spaceId),
+    ])
   const today = todayKey()
   const billsMonthly = payments
     .filter((payment) => payment.kind === "bill")

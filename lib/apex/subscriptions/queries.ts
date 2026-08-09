@@ -38,8 +38,6 @@ export type SubscriptionsPageData = {
   accounts: AccountOption[]
   /** Expense categories only — Mark paid posts an expense */
   categories: CategoryOption[]
-  /** Latest Mark paid per item (yyyy-mm-dd), from the transactions it wrote */
-  lastPaidByPaymentId: Record<string, string>
 }
 
 /** Recurring payments plus the account/category options the drawer needs. */
@@ -48,12 +46,8 @@ export async function getSubscriptionsPageData(
 ): Promise<SubscriptionsPageData> {
   const supabase = await createServerSupabase()
 
-  const [
-    { data: paymentRows },
-    { data: accountRows },
-    { data: categoryRows },
-    { data: paidRows },
-  ] = await Promise.all([
+  const [{ data: paymentRows }, { data: accountRows }, { data: categoryRows }] =
+    await Promise.all([
       supabase
         .from("recurring_payments")
         .select(
@@ -76,17 +70,6 @@ export async function getSubscriptionsPageData(
         .eq("kind", "expense")
         .is("deleted_at", null)
         .order("name", { ascending: true }),
-      // Every Mark paid stamps its transaction with the payment id; newest
-      // first, so the first row seen per id is the latest. A household ledger
-      // keeps this list small enough to reduce here rather than in an RPC.
-      supabase
-        .from("transactions")
-        .select("recurring_payment_id, occurred_on")
-        .eq("space_id", spaceId)
-        .not("recurring_payment_id", "is", null)
-        .is("deleted_at", null)
-        .order("occurred_on", { ascending: false })
-        .order("created_at", { ascending: false }),
     ])
 
   const accounts: AccountOption[] = accountRows ?? []
@@ -118,14 +101,37 @@ export async function getSubscriptionsPageData(
     }
   })
 
-  const lastPaidByPaymentId: Record<string, string> = {}
-  for (const row of paidRows ?? []) {
-    if (row.recurring_payment_id && !(row.recurring_payment_id in lastPaidByPaymentId)) {
-      lastPaidByPaymentId[row.recurring_payment_id] = row.occurred_on
+  return { payments, accounts, categories }
+}
+
+/**
+ * Latest Mark paid per item (yyyy-mm-dd), from the transactions it stamps.
+ * Its own fetch rather than part of getSubscriptionsPageData, because the
+ * overview reuses that function for its due list and must not inherit a
+ * ledger scan it never reads. Newest first, so the first row seen per id is
+ * the latest; the cap covers years of household history.
+ */
+export async function getRecurringLastPaid(
+  spaceId: string
+): Promise<Record<string, string>> {
+  const supabase = await createServerSupabase()
+  const { data } = await supabase
+    .from("transactions")
+    .select("recurring_payment_id, occurred_on")
+    .eq("space_id", spaceId)
+    .not("recurring_payment_id", "is", null)
+    .is("deleted_at", null)
+    .order("occurred_on", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1000)
+
+  const lastPaid: Record<string, string> = {}
+  for (const row of data ?? []) {
+    if (row.recurring_payment_id && !(row.recurring_payment_id in lastPaid)) {
+      lastPaid[row.recurring_payment_id] = row.occurred_on
     }
   }
-
-  return { payments, accounts, categories, lastPaidByPaymentId }
+  return lastPaid
 }
 
 const PERIODS_PER_MONTH: Record<RecurringCadence, number> = {

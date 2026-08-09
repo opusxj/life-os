@@ -13,7 +13,9 @@ import { parseDay } from "@/lib/apex/dates"
 import type { RecurringCadence, RecurringPayment } from "./queries"
 
 /** The due-soon window: Mark paid is offered and "due soon" copy fires
- *  inside it. One definition for every surface that measures it. */
+ *  inside it. The one home for the rule; older surfaces (due-state, overview,
+ *  sidebar) still hardcode their 7s — see the audit note — and should derive
+ *  from this when next touched. */
 export const DUE_SOON_DAYS = 7
 
 const CADENCE_MONTHS: Record<Exclude<RecurringCadence, "weekly">, number> = {
@@ -86,6 +88,11 @@ export function monthTotals(
   )
 
   for (const payment of payments) {
+    // The SQL persists the derived anchor on the first advance; deriving it
+    // per step from an already-clamped date would walk a null-anchor 31st
+    // back to the 28th for good. Hoist once so the port stays in step.
+    const anchor =
+      payment.anchorDay ?? parseDay(payment.nextDueOn).getDate()
     let occurrence = payment.nextDueOn
     // An overdue row walks forward into the window; the cap only guards a
     // pathological date far in the past. yyyy-mm-dd compares as it sorts.
@@ -100,7 +107,7 @@ export function monthTotals(
           }
         }
       }
-      occurrence = advance(occurrence, payment.cadence, payment.anchorDay)
+      occurrence = advance(occurrence, payment.cadence, anchor)
     }
   }
 

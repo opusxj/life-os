@@ -38,11 +38,12 @@ export function DueNextCard({
 
   const due = dueState(next.nextDueOn, today)
   const pill = duePill(due)
-  const others = payments.filter(
-    (payment) =>
-      payment.id !== next.id &&
-      dueState(payment.nextDueOn, today).days <= DUE_SOON_DAYS
-  )
+  const others = payments.filter((payment) => {
+    if (payment.id === next.id) return false
+    const days = dueState(payment.nextDueOn, today).days
+    // 0 to the window only: a second overdue item is not "due within a week"
+    return days >= 0 && days <= DUE_SOON_DAYS
+  })
   const othersTotal = others.reduce((sum, payment) => sum + payment.amount, 0)
 
   return (

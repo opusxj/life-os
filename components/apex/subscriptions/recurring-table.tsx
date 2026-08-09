@@ -19,8 +19,8 @@ import { MarkPaidButton } from "@/components/apex/subscriptions/mark-paid-button
 import { RecurringDrawer } from "@/components/apex/subscriptions/recurring-drawer"
 import {
   DataChip,
-  TABLE_FOOT,
   TABLE_HEAD,
+  TABLE_STATIC_FOOT,
   TableCard,
   TableCardHeader,
 } from "@/components/apex/table-shell"
@@ -268,28 +268,35 @@ export function RecurringTable({
               )
             })}
           </TableBody>
+          {/* Static dress, not TABLE_FOOT: this table rides a normally
+              scrolling page, so a sticky foot would pin to the shell's
+              viewport instead of sitting under its rows. */}
           <TableFooter className="border-t-0 bg-transparent font-normal">
             <TableRow className="hover:bg-transparent">
               <TableCell
                 className={cn(
-                  TABLE_FOOT,
+                  TABLE_STATIC_FOOT,
                   "py-2.5 pl-3 text-[12px] text-muted-foreground"
                 )}
               >
                 Scaled to a month
               </TableCell>
-              <TableCell className={cn(TABLE_FOOT, "hidden md:table-cell")} />
-              <TableCell className={TABLE_FOOT} />
-              <TableCell className={cn(TABLE_FOOT, "hidden md:table-cell")} />
+              <TableCell
+                className={cn(TABLE_STATIC_FOOT, "hidden md:table-cell")}
+              />
+              <TableCell className={TABLE_STATIC_FOOT} />
+              <TableCell
+                className={cn(TABLE_STATIC_FOOT, "hidden md:table-cell")}
+              />
               <TableCell
                 className={cn(
-                  TABLE_FOOT,
+                  TABLE_STATIC_FOOT,
                   "py-2.5 pr-2 text-right font-medium whitespace-nowrap tabular-nums"
                 )}
               >
                 {formatPence(monthlyTotal)}
               </TableCell>
-              <TableCell className={TABLE_FOOT} />
+              <TableCell className={TABLE_STATIC_FOOT} />
             </TableRow>
           </TableFooter>
         </Table>

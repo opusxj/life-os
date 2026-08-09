@@ -47,7 +47,14 @@ export function MonthsAheadCard({
 
   const heaviest = months[totals.indexOf(max)]
   const median = [...totals].sort((a, b) => a - b)[Math.floor(totals.length / 2)]
-  const heavy = median > 0 && max >= median * HEAVY_RATIO && heaviest.biggest
+  // A schedule of rare items leaves most months empty (median 0); an occupied
+  // month towering over empty ones IS the ambush, so emptiness takes the
+  // heavy branch rather than reporting "every month is close to £0". Strictly
+  // above the ratio, or a routine fifth week of a weekly item gets named as
+  // an ambush (5 occurrences vs a median 4 is exactly 1.25).
+  const heavy =
+    Boolean(heaviest.biggest) &&
+    (median === 0 || max > median * HEAVY_RATIO)
 
   // Projections round to the pound: pence here would be false precision on
   // a "what lands when" sketch (the table holds the exact figures).
