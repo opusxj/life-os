@@ -98,7 +98,8 @@ export function RecurringTable({
   spaceId,
   today,
 }: {
-  /** Soonest due first — the query's order, kinds interleaved */
+  /** Active rows soonest due first, kinds interleaved; paused rows sunk to
+   *  the bottom (the page owns that ordering) */
   payments: RecurringRow[]
   /** Combined cadence-normalized pence per month; the totals-row figure */
   monthlyTotal: number
@@ -124,7 +125,7 @@ export function RecurringTable({
     id: string
     message: string
   } | null>(null)
-  const [, startPause] = React.useTransition()
+  const [pausePending, startPause] = React.useTransition()
 
   function togglePause(payment: RecurringPayment) {
     setPauseError(null)
@@ -266,7 +267,7 @@ export function RecurringTable({
                       {pauseError?.id === payment.id && (
                         <span
                           role="alert"
-                          className="text-[13px] whitespace-nowrap text-destructive"
+                          className="text-[13px] text-destructive"
                         >
                           {pauseError.message}
                         </span>
@@ -299,6 +300,7 @@ export function RecurringTable({
                               Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem
+                              disabled={pausePending}
                               onClick={() => togglePause(payment)}
                             >
                               {payment.paused ? <Play /> : <Pause />}

@@ -122,8 +122,12 @@ export type PaymentStamp = {
  * function for its due list and must not inherit a ledger scan it never
  * reads. One query feeds both the table's Last paid column and the price
  * history (lib/apex/subscriptions/history.ts); the cap covers years of
- * household history.
+ * household history, and callers whose claims depend on the OLDEST stamps
+ * (price history's "first price you paid") must treat a full window as
+ * truncated rather than trust its far end.
  */
+export const STAMP_CAP = 1000
+
 export async function getRecurringPaymentStamps(
   spaceId: string
 ): Promise<PaymentStamp[]> {
@@ -136,7 +140,7 @@ export async function getRecurringPaymentStamps(
     .is("deleted_at", null)
     .order("occurred_on", { ascending: false })
     .order("created_at", { ascending: false })
-    .limit(1000)
+    .limit(STAMP_CAP)
 
   return (data ?? []).flatMap((row) =>
     row.recurring_payment_id

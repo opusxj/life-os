@@ -63,11 +63,17 @@ export function priceRisers(
     const first = history[history.length - 1]
     if (payment.amount <= first.amount) continue
 
-    // The first stamp at the current price, if the rise has been paid yet.
-    // Newest-first: the last matching entry is the earliest such payment.
-    const paidAtCurrent = [...history]
-      .reverse()
-      .find((stamp) => stamp.amount === payment.amount)
+    // "since" only when the newest stamp is already at the current price;
+    // dated from the start of that contiguous run. An old stamp at a
+    // coincidentally equal price (rose, fell back, rose again) must not date
+    // today's rise from a former era.
+    let paidAtCurrent: PaymentStamp | undefined
+    if (history[0].amount === payment.amount) {
+      for (const stamp of history) {
+        if (stamp.amount !== payment.amount) break
+        paidAtCurrent = stamp
+      }
+    }
 
     risers.push({
       id: payment.id,

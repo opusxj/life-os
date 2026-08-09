@@ -7,7 +7,7 @@ import { friendlyDbError } from "@/lib/supabase/errors"
 import { createServerSupabase } from "@/lib/supabase/server"
 import type { Json } from "@/lib/supabase/types"
 
-import type { RecurringCadence } from "./queries"
+import { isRecurringPaused, type RecurringCadence } from "./queries"
 import { advance } from "./schedule"
 
 export type RecurringFormState =
@@ -127,6 +127,13 @@ export async function setRecurringPaused(
     .maybeSingle()
   if (!existing) return { error: "That payment was cancelled or removed." }
 
+  // Resuming a row that is not actually paused must be a no-op: a stale tab's
+  // Resume would otherwise roll a genuinely overdue date past a payment that
+  // was never recorded. Pausing twice is harmless and falls through.
+  if (!paused && !isRecurringPaused(existing.metadata)) {
+    return {}
+  }
+
   const metadata: Record<string, Json | undefined> =
     typeof existing.metadata === "object" &&
     existing.metadata !== null &&
@@ -148,13 +155,19 @@ export async function setRecurringPaused(
     if (nextDue !== existing.next_due_on) values.next_due_on = nextDue
   }
 
+  // The next_due_on guard makes the read-compute-write honest under a
+  // concurrent edit: if the date moved since the read, count comes back 0
+  // and the user retries against fresh state instead of clobbering it.
   const { error, count } = await supabase
     .from("recurring_payments")
     .update(values, { count: "exact" })
     .eq("id", paymentId)
+    .eq("next_due_on", existing.next_due_on)
     .is("deleted_at", null)
   if (error) return { error: friendlyDbError(error.message) }
-  if (count === 0) return { error: "That payment was cancelled or removed." }
+  if (count === 0) {
+    return { error: "That payment just changed elsewhere. Try again." }
+  }
   revalidateApex()
   return {}
 }

@@ -8,7 +8,7 @@ import {
   ApexStatUnit,
   ApexStatValue,
 } from "@/components/apex/stat-card"
-import { formatDayMonth } from "@/lib/apex/dates"
+import { formatDayMonth, formatDayMonthYearShort } from "@/lib/apex/dates"
 import { formatPence } from "@/lib/apex/money"
 import type { PriceRiser } from "@/lib/apex/subscriptions/history"
 import { annualPence } from "@/lib/apex/subscriptions/queries"
@@ -24,10 +24,13 @@ import { annualPence } from "@/lib/apex/subscriptions/queries"
  */
 export function PriceCreepCard({
   risers,
+  today,
   className,
 }: {
   /** From priceRisers — biggest monthly delta first */
   risers: PriceRiser[]
+  /** yyyy-mm-dd, server-resolved; decides when a story date needs its year */
+  today: string
   className?: string
 }) {
   if (risers.length === 0) return null
@@ -59,20 +62,32 @@ export function PriceCreepCard({
           <div key={riser.id}>
             <div className="flex items-baseline justify-between gap-3 text-[13px]">
               <span className="min-w-0 truncate">{riser.name}</span>
+              {/* Non-monthly rows name the base: their mechanism line shows
+                  the real charge, which the monthly delta visibly won't match */}
               <span className="shrink-0 font-medium text-red-600 tabular-nums dark:text-red-400">
-                {`+${formatPence(riser.deltaMonthly)}`}
+                {riser.cadence === "monthly"
+                  ? `+${formatPence(riser.deltaMonthly)}`
+                  : `+${formatPence(riser.deltaMonthly)} a month`}
               </span>
             </div>
             <p className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
-              {`${formatPence(riser.fromAmount)} to ${formatPence(riser.toAmount)}, ${riser.story.kind} ${formatDayMonth(riser.story.on)}`}
+              {`${formatPence(riser.fromAmount)} to ${formatPence(riser.toAmount)}, ${riser.story.kind} ${storyDate(riser.story.on, today)}`}
             </p>
           </div>
         ))}
       </div>
 
       <ApexCardFootnote>
-        {`${formatPence(totalAnnual)} a year at the new prices.`}
+        {`${formatPence(totalAnnual)} a year more at the new prices.`}
       </ApexCardFootnote>
     </ApexStatCard>
   )
+}
+
+/** A same-year story stays terse; an older one must say its year, or "since
+ *  10th September" from two years back reads as last month. */
+function storyDate(on: string, today: string): string {
+  return on.slice(0, 4) === today.slice(0, 4)
+    ? formatDayMonth(on)
+    : formatDayMonthYearShort(on)
 }
