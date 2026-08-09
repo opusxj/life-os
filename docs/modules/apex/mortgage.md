@@ -4,7 +4,21 @@ Research synthesis and feature plan. Four research passes (domain truth, competi
 teardown, voice of the user, anti-features & upkeep) — 2026-08-05.
 
 This doc decides what the Mortgage area is *for*, what it will contain, and — more
-usefully — what it will not. Nothing here is built yet.
+usefully — what it will not.
+
+> **Status 2026-08-09** — the area is built (LIFE-29 plus a design-polish pass) and
+> is the approved design reference for the whole app. Landed: **F1** largely (payment
+> shock headline, reserve-window meter and stage guidance, LTV band proximity on the
+> Loan to value card), **F6** in full (rounded figures, both numbers with time drawn
+> on the finish-flag ruler, slider gated on the allowance, assumption stated as
+> provenance), **F7** partially (`repayment_type`, `balance_as_of`, `reversion_rate`,
+> `rate_started_on` columns; overpayment cap collected as `overpayment_allowance_pct`
+> in metadata; no property entity or ERC schedule yet), **F8** partially (this
+> month's capital/interest split card; no cumulative-year figure), plus §2.3's
+> projection-first principle adopted (`balanceToday` ages the stored figure; open
+> question 1 is settled). Not built: F2 reconciliation, F4 ghost schedule, F5
+> quantised progress, F9 joint views beyond what spaces already give. §4.3's
+> not-building list stands.
 
 ---
 
@@ -178,8 +192,9 @@ things, nothing else:
 - **LTV band proximity as the one action available now**: current LTV, next band down,
   and the overpayment needed to cross it. Crossing 80%→75% on £200k is worth ~£36/month.
 
-`rate-card.tsx`'s existing "alarm inversion" at six months — where the countdown replaces
-the rate as the headline — is the best thing in the current module and should survive.
+The old `rate-card.tsx` "alarm inversion" at six months — the countdown replacing the
+rate as the headline — did survive: its successor `headline-card.tsx` leads with the
+countdown attached to the payment shock.
 
 **F2 · Reconciliation.** The unclaimed trust job, and the one thing a tracker can do that
 a calculator cannot. We already own transaction data. Show planned vs actual: *"you
@@ -237,22 +252,6 @@ overpayments, and joint goals."* **Life OS already has spaces and multi-user mem
 This is a structural advantage we get for free and the incumbents cannot easily retrofit.
 Household pricing is separately an explicit unmet demand from Emma's paying users.
 
-**F8 · Interest charged, and the capital/interest split.** The highest-confidence unmet
-need in the whole study — six independent reviewers across four lenders, none satisfied,
-one reduced to writing letters to his building society to find out. No UK lender app in
-the sampled corpus does it. Two figures: *this month, £X killed debt and £Y fed the bank*,
-and *interest charged this year to date*. Both fall straight out of the schedule we
-already compute. This is also the answer to "balance isn't a fast moving milestone" — it
-is the number that moves.
-
-**F9 · Joint mortgages, which are broken everywhere.** Sprive cannot handle two people on
-one mortgage: *"the app won't let my husband send payments"*, *"It's a JOINT ACCOUNT!"*,
-*"I have money sitting doing nothing on the app and have given up using the app."* Life OS
-already has spaces and multi-user membership, so a shared view of one mortgage with
-combined progress is close to free for us and is a genuine structural advantage over every
-incumbent. Household pricing is separately an explicit unmet demand from Emma's paying
-users.
-
 **F7 · Data model corrections.** `repayment_type`, `balance_as_of`, `reversion_rate`,
 `rate_started_on`, `term_started_on`, `property_id`, `erc_schedule`,
 `overpayment_allowance_pct`. Move `equity_share_pct` and `rent_monthly` to property
@@ -291,10 +290,10 @@ ever asking about split rates.
 3. **"Keep your data fresh" nudges.** The correct answer to staleness is to make staleness
    not matter — achievable to within £86 over five years. A nudge to re-enter a derivable
    number outsources the app's own arithmetic to someone with executive-function difficulty.
-4. **A net-worth or equity chart driven by `property_value`.** The field is collected,
-   stored, typed through queries and actions, and rendered by **nothing** — the
-   highest-decay field in the schema with zero output. Delete it rather than build the
-   card it was meant to feed.
+4. **A net-worth or equity chart driven by `property_value`.** Overtaken: the field now
+   feeds the LTV and Equity cards (`ltv-card.tsx`, `equity-card.tsx`), which prompt once
+   for a valuation and step aside without one. What stands of this item is only: no
+   net-worth chart, no automatic revaluation.
 5. **Any lender comparison, product ranking, or "you should switch" recommendation.**
    Perimeter risk, and 57% of movers already use a broker. Deliver the user to a broker at
    the right moment with their numbers in hand — that's scheduling, not advice.

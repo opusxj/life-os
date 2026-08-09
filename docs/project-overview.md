@@ -13,7 +13,7 @@ Life OS is a personal/family operating system: one application that manages the 
 | Module | Slug | Domain | Status |
 |--------|------|--------|--------|
 | Home | `/` | Dashboard across all modules | Shell only |
-| Apex | `/apex` | Finance: accounts, transactions, budgets, goals | **First module to build** |
+| Apex | `/apex` | Finance: accounts, transactions, budgets, goals | **Built** — six pages live; the Mortgage page is the app-wide design reference |
 | Festum | `/festum` | Food: recipes, meal plans, shopping list | Placeholder — spec just-in-time |
 | Rete | `/rete` | People: social CRM, circles, important dates | Placeholder — spec just-in-time |
 | Medium | `/medium` | Media: library, watch lists, game backlog | Placeholder — spec just-in-time |
@@ -27,7 +27,7 @@ Modules are deliberately **not** broken down upfront. A module gets a spec (`doc
 - **Animation:** Motion (`motion/react`) — springs, layout morphs; reduced-motion respected
 - **Data:** Supabase (Postgres, Auth, RLS) — see [data-standards.md](data-standards.md)
 - **Shell:** floating panels on a muted canvas — top bar, module rail, contextual sidebar + body panel (`components/shell/`)
-- **Tracking:** Linear (board mirrored in [board.md](board.md) until connected)
+- **Tracking:** Linear (canonical since 2026-08-02; [board.md](board.md) is a frozen pre-import archive)
 
 ## Roadmap order
 

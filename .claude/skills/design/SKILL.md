@@ -91,6 +91,13 @@ BI restraint. Thin hairline marks read as lifeless here.
   indicator.
 - **Pills carry discrete data**: dates, deltas, one-fact tags render as
   pastel pills (`ApexStatTag`). A sentence stays a hint line.
+- **A breakdown's total row wears the legend's own grammar**: outline swatch
+  (it is all of the above, not one slice), label left, amount right, pinned
+  to the base on the hairline. Never a prose closing line restating the sum.
+- **A record card groups its facts in named columns, colour in the words
+  alone**: headings in the hue's strong text step from the vocabulary. Washed
+  panels read as cards nested in a card, rails as lined sections, pill titles
+  compete with the card's own header (all three rejected; taste log).
 - **Prefer a metaphor the eye already knows.** A finish-line flag on a track
   is understood before it is read; a coloured bar must be interpreted. This
   audience includes people who struggle to hold several facts at once, so a
@@ -110,7 +117,7 @@ BI restraint. Thin hairline marks read as lifeless here.
 | Progress toward a target | `DataProgress` |
 | Independent quantities compared | one `DataProgress` each, all scaled to the largest |
 | Proportion that *is* the card's point | `ArcGauge` (the feature display) |
-| A span of time measured against a deadline | a hairline ruler with markers |
+| A span of time measured against a deadline | `FinishTrack` (mortgage/finish-track.tsx), never a second hand-rolled ruler |
 | Discrete tiers you move between | a staircase, one step per tier |
 
 Parts that sum to a whole are `SegmentMeter`; quantities that do not sum are a
@@ -135,6 +142,36 @@ anything, and it matched how the reader already thinks about the subject.
 caption directly under the figure: split them across the gauge's edge and
 they stop reading as one unit. Size the arc so the figure clears the stroke
 by ~25px at its widest rather than shrinking the type.
+
+### Controls on a card
+
+Ratified on the Overpaying card (2026-08-09), which is the reference for any
+future interactive card:
+
+- **One direct control** (slider, field, select), never a row of preset chip
+  buttons. Presets that restate facts other cards own are clutter.
+- **The resting state keeps the full anatomy.** No empty state that swaps the
+  graphic away: values go quiet, structure stays, and the hero at rest shows
+  the real baseline the card measures against (the payment already being
+  made), never a grey zero or a bare dash while the control sits at nothing.
+- **The chosen value rides the control.** A bubble travels with the slider
+  thumb (fixed width so digits don't jitter, clamped inside the card at the
+  ends); a static pill beside the track reads as a second fact off to the
+  side.
+- **A bounded track is a labelled scale**: marks under the ends and midpoint
+  ("0% / 5% / 10%"), the unit's word said once, and the bound enforced by the
+  control itself. The far end IS the limit; a warning that fires past a limit
+  is a trap, a track that ends at it is calm.
+- **Ask before hedging.** When a figure is the user's own term (their deal's
+  overpayment cap), collect it as an optional field on the edit surface and
+  assert it once supplied. Hedge only while it is absent, and the fallback
+  footer is the action, one line: "Edit the mortgage to add your current
+  cap." A recorded figure needs no prose at all.
+- **Round projections hard, hedge first.** "Around £29,000 less interest",
+  never £29,326.96 on a two-decade model. Time deltas are drawn (the
+  finish-flag ruler makes the saving a length that moves under the thumb);
+  money is stated; exact far-future dates live on a marker's hover, demoted
+  from claim to detail.
 
 ### Graphics explain themselves
 
@@ -305,6 +342,31 @@ Real decisions, with the user's words where they instruct. Keep appending.
 - A ladder of thresholds measured against today. Five of six rungs sat three to
   twelve years out and the sixth arrived unaided, so the card "feels arbitrary".
   Anchor a threshold to the moment it is actually used.
+- A row of preset chip buttons between a card's results and its slider: "I'm
+  not a fan of the clickable tag element box things." The slider's far end
+  already answered the maximum and the band figure already lived on the Loan to
+  value footer, so the chips were part restatement, part clutter. Prefer the
+  one direct control.
+- Two result figures side by side on one card ("paid off sooner" beside "less
+  interest"): "it feels really cluttered." One figure leads; the second fact
+  rides beneath it in a quiet line, or lives in the graphic.
+- An empty state that swaps away a card's graphic at zero input: "now I can't
+  see the goal?" A card with a control keeps its full anatomy at rest; the
+  values go quiet, the structure stays, and the resting graphic is itself the
+  invitation.
+- Hedged industry norms where the product could simply ask ("most deals cap
+  overpayments at 10%"): "perhaps it's worth first ASKING for the cap?" Collect
+  the user's own figure (an optional field), assert it once supplied, and hedge
+  only while it is absent, with the fallback line saying where to add it.
+- A static amount pill beside a slider, and footer paragraphs restating what a
+  control already enforces: "we need some sort of indicator" and "I hate how
+  much dialog there is at the bottom." The value rides the thumb as a bubble,
+  the cap is a three-word label at the end of the track it bounds ("10% cap"),
+  and the footer keeps at most one short line, only while it has a job.
+- A grey zero as a playable card's resting hero: "shouldn't we say the original
+  payment?" At rest the hero states the real baseline the card measures
+  against (the payment already being made); dragging morphs it into the
+  result.
 
 **Explaining a term**
 
@@ -330,6 +392,17 @@ reader already holds: a rung says "loans up to £139,500" on hover, because
 - A finish-line flag on a hairline ruler, explicitly for legibility under
   ADHD/OCD: a marked finish is understood before it is read.
 - Spreading a card so the answer sits at the top and the note at the base.
+- Grouping a record card into coloured columns ("that way we keep the ADHD
+  OCD vibes"), where the colour settled into the heading words alone. Washed
+  panels were rejected ("it just looks like 3 cards inside of each other"),
+  left rails too ("not a fan of the lined sections"), and pill titles as well
+  ("it feels too close to the title above" — same weight class as the card
+  header). What stuck: headings in the hue's strong text step (sky the loan,
+  amber the deal, indigo the property) over bare columns, no furniture at
+  all.
+- A total row in the legend's own grammar instead of a prose closing line
+  ("the 'a year all in' is a bit weird"): outline swatch (it is all of the
+  above, not one slice), label left, amount right, pinned to the base.
 
 ## 8. Where the system lives
 
@@ -340,9 +413,10 @@ import the exact name, not the short form.
 |---|---|
 | `components/apex/stat-card.tsx` | `ApexStatCard`, `ApexStatValue`, `ApexStatUnit`, `ApexStatFigure`, `ApexStatTag`, `ApexStatHint` |
 | `components/apex/anchor-tints.ts` | `ANCHOR_TINTS` (icon chips), `TAG_TINTS` (pills) |
-| `components/apex/meter.tsx` | `MeterHead` (name left, amount right, above any bar), `SegmentMeter`, with per-segment tooltips |
+| `components/apex/meter.tsx` | `MeterHead` (name left, amount right, above any bar), `SegmentMeter` with per-segment tooltips and a min-width floor so a 1–2% share stays findable, `MeterSwatch` (the legend square that ties a row to its segment) |
 | `components/apex/arc-gauge.tsx` | `ArcGauge`, the feature display |
 | `components/apex/progress.tsx` | `DataProgress`, progress toward a target |
+| `components/apex/mortgage/finish-track.tsx` | `FinishTrack`, the finish-flag ruler shared by Paid off (static) and Overpaying (flag animated on the house spring): solid run travelled, dashed run not, ring for the measured finish, flag for where the debt clears |
 | `components/apex/page.tsx` | `ApexPage` (the 1100px cap), `ApexPageHeader`, `ApexSection`, `ApexCardGrid`, `ApexPlaceholder` |
 | `components/apex/table-shell.tsx` | `TableCard`, `TableScroll`, `TableCardHeader`, `DataChip`, `TABLE_HEAD`, `TABLE_PINNED_HEAD`, `TABLE_FOOT`. Deliberately no toolbar: controls belong in the page header, the card holds rows and only rows. |
 | `components/apex/due-state.tsx` | `dueState`, `DueStateBadge`, `todayKey` — the one due-language, and the server clock every card is passed |
@@ -353,8 +427,8 @@ import the exact name, not the short form.
 | `lib/apex/money.ts` | `formatPence`, `formatPenceShort`, integer pence |
 
 Mortgage cards import dates via `components/apex/mortgage/format.ts`, which
-re-exports from `lib/apex/dates` and adds `pluralMonths` and `formatShare`.
-That is the sanctioned path, not a bypass.
+re-exports from `lib/apex/dates` and adds `pluralMonths`, `spanWords` and
+`formatShare`. That is the sanctioned path, not a bypass.
 
 Read the primitive before designing with it. Compose `components/ui` via the
 `render` prop (Base UI, not Radix), and never hand-patch `components/ui/**`.
