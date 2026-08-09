@@ -1,7 +1,11 @@
 import { Coins } from "lucide-react"
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
-import { MeterSwatch, SegmentMeter } from "@/components/apex/meter"
+import {
+  MeterLegendRow,
+  MeterTotalRow,
+  SegmentMeter,
+} from "@/components/apex/meter"
 import {
   ApexCardFootnote,
   ApexStatCard,
@@ -81,34 +85,20 @@ export function MonthlyCostCard({ mortgage }: { mortgage: Mortgage }) {
           />
           <div className="mt-2.5 space-y-1.5">
             {parts.map((part) => (
-              <div
+              <MeterLegendRow
                 key={part.label}
-                className="flex items-center justify-between gap-3"
-              >
-                <span className="flex min-w-0 items-center gap-2 text-[13px] text-muted-foreground">
-                  <MeterSwatch className={part.color} />
-                  <span className="truncate">{part.label}</span>
-                </span>
-                <span className="shrink-0 text-[13px] font-medium tabular-nums">
-                  {formatPence(part.amount)}
-                </span>
-              </div>
+                swatchClassName={part.color}
+                label={part.label}
+                amount={formatPence(part.amount)}
+              />
             ))}
           </div>
         </>
       )}
 
-      {/* The same costs at the longer range, in the legend's own grammar. The
-          square is an outline because this row is all of the above rather
-          than one slice. */}
+      {/* The same costs at the longer range, in the legend's own grammar. */}
       <ApexCardFootnote asRow>
-        <span className="flex items-center gap-2 text-[13px] text-muted-foreground">
-          <MeterSwatch className="border-[1.5px] border-muted-foreground/50" />
-          Annually
-        </span>
-        <span className="shrink-0 text-[13px] font-medium tabular-nums">
-          {formatPence(total * 12)}
-        </span>
+        <MeterTotalRow label="Annually" amount={formatPence(total * 12)} />
       </ApexCardFootnote>
     </ApexStatCard>
   )

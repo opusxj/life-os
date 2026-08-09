@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ConfirmDialog } from "@/components/apex/confirm-dialog"
+import { MeterHead } from "@/components/apex/meter"
 import { DataProgress } from "@/components/apex/progress"
 import { ApexStatTag } from "@/components/apex/stat-card"
 import { FormError } from "@/components/shared/form-error"
@@ -63,26 +64,29 @@ export function BudgetRow({ budget, tick }: { budget: Budget; tick: number }) {
         style={{ backgroundColor: budget.category.color }}
       />
       <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2">
-          <span className="truncate text-[13px] font-medium">
-            {budget.category.name}
-          </span>
-          <span className="flex shrink-0 items-center gap-2">
-            {over && (
-              <ApexStatTag tint="destructive" className="shrink-0">
+        <MeterHead
+          className="mb-0 items-center"
+          name={budget.category.name}
+          nameClassName="truncate text-[13px] font-medium text-foreground"
+          trailing={
+            over && (
+              <ApexStatTag tint="destructive" className="ml-auto shrink-0">
                 {`${formatPenceShort(budget.spent - budget.amount)} over`}
               </ApexStatTag>
-            )}
-            <span className="text-[13px] tabular-nums">
+            )
+          }
+          amount={
+            <>
               <span className="font-medium">
                 {formatPenceShort(budget.spent)}
               </span>
               <span className="text-muted-foreground">
                 {` of ${formatPenceShort(budget.amount)}`}
               </span>
-            </span>
-          </span>
-        </div>
+            </>
+          }
+          amountClassName="shrink-0 text-[13px] font-normal"
+        />
         <DataProgress
           value={percent}
           color={over ? "var(--destructive)" : budget.category.color}
