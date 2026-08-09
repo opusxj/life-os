@@ -76,10 +76,10 @@ export function GoalCard({
   const percent = Math.floor(fraction * 100)
   const reached = goal.saved >= goal.targetAmount
   const targetLabel = goal.targetOn ? formatMonthYear(goal.targetOn) : null
-  // Same month arithmetic as paceHint, so pill and hint can never disagree
-  const targetPassed = goal.targetOn
-    ? monthsToTarget(goal.targetOn, today) <= 0
-    : false
+  // Day-level, not month-level: a target on the 31st is still ahead on the
+  // 9th, and "Target was August" three weeks early reads as a malfunction.
+  // yyyy-mm-dd compares as it sorts.
+  const targetPassed = goal.targetOn ? goal.targetOn < today : false
   const hint = paceHint(goal, today)
 
   function remove() {
@@ -322,7 +322,12 @@ function paceHint(goal: SavingGoal, today: string): string | null {
   if (!goal.targetOn) return null
   const remaining = goal.targetAmount - goal.saved
   if (remaining <= 0) return null
-  const months = monthsToTarget(goal.targetOn, today)
+  // A target later in the current month still deserves guidance: the whole
+  // remainder is due within it, which is what one month of pace means.
+  const months = Math.max(
+    monthsToTarget(goal.targetOn, today),
+    goal.targetOn >= today ? 1 : 0
+  )
   if (months <= 0) return null
   const perMonth = Math.ceil(remaining / months / 100) * 100
   return `Needs ${formatPenceShort(perMonth)} a month to hit the target.`

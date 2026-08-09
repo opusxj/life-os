@@ -114,8 +114,8 @@ the shape:
   used; each row is the category's own hex with the shared month tick, an
   over-tag, and a red-dimmed fill when blown — visible but calm.
 - **Saving goals:** one card per goal with the **progress grid** — the
-  target divided into 10-40 squares of a round amount ("each square is
-  £250"), filled as savings grow, in the goal's own colour. Chosen over a
+  target divided into squares of a round amount, about 10 to 40 of them
+  ("each square is £250"), filled as savings grow, in the goal's own colour. Chosen over a
   continuous bar because slow money on a bar reads as nothing happening.
   Pills carry percent and target date (a passed target is the neutral
   pill's fact alone); the pace hint ("Needs £260 a month") only exists for

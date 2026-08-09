@@ -28,11 +28,18 @@ export function ProgressGrid({
   const cell = cellSize(target)
   const cells = Math.ceil(target / cell)
   const capped = Math.min(saved, target)
-  const full = Math.floor(capped / cell)
-  // The leading edge: how far into its square the next £ lands
-  const fraction = full < cells ? (capped - full * cell) / cell : 0
 
-  const track = `color-mix(in srgb, ${color} 15%, transparent)`
+  // Each square fills against its own span. The last square usually covers
+  // less than a whole cell (a £35,000 target in £2,000 squares ends on a
+  // £1,000 one), and it must still read full at the target — half-filled
+  // beside a "Goal reached" tag is the grid lying about done.
+  const fill = (index: number) => {
+    const start = index * cell
+    const span = Math.min(cell, target - start)
+    return Math.min(1, Math.max(0, (capped - start) / span))
+  }
+
+  const track = `color-mix(in oklab, ${color} 15%, transparent)`
 
   return (
     <div className={className}>
@@ -41,20 +48,23 @@ export function ProgressGrid({
         aria-label={`${formatPence(saved)} of ${formatPenceShort(target)} saved; each square is ${formatPenceShort(cell)}.`}
         className="flex flex-wrap gap-[3px]"
       >
-        {Array.from({ length: cells }, (_, index) => (
-          <span
-            key={index}
-            className="size-[15px] rounded-[3px]"
-            style={{
-              background:
-                index < full
-                  ? color
-                  : index === full && fraction > 0
-                    ? `linear-gradient(90deg, ${color} ${Math.round(fraction * 100)}%, ${track} ${Math.round(fraction * 100)}%)`
-                    : track,
-            }}
-          />
-        ))}
+        {Array.from({ length: cells }, (_, index) => {
+          const fraction = fill(index)
+          return (
+            <span
+              key={index}
+              className="size-[15px] rounded-[3px]"
+              style={{
+                background:
+                  fraction >= 1
+                    ? color
+                    : fraction > 0
+                      ? `linear-gradient(90deg, ${color} ${Math.round(fraction * 100)}%, ${track} ${Math.round(fraction * 100)}%)`
+                      : track,
+              }}
+            />
+          )
+        })}
       </div>
       <p
         aria-hidden

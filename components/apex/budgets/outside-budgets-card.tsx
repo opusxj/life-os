@@ -36,8 +36,10 @@ export function OutsideBudgetsCard({
   const total = parts.reduce((sum, part) => sum + part.amount, 0)
   if (total <= 0) return null
 
-  const named = parts.filter((part) => part.label !== "No category")
-  const noCategory = parts.find((part) => part.label === "No category")
+  // color === null is the bucket's discriminator (queries.ts), never the
+  // label: a user is free to name a real category "No category".
+  const named = parts.filter((part) => part.color !== null)
+  const noCategory = parts.find((part) => part.color === null)
   const top = named.slice(0, TOP)
   const restTotal = named
     .slice(TOP)
@@ -56,8 +58,13 @@ export function OutsideBudgetsCard({
       </ApexStatValue>
 
       <div className="mt-2.5 space-y-1.5">
-        {top.map((part) => (
-          <Row key={part.label} label={part.label} color={part.color} amount={part.amount} />
+        {top.map((part, index) => (
+          <Row
+            key={index}
+            label={part.label}
+            color={part.color}
+            amount={part.amount}
+          />
         ))}
         {restTotal > 0 && (
           <Row label="Everything else" color={null} amount={restTotal} />

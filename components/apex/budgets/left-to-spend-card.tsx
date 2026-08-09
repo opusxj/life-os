@@ -10,7 +10,7 @@ import {
   ApexStatUnit,
   ApexStatValue,
 } from "@/components/apex/stat-card"
-import { formatPence, formatPenceShort } from "@/lib/apex/money"
+import { formatPenceShort } from "@/lib/apex/money"
 import { cn } from "@/lib/utils"
 
 /**
@@ -56,11 +56,11 @@ export function LeftToSpendCard({
         {over ? (
           <>
             <ApexStatUnit>Over by</ApexStatUnit>{" "}
-            <ApexStatFigure negative>{formatPence(-left)}</ApexStatFigure>
+            <ApexStatFigure negative>{formatPenceShort(-left)}</ApexStatFigure>
           </>
         ) : (
           <>
-            <ApexStatFigure>{formatPence(left)}</ApexStatFigure>{" "}
+            <ApexStatFigure>{formatPenceShort(left)}</ApexStatFigure>{" "}
             <ApexStatUnit>left to spend</ApexStatUnit>
           </>
         )}
@@ -71,7 +71,7 @@ export function LeftToSpendCard({
           name="Spent"
           amount={
             <>
-              <span className="font-medium">{formatPence(spent)}</span>
+              <span className="font-medium">{formatPenceShort(spent)}</span>
               <span className="text-muted-foreground">
                 {` of ${formatPenceShort(budgeted)}`}
               </span>
@@ -89,7 +89,7 @@ export function LeftToSpendCard({
         />
       </div>
 
-      {!over && daysLeft > 0 && (
+      {left > 0 && daysLeft > 0 && (
         <ApexStatHint className="mt-2.5">
           {perDayPounds >= 1
             ? `About £${perDayPounds} a day for the rest of ${monthName}.`
