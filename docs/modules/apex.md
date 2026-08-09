@@ -97,8 +97,32 @@ spec; the shape:
 
 ### Budgets & Savings
 
-- **Budgets (top):** per-category monthly envelopes — bar per category: spent vs. `amount`, current month. Over-budget state is visible but calm, not shaming.
-- **Saving goals (bottom):** one card per goal — the **progress grid** (target divided into cells; cells fill as savings grow), amount saved / target, optional target date with an on-track hint. Quick action: **Top up** (drawer: from-account + amount → creates a transfer to the linked account, or bumps `saved_amount` when unlinked). No redirects.
+Redesigned to the mortgage bar (2026-08-09). The shipped page is the spec;
+the shape:
+
+- **Left to spend** (the page's terracotta headline; renames "Headroom",
+  which taught nothing): what remains of the envelopes this month, a
+  spent-of-budgeted bar with the month-elapsed tick, and an "About £X a day
+  for the rest of August" hint. Over state leads with the consequence and
+  drops the hint; the rows below locate the damage.
+- **Outside your budgets** (sky, the honesty card): this month's spend in
+  categories with no envelope, plus a "No category" bucket — the money the
+  old page silently filtered away. Identity-dot rows (top three + a slate
+  "Everything else"), footnote pointing at New budget. Steps aside at zero
+  and Left to spend takes the row.
+- **Envelope rows:** blown envelopes first (worst first), then by share
+  used; each row is the category's own hex with the shared month tick, an
+  over-tag, and a red-dimmed fill when blown — visible but calm.
+- **Saving goals:** one card per goal with the **progress grid** — the
+  target divided into 10-40 squares of a round amount ("each square is
+  £250"), filled as savings grow, in the goal's own colour. Chosen over a
+  continuous bar because slow money on a bar reads as nothing happening.
+  Pills carry percent and target date (a passed target is the neutral
+  pill's fact alone); the pace hint ("Needs £260 a month") only exists for
+  a future, unmet target. Quick action: **Top up** (drawer: from-account +
+  amount → transfer to the linked account, or bumps `saved_amount` when
+  unlinked). No redirects.
+- No visible page title: the page opens on its sections (sr-only h1).
 
 ### Mortgage
 

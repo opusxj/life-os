@@ -1,26 +1,14 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
-import { PiggyBank, PieChart, Wallet } from "lucide-react"
+import { PiggyBank, PieChart } from "lucide-react"
 
-import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
-import {
-  ApexCardGrid,
-  ApexPage,
-  ApexPageHeader,
-  ApexSection,
-} from "@/components/apex/page"
+import { ApexCardGrid, ApexPage, ApexSection } from "@/components/apex/page"
 import { BudgetRow } from "@/components/apex/budgets/budget-row"
 import { GoalCard } from "@/components/apex/budgets/goal-card"
 import { NewGoalButton } from "@/components/apex/budgets/goal-drawer"
+import { LeftToSpendCard } from "@/components/apex/budgets/left-to-spend-card"
 import { NewBudgetDialog } from "@/components/apex/budgets/new-budget-dialog"
-import { DataProgress } from "@/components/apex/progress"
-import {
-  ApexStatCard,
-  ApexStatFigure,
-  ApexStatHint,
-  ApexStatValue,
-} from "@/components/apex/stat-card"
-import { MetaDot } from "@/components/shared/meta-dot"
+import { OutsideBudgetsCard } from "@/components/apex/budgets/outside-budgets-card"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   Empty,
@@ -29,8 +17,8 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
+import { formatMonth, parseDay, todayKey } from "@/lib/apex/dates"
 import { getBudgetsPageData } from "@/lib/apex/budgets/queries"
-import { formatPenceShort } from "@/lib/apex/money"
 import { getWorkspace } from "@/lib/data/workspace"
 import { cn } from "@/lib/utils"
 
@@ -49,24 +37,38 @@ export default async function BudgetsPage() {
     0
   )
   const totalSpent = data.budgets.reduce((sum, budget) => sum + budget.spent, 0)
-  const headroom = totalBudgeted - totalSpent
-  const over = headroom < 0
-  const spentPercent =
-    totalBudgeted > 0 ? Math.min(100, (totalSpent / totalBudgeted) * 100) : 0
 
-  // Pace marker: how far through the month we are, resolved server-side so
-  // every budget bar shares the same tick.
-  const now = new Date()
+  // One server clock for the whole page: the month name, the pace tick on
+  // every bar, and the goal pills all read the same day.
+  const today = todayKey()
+  const now = parseDay(today)
+  const monthName = formatMonth(now)
   const daysInMonth = new Date(
     now.getFullYear(),
     now.getMonth() + 1,
     0
   ).getDate()
   const monthTick = Math.round((now.getDate() / daysInMonth) * 100)
+  const daysLeft = daysInMonth - now.getDate()
+
+  // Attention lands where it's needed without scrolling: blown envelopes
+  // first (worst first), then by how used each one is.
+  const budgets = [...data.budgets].sort((a, b) => {
+    const aOver = a.spent - a.amount
+    const bOver = b.spent - b.amount
+    if (aOver > 0 || bOver > 0) return bOver - aOver
+    return b.spent / b.amount - a.spent / a.amount
+  })
+
+  const hasOutside =
+    data.outsideBudgets.reduce((sum, part) => sum + part.amount, 0) > 0
 
   return (
     <ApexPage>
-      <ApexPageHeader title="Budgets & Savings" />
+      {/* The band a title would fill carries nothing no card owns, so the
+          page opens on its first section (design skill: page headers earn
+          their space or go) */}
+      <h1 className="sr-only">Budgets & savings</h1>
 
       <ApexSection
         label="Budgets"
@@ -80,52 +82,32 @@ export default async function BudgetsPage() {
               </EmptyMedia>
               <EmptyTitle>No budgets yet</EmptyTitle>
               <EmptyDescription>
-                Give a category a monthly envelope and watch the bar.
+                Give a category a monthly envelope. Spending you log counts
+                against it.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
         ) : (
           <>
-            <ApexStatCard
-              label="Headroom"
-              icon={Wallet}
-              iconClassName={ANCHOR_TINTS.primary}
-            >
-              <ApexStatValue className={cn(over && "text-destructive")}>
-                {over ? (
-                  <>
-                    Over by{" "}
-                    <ApexStatFigure negative>
-                      {formatPenceShort(-headroom)}
-                    </ApexStatFigure>
-                  </>
-                ) : (
-                  <>
-                    <ApexStatFigure>{formatPenceShort(headroom)}</ApexStatFigure>{" "}
-                    left
-                  </>
-                )}
-              </ApexStatValue>
-              <DataProgress
-                value={spentPercent}
-                color={over ? "var(--destructive)" : "var(--primary)"}
-                dim={over}
-                tick={monthTick}
-                tickLabel={`${monthTick}% through the month`}
-                aria-label="Spent of budgeted this month"
-                className="mt-2"
+            <div className="grid gap-4 lg:grid-cols-3">
+              <LeftToSpendCard
+                spent={totalSpent}
+                budgeted={totalBudgeted}
+                monthName={monthName}
+                monthTick={monthTick}
+                daysLeft={daysLeft}
+                className={cn(hasOutside ? "lg:col-span-2" : "lg:col-span-3")}
               />
-              <ApexStatHint className="mt-1.5">
-                {`${formatPenceShort(totalSpent)} of ${formatPenceShort(totalBudgeted)}`}
-                <MetaDot />
-                {data.monthLabel}
-              </ApexStatHint>
-            </ApexStatCard>
+              <OutsideBudgetsCard
+                parts={data.outsideBudgets}
+                monthName={monthName}
+              />
+            </div>
 
             <Card size="sm" className="py-1">
               <CardContent className="px-1">
                 <div className="grid gap-x-6 xl:grid-cols-2">
-                  {data.budgets.map((budget) => (
+                  {budgets.map((budget) => (
                     <BudgetRow
                       key={budget.id}
                       budget={budget}
@@ -151,7 +133,7 @@ export default async function BudgetsPage() {
               </EmptyMedia>
               <EmptyTitle>No saving goals yet</EmptyTitle>
               <EmptyDescription>
-                Name the thing, set a target, fill the grid.
+                Name it, set a target, and each top up fills a square.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -163,6 +145,7 @@ export default async function BudgetsPage() {
                 goal={goal}
                 accounts={data.accounts}
                 savingsAccounts={data.savingsAccounts}
+                today={today}
               />
             ))}
           </ApexCardGrid>

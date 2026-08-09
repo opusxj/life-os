@@ -15,7 +15,7 @@ Severities: **fix-now** = cheap and unambiguous, batch into cleanup commits · *
 - useActionState close-and-refresh glue duplicated in ~12 forms
 - Query modules disagree on error handling: one throws, six swallow into empty/zero UI
 - todayKey lives in components/apex/due-state.tsx, and the local-date-key function exists in four copies
-- Client-clock violations: bank-card expiryState and goal-card paceHint/monthsToTarget
+- Client-clock violations: bank-card expiryState (goal-card's half landed with the budgets redesign)
 - lib/spaces mutations have the same silent-no-op gap the Apex actions fixed
 - Soft-delete stamping is implemented five times
 - data-standards.md is missing two standards the migrations now rely on: composite (id, space_id) child FKs and the update-guard trigger
@@ -24,7 +24,7 @@ Severities: **fix-now** = cheap and unambiguous, batch into cleanup commits · *
 - Transfer's sky colour is a raw hex repeated in three places, and "sky = transfer" is not in the vocabulary
 - Card grid gap unreconciled: skill says gap-4, ApexCardGrid and two hand-written grids ship gap-3.5
 
-**note (25)**
+**note (23)**
 
 - Runtime color-mix tint recipes drift across four chip components
 - Empty-state border drift: budgets borders its Empty, every other surface renders it bare
@@ -48,11 +48,15 @@ Severities: **fix-now** = cheap and unambiguous, batch into cleanup commits · *
 - Bank card parses dates with raw new Date instead of parseDay
 - Cashflow legend hand-rolls its swatch instead of using MeterSwatch
 - Sidebar footer's "+£x this month" is a borderline orphaned delta
-- Budgets Headroom card has no provenance line
-- Goal card states the passed-target fact twice
 - Clean sweeps worth recording: em dashes, hard-written dots, unbuilt-behaviour claims
 
 ## Resolved
+
+**Budgets redesign — landed 2026-08-09:**
+
+- ~~Budgets Headroom card has no provenance line~~ (the card is now Left to spend, with "After the spending you've logged this August" doing the provenance and teaching work)
+- ~~Goal card states the passed-target fact twice~~ (paceHint returns null on a passed target; the neutral pill owns the fact)
+- goal-card's half of the client-clock ticket (today threaded from the page; bank-card's half stays open)
 
 **Meter primitives precursor — landed 2026-08-09 on `refactor/life-39-meter-primitives`:**
 
@@ -167,13 +171,13 @@ CONFIRMED and expanded. todayKey (due-state.tsx:70-74) is a pure server-clock he
 
 **Do:** Move todayKey into lib/apex/dates.ts and add a `dateKey(date: Date): string` sibling (todayKey = dateKey(new Date())). Delete the two private toDateKey copies and serverToday, importing from lib/apex/dates instead. Update the five todayKey import sites and .claude/skills/design/SKILL.md line 422, which documents todayKey as living in due-state.tsx.
 
-### Client-clock violations: bank-card expiryState and goal-card paceHint/monthsToTarget
+### Client-clock violations: bank-card expiryState
 
-Files: `components/apex/accounts/bank-card.tsx` · `components/apex/budgets/goal-card.tsx`
+Files: `components/apex/accounts/bank-card.tsx`
 
-CONFIRMED. Both files are "use client" and read new Date() directly: bank-card.tsx:20-29 (expiryState decides the Expired/Expires-soon pill from the browser clock) and goal-card.tsx:369-376 (monthsToTarget, feeding paceHint at 358-366 and the targetPassed pill at 82-84). This violates the documented contract in due-state.tsx and mortgage/status.ts ("pass a server-resolved today so SSR and hydration agree") — a client clock that disagrees with the server produces hydration mismatches and pills that flip depending on the visitor's device clock. Every mortgage card already does this correctly via a today prop. transaction-dialog.tsx:553-563 (localToday/localDaysAgo) also reads the client clock but only to seed a date input default, which is arguably the user's honest calendar day — noted separately, no change forced.
+CONFIRMED. The file is "use client" and reads new Date() directly: bank-card.tsx:20-29 (expiryState decides the Expired/Expires-soon pill from the browser clock). This violates the documented contract in due-state.tsx and mortgage/status.ts ("pass a server-resolved today so SSR and hydration agree"). goal-card's identical violation was fixed in the 2026-08-09 budgets redesign (today threaded from its page, the component's only consumer). transaction-dialog.tsx:553-563 (localToday/localDaysAgo) also reads the client clock but only to seed a date input default, which is arguably the user's honest calendar day — noted separately, no change forced.
 
-**Do:** Thread `today: string` (from todayKey() in the page server components) through accounts-view → BankCard and budgets page/overview → GoalCard, then compute expiryState(expiresOn, today) and monthsToTarget(targetOn, today) against parseDay(today) instead of new Date(). Verify in the running browser that the Expires-soon and Target-was pills still render.
+**Do:** Thread `today: string` (from todayKey() in the page server component) through accounts-view → BankCard, then compute expiryState(expiresOn, today) against parseDay(today) instead of new Date(). Verify in the running browser that the Expires-soon pill still renders. Folds naturally into the accounts redesign.
 
 ### lib/spaces mutations have the same silent-no-op gap the Apex actions fixed
 
@@ -409,22 +413,6 @@ Files: `components/apex/sidebar/panel.tsx`
 panel.tsx:126 renders `${monthNet > 0 ? "+" : ""}${formatPenceShort(monthNet)} this month` under the "Net position" total. The copy rule: '"+£227.20" fails (than what?)'. "this month" names the period but not the subject (net of income minus spending). It reads acceptably under the Net position heading, which is why this is a note rather than a fix, but a first-time reader can take it as the change in total balance, which transfers and adjustments make untrue.
 
 **Do:** If touching the sidebar, consider "Net +£350 this month" or a title/aria clarification tying it to income-minus-spending; verify against how monthNet is computed in lib/apex/sidebar/queries.ts before rewording.
-
-### Budgets Headroom card has no provenance line
-
-Files: `app/(shell)/apex/budgets/page.tsx`
-
-app/(shell)/apex/budgets/page.tsx:88-91 renders ApexStatCard label="Headroom" with no description, while card grammar makes provenance the second element of every stat card and every other stat card audited carries one. The base hint (line 106-110, "£spent of £totalBudgeted · August") partially compensates but sits at the bottom, and "Headroom" is a term this audience may not know (memory: cards must teach the term).
-
-**Do:** Add a description that both sources and teaches, e.g. description="What's left of your budgets this month" — and consider whether the bottom hint's month fact then belongs in it (say each fact once).
-
-### Goal card states the passed-target fact twice
-
-Files: `components/apex/budgets/goal-card.tsx`
-
-When a target date has passed and the goal is unmet, goal-card.tsx renders both the neutral pill "Target was Mar 2027" (line 192) and the hint "The target date has passed." (line 363 via paceHint). The skill: 'Say each fact once per page' and a supporting line only 'where the graphic cannot speak'. The pill already carries the fact with more information (the date).
-
-**Do:** Make paceHint return null when monthsToTarget <= 0 (the pill's targetPassed branch already covers it), deleting the "The target date has passed." sentence.
 
 ### Clean sweeps worth recording: em dashes, hard-written dots, unbuilt-behaviour claims
 

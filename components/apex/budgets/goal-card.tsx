@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { MoreHorizontal, Pencil, PiggyBank, Plus, Trash2 } from "lucide-react"
 
 import { ConfirmDialog } from "@/components/apex/confirm-dialog"
-import { DataProgress } from "@/components/apex/progress"
+import { ProgressGrid } from "@/components/apex/budgets/progress-grid"
 import {
   ApexStatCard,
   ApexStatFigure,
@@ -54,10 +54,14 @@ export function GoalCard({
   goal,
   accounts,
   savingsAccounts,
+  today,
 }: {
   goal: SavingGoal
   accounts: AccountOption[]
   savingsAccounts: AccountOption[]
+  /** yyyy-mm-dd resolved server-side, so the target pills can't flip on the
+   *  visitor's clock (the client-clock trap in the audit) */
+  today: string
 }) {
   const router = useRouter()
   const [topUpOpen, setTopUpOpen] = React.useState(false)
@@ -74,9 +78,9 @@ export function GoalCard({
   const targetLabel = goal.targetOn ? formatMonthYear(goal.targetOn) : null
   // Same month arithmetic as paceHint, so pill and hint can never disagree
   const targetPassed = goal.targetOn
-    ? monthsToTarget(goal.targetOn) <= 0
+    ? monthsToTarget(goal.targetOn, today) <= 0
     : false
-  const hint = paceHint(goal)
+  const hint = paceHint(goal, today)
 
   function remove() {
     startTransition(async () => {
@@ -96,7 +100,7 @@ export function GoalCard({
       description={
         goal.account
           ? `From your ${goal.account.name} balance`
-          : "From your top ups"
+          : "From the top ups you've logged"
       }
       icon={PiggyBank}
       iconColor={goal.color}
@@ -146,10 +150,10 @@ export function GoalCard({
         <ApexStatUnit>{`of ${formatPenceShort(goal.targetAmount)}`}</ApexStatUnit>
       </ApexStatValue>
 
-      <DataProgress
-        value={fraction * 100}
+      <ProgressGrid
+        target={goal.targetAmount}
+        saved={goal.saved}
         color={goal.color}
-        aria-label={`${percent}% of target saved`}
         className="mt-3"
       />
 
@@ -311,22 +315,23 @@ export function TopUpDrawer({
 /**
  * The pace sentence: what the goal needs each month to land on time. The
  * target date itself lives in the target pill, so this line never repeats it;
- * "Goal reached" is the emerald tag's job, so a met goal returns null.
+ * "Goal reached" is the emerald tag's job, and a passed target is the
+ * neutral pill's, so both return null rather than stating a fact twice.
  */
-function paceHint(goal: SavingGoal): string | null {
+function paceHint(goal: SavingGoal, today: string): string | null {
   if (!goal.targetOn) return null
   const remaining = goal.targetAmount - goal.saved
   if (remaining <= 0) return null
-  const months = monthsToTarget(goal.targetOn)
-  if (months <= 0) return "The target date has passed."
+  const months = monthsToTarget(goal.targetOn, today)
+  if (months <= 0) return null
   const perMonth = Math.ceil(remaining / months / 100) * 100
   return `Needs ${formatPenceShort(perMonth)} a month to hit the target.`
 }
 
 /** Whole months from this month to the target's month; 0 or less once passed */
-function monthsToTarget(targetOn: string): number {
+function monthsToTarget(targetOn: string, today: string): number {
   const target = parseDay(targetOn)
-  const now = new Date()
+  const now = parseDay(today)
   return (
     (target.getFullYear() - now.getFullYear()) * 12 +
     (target.getMonth() - now.getMonth())

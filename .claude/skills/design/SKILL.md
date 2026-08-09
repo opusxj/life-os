@@ -120,6 +120,7 @@ BI restraint. Thin hairline marks read as lifeless here.
 | A span of time measured against a deadline | `FinishTrack` (mortgage/finish-track.tsx), never a second hand-rolled ruler |
 | Discrete tiers you move between | a staircase, one step per tier |
 | Amounts landing on a calendar | stacked month columns (subscriptions/months-ahead-card.tsx) |
+| Slow progress toward a big target | `ProgressGrid` (budgets/progress-grid.tsx), squares of a round amount |
 
 Parts that sum to a whole are `SegmentMeter`; quantities that do not sum are a
 `DataProgress` each. Every bar of either family takes `MeterHead` above it, and
@@ -418,6 +419,15 @@ reader already holds: a rung says "loans up to £139,500" on hover, because
   misleads, and states the calm fact when there is no drama ("No heavy months
   ahead"). Projections round to the pound; the exact figures live in the
   table.
+- The goal progress grid over the continuous bar (budgets redesign,
+  2026-08-09, "Let's go with A just for the revamp"): slow money on a bar is
+  visually motionless and reads as nothing happening; squares of a round
+  amount ("each square is £250") make every top up an event. DataProgress
+  stays the display for month-scale progress (envelopes, the month tick);
+  the grid owns the year-scale targets. Ratified with it: the blown-envelope
+  bar goes red-dimmed whole (red is money-bad; a full category-coloured bar
+  reads as done), and the honesty card ("Outside your budgets") wears sky,
+  because unbudgeted is unwatched, not bad.
 - Price creep beside the calendar (2026-08-09, "Option B makes most sense"):
   the page's two forward-looking cards share a 2+1 row rather than widening
   the ratified three-card headline row or polluting the Subscriptions card
