@@ -268,18 +268,28 @@ export function RecurringTable({
               )
             })}
           </TableBody>
-          <TableFooter className="bg-transparent">
-            <TableRow className={cn(TABLE_FOOT, "hover:bg-transparent")}>
-              <TableCell className="py-2.5 pl-3 text-[12px] text-muted-foreground">
+          <TableFooter className="border-t-0 bg-transparent font-normal">
+            <TableRow className="hover:bg-transparent">
+              <TableCell
+                className={cn(
+                  TABLE_FOOT,
+                  "py-2.5 pl-3 text-[12px] text-muted-foreground"
+                )}
+              >
                 Scaled to a month
               </TableCell>
-              <TableCell className="hidden md:table-cell" />
-              <TableCell />
-              <TableCell className="hidden md:table-cell" />
-              <TableCell className="py-2.5 pr-2 text-right font-medium whitespace-nowrap tabular-nums">
+              <TableCell className={cn(TABLE_FOOT, "hidden md:table-cell")} />
+              <TableCell className={TABLE_FOOT} />
+              <TableCell className={cn(TABLE_FOOT, "hidden md:table-cell")} />
+              <TableCell
+                className={cn(
+                  TABLE_FOOT,
+                  "py-2.5 pr-2 text-right font-medium whitespace-nowrap tabular-nums"
+                )}
+              >
                 {formatPence(monthlyTotal)}
               </TableCell>
-              <TableCell />
+              <TableCell className={TABLE_FOOT} />
             </TableRow>
           </TableFooter>
         </Table>

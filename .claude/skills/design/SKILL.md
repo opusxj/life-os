@@ -119,6 +119,7 @@ BI restraint. Thin hairline marks read as lifeless here.
 | Proportion that *is* the card's point | `ArcGauge` (the feature display) |
 | A span of time measured against a deadline | `FinishTrack` (mortgage/finish-track.tsx), never a second hand-rolled ruler |
 | Discrete tiers you move between | a staircase, one step per tier |
+| Amounts landing on a calendar | stacked month columns (subscriptions/months-ahead-card.tsx) |
 
 Parts that sum to a whole are `SegmentMeter`; quantities that do not sum are a
 `DataProgress` each. Every bar of either family takes `MeterHead` above it, and
@@ -403,6 +404,20 @@ reader already holds: a rung says "loans up to £139,500" on hover, because
 - A total row in the legend's own grammar instead of a prose closing line
   ("the 'a year all in' is a bit weird"): outline swatch (it is all of the
   above, not one slice), label left, amount right, pinned to the base.
+- Money leads, the calendar follows (subscriptions redesign, 2026-08-09).
+  Three structures were mocked: money-led with a months-ahead card, a
+  calendar-led no-title page, and a graphics-only upgrade of the old four
+  cards. The money-led one won ("this is a good approach and does match what
+  we have"), and the defaults were ratified with it: all-violet subscription
+  bars over per-category colours, one interleaved soonest-first table over a
+  kind split, and the count living in the page header alone while the table's
+  total moved from header furniture to a real foot.
+- The months-ahead columns: a projection card plots real occurrences on real
+  months (a yearly premium is one tall column, never a twelfth smeared
+  everywhere), starts at the next whole month because a part-spent month
+  misleads, and states the calm fact when there is no drama ("No heavy months
+  ahead"). Projections round to the pound; the exact figures live in the
+  table.
 
 ## 8. Where the system lives
 

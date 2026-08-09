@@ -89,6 +89,14 @@ export function formatMonth(date: string | Date): string {
   return MONTH_LONG.format(value)
 }
 
+/** "2026-09-02" → "Sept". Chart axes only — the one surface allowed a bare
+ *  short month (design skill: axis cells are a sanctioned shortening). */
+export function formatMonthShort(date: string | Date): string {
+  const value = resolve(date)
+  if (!value) return "—"
+  return MONTH_SHORT.format(value)
+}
+
 /** "2027-03-31" → "March 2027" */
 export function formatMonthYear(date: string | Date): string {
   const value = resolve(date)
