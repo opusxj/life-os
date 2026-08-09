@@ -26,7 +26,11 @@ export function ApexPage({
         // Capped like the reference dashboards: nothing on an Apex page is
         // ever full-bleed, because tick meters and charts scale badly wide
         "mx-auto w-full max-w-[1100px] p-5",
-        fill ? "flex h-full min-h-0 flex-col gap-4" : "space-y-6 pb-10",
+        // self-start, because main is a flex row: stretched to the viewport,
+        // a long page overflows its own box and the bottom padding never
+        // renders. Sized to content, the page ends with the same 20px it
+        // starts with.
+        fill ? "flex h-full min-h-0 flex-col gap-4" : "space-y-6 self-start",
         className
       )}
       {...props}
