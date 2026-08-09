@@ -418,6 +418,16 @@ reader already holds: a rung says "loans up to £139,500" on hover, because
   misleads, and states the calm fact when there is no drama ("No heavy months
   ahead"). Projections round to the pound; the exact figures live in the
   table.
+- Price creep beside the calendar (2026-08-09, "Option B makes most sense"):
+  the page's two forward-looking cards share a 2+1 row rather than widening
+  the ratified three-card headline row or polluting the Subscriptions card
+  with a second question. The creep card lists risers against the first price
+  ever paid: red deltas in the card's one base (per month), the real charges
+  in an 11px mechanism line ("£15.99 to £17.99, from 10th September"), the
+  annual total in the footnote. No risers, no card — the calendar takes the
+  row back, because no news is the good state, not a grey card. Paused rows
+  dim to 60%, sink below the live checklist, and leave every live answer on
+  the page.
 
 ## 8. Where the system lives
 

@@ -86,6 +86,9 @@ export async function getOverviewData(spaceId: string): Promise<OverviewData> {
   horizon.setDate(horizon.getDate() + 7)
   const horizonKey = toDateKey(horizon)
 
+  // Paused items are not due and never will be until resumed
+  const activePayments = subsData.payments.filter((payment) => !payment.paused)
+
   return {
     accounts: accountRows,
     totalBalance: accountRows.reduce(
@@ -97,13 +100,12 @@ export async function getOverviewData(spaceId: string): Promise<OverviewData> {
       .sort((a, b) => b.spent - a.spent)
       .slice(0, 5),
     goals: budgetsData.goals,
-    dueSoon: subsData.payments.filter(
+    dueSoon: activePayments.filter(
       (payment) => payment.nextDueOn <= horizonKey
     ),
     // Payments arrive soonest-first, so the first one past the horizon is next
     nextUp:
-      subsData.payments.find((payment) => payment.nextDueOn > horizonKey) ??
-      null,
+      activePayments.find((payment) => payment.nextDueOn > horizonKey) ?? null,
     payAccounts: subsData.accounts,
     goalAccounts: budgetsData.accounts,
     mortgages,

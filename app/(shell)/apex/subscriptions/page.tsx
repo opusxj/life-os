@@ -7,6 +7,7 @@ import { AddRecurringButton } from "@/components/apex/subscriptions/add-recurrin
 import { DueNextCard } from "@/components/apex/subscriptions/due-next-card"
 import { MonthsAheadCard } from "@/components/apex/subscriptions/months-ahead-card"
 import { OutgoingsCard } from "@/components/apex/subscriptions/outgoings-card"
+import { PriceCreepCard } from "@/components/apex/subscriptions/price-creep-card"
 import { RecurringTable } from "@/components/apex/subscriptions/recurring-table"
 import { SubscriptionCostsCard } from "@/components/apex/subscriptions/subscription-costs-card"
 import { ApexPage, ApexPageHeader } from "@/components/apex/page"
@@ -19,8 +20,12 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import {
+  lastPaidFromStamps,
+  priceRisers,
+} from "@/lib/apex/subscriptions/history"
+import {
   annualPence,
-  getRecurringLastPaid,
+  getRecurringPaymentStamps,
   getSubscriptionsPageData,
   monthlyPence,
 } from "@/lib/apex/subscriptions/queries"
@@ -35,26 +40,33 @@ export default async function SubscriptionsPage() {
   if (!workspace) redirect("/sign-in")
 
   const spaceId = workspace.activeSpace.id
-  const [{ payments, accounts, categories }, lastPaidByPaymentId] =
-    await Promise.all([
-      getSubscriptionsPageData(spaceId),
-      getRecurringLastPaid(spaceId),
-    ])
+  const [{ payments, accounts, categories }, stamps] = await Promise.all([
+    getSubscriptionsPageData(spaceId),
+    getRecurringPaymentStamps(spaceId),
+  ])
+  const lastPaidByPaymentId = lastPaidFromStamps(stamps)
+  const risers = priceRisers(payments, stamps)
   const today = todayKey()
-  const billsMonthly = payments
+  // Paused items keep their table row but leave every live answer: the cards
+  // and the foot state what actually leaves the account right now.
+  const active = payments.filter((payment) => !payment.paused)
+  const billsMonthly = active
     .filter((payment) => payment.kind === "bill")
     .reduce((sum, payment) => sum + monthlyPence(payment.amount, payment.cadence), 0)
-  const subscriptionsMonthly = payments
+  const subscriptionsMonthly = active
     .filter((payment) => payment.kind === "subscription")
     .reduce((sum, payment) => sum + monthlyPence(payment.amount, payment.cadence), 0)
-  const annualTotal = payments.reduce(
+  const annualTotal = active.reduce(
     (sum, payment) => sum + annualPence(payment.amount, payment.cadence),
     0
   )
-  const rows = payments.map((payment) => ({
-    ...payment,
-    monthly: monthlyPence(payment.amount, payment.cadence),
-  }))
+  // Paused rows sink below the live checklist, dimmed, whatever their date
+  const rows = [...active, ...payments.filter((payment) => payment.paused)].map(
+    (payment) => ({
+      ...payment,
+      monthly: monthlyPence(payment.amount, payment.cadence),
+    })
+  )
 
   const addButton = (
     <AddRecurringButton
@@ -93,11 +105,24 @@ export default async function SubscriptionsPage() {
               subscriptionsMonthly={subscriptionsMonthly}
               annualTotal={annualTotal}
             />
-            <DueNextCard payments={payments} today={today} />
-            <SubscriptionCostsCard payments={payments} />
+            <DueNextCard payments={active} today={today} />
+            <SubscriptionCostsCard payments={active} />
           </div>
 
-          <MonthsAheadCard payments={payments} today={today} />
+          {/* Creep steps aside when nothing has risen and the calendar takes
+              the row back: no news is the good state, not a grey card. */}
+          {risers.length > 0 ? (
+            <div className="grid gap-4 lg:grid-cols-3">
+              <MonthsAheadCard
+                className="lg:col-span-2"
+                payments={active}
+                today={today}
+              />
+              <PriceCreepCard risers={risers} />
+            </div>
+          ) : (
+            <MonthsAheadCard payments={active} today={today} />
+          )}
 
           <RecurringTable
             payments={rows}

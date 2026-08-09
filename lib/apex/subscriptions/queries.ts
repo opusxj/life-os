@@ -14,6 +14,8 @@ export type RecurringPayment = {
   nextDueOn: string
   /** Intended day of month (1-31); the advance rule rebuilds from this */
   anchorDay: number | null
+  /** metadata.paused — kept in the table, excluded from every live answer */
+  paused: boolean
   accountId: string | null
   accountName: string | null
   categoryId: string | null
@@ -51,7 +53,7 @@ export async function getSubscriptionsPageData(
       supabase
         .from("recurring_payments")
         .select(
-          "id, name, kind, amount, cadence, next_due_on, anchor_day, account_id, category_id"
+          "id, name, kind, amount, cadence, next_due_on, anchor_day, account_id, category_id, metadata"
         )
         .eq("space_id", spaceId)
         .is("deleted_at", null)
@@ -92,6 +94,7 @@ export async function getSubscriptionsPageData(
       cadence: toCadence(row.cadence),
       nextDueOn: row.next_due_on,
       anchorDay: row.anchor_day,
+      paused: isRecurringPaused(row.metadata),
       accountId: row.account_id,
       accountName: account?.name ?? null,
       categoryId: row.category_id,
@@ -104,20 +107,30 @@ export async function getSubscriptionsPageData(
   return { payments, accounts, categories }
 }
 
+/** One Mark paid record: what was actually charged, when, for which item. */
+export type PaymentStamp = {
+  paymentId: string
+  /** yyyy-mm-dd */
+  occurredOn: string
+  /** pence actually paid */
+  amount: number
+}
+
 /**
- * Latest Mark paid per item (yyyy-mm-dd), from the transactions it stamps.
- * Its own fetch rather than part of getSubscriptionsPageData, because the
- * overview reuses that function for its due list and must not inherit a
- * ledger scan it never reads. Newest first, so the first row seen per id is
- * the latest; the cap covers years of household history.
+ * Every Mark paid stamp for the space, newest first. Its own fetch rather
+ * than part of getSubscriptionsPageData, because the overview reuses that
+ * function for its due list and must not inherit a ledger scan it never
+ * reads. One query feeds both the table's Last paid column and the price
+ * history (lib/apex/subscriptions/history.ts); the cap covers years of
+ * household history.
  */
-export async function getRecurringLastPaid(
+export async function getRecurringPaymentStamps(
   spaceId: string
-): Promise<Record<string, string>> {
+): Promise<PaymentStamp[]> {
   const supabase = await createServerSupabase()
   const { data } = await supabase
     .from("transactions")
-    .select("recurring_payment_id, occurred_on")
+    .select("recurring_payment_id, occurred_on, amount")
     .eq("space_id", spaceId)
     .not("recurring_payment_id", "is", null)
     .is("deleted_at", null)
@@ -125,13 +138,17 @@ export async function getRecurringLastPaid(
     .order("created_at", { ascending: false })
     .limit(1000)
 
-  const lastPaid: Record<string, string> = {}
-  for (const row of data ?? []) {
-    if (row.recurring_payment_id && !(row.recurring_payment_id in lastPaid)) {
-      lastPaid[row.recurring_payment_id] = row.occurred_on
-    }
-  }
-  return lastPaid
+  return (data ?? []).flatMap((row) =>
+    row.recurring_payment_id
+      ? [
+          {
+            paymentId: row.recurring_payment_id,
+            occurredOn: row.occurred_on,
+            amount: row.amount,
+          },
+        ]
+      : []
+  )
 }
 
 const PERIODS_PER_MONTH: Record<RecurringCadence, number> = {
@@ -165,4 +182,16 @@ function toCadence(value: string): RecurringCadence {
   return value === "weekly" || value === "quarterly" || value === "yearly"
     ? value
     : "monthly"
+}
+
+/** The 80%-rule pause flag. Anything but a literal true means active, so a
+ *  hand-edited or missing metadata object can never silently pause a bill.
+ *  Exported for the surfaces that query recurring_payments directly. */
+export function isRecurringPaused(metadata: unknown): boolean {
+  return (
+    typeof metadata === "object" &&
+    metadata !== null &&
+    !Array.isArray(metadata) &&
+    (metadata as Record<string, unknown>).paused === true
+  )
 }

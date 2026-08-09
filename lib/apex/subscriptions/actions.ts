@@ -1,9 +1,14 @@
 "use server"
 
+import { todayKey } from "@/lib/apex/dates"
 import { parsePoundsToPence } from "@/lib/apex/money"
 import { revalidateApex } from "@/lib/apex/revalidate"
 import { friendlyDbError } from "@/lib/supabase/errors"
 import { createServerSupabase } from "@/lib/supabase/server"
+import type { Json } from "@/lib/supabase/types"
+
+import type { RecurringCadence } from "./queries"
+import { advance } from "./schedule"
 
 export type RecurringFormState =
   { error?: string; success?: boolean } | undefined
@@ -96,6 +101,60 @@ export async function markRecurringPaid(
     ...(accountId ? { pay_account: accountId } : {}),
   })
   if (error) return { error: friendlyDbError(error.message) }
+  revalidateApex()
+  return {}
+}
+
+/**
+ * Pause keeps the row and its history but removes the item from every live
+ * answer: totals, due list, projections, badges. Resume rolls a stale due
+ * date forward to the first occurrence on or after today via the schedule's
+ * anchor rule, so the item starts again on its usual day instead of
+ * resurfacing with a pile of phantom overdue payments; a still-future date
+ * is kept as it is. The flag is metadata (80% rule), merged so keys this
+ * action doesn't own pass through untouched.
+ */
+export async function setRecurringPaused(
+  paymentId: string,
+  paused: boolean
+): Promise<{ error?: string }> {
+  const supabase = await createServerSupabase()
+  const { data: existing } = await supabase
+    .from("recurring_payments")
+    .select("metadata, cadence, next_due_on, anchor_day")
+    .eq("id", paymentId)
+    .is("deleted_at", null)
+    .maybeSingle()
+  if (!existing) return { error: "That payment was cancelled or removed." }
+
+  const metadata: Record<string, Json | undefined> =
+    typeof existing.metadata === "object" &&
+    existing.metadata !== null &&
+    !Array.isArray(existing.metadata)
+      ? { ...existing.metadata }
+      : {}
+  if (paused) metadata["paused"] = true
+  else delete metadata["paused"]
+
+  const values: { metadata: Json; next_due_on?: string } = { metadata }
+  if (!paused) {
+    const today = todayKey()
+    const anchor =
+      existing.anchor_day ?? Number(existing.next_due_on.slice(8, 10))
+    let nextDue = existing.next_due_on
+    for (let step = 0; nextDue < today && step < 1000; step++) {
+      nextDue = advance(nextDue, existing.cadence as RecurringCadence, anchor)
+    }
+    if (nextDue !== existing.next_due_on) values.next_due_on = nextDue
+  }
+
+  const { error, count } = await supabase
+    .from("recurring_payments")
+    .update(values, { count: "exact" })
+    .eq("id", paymentId)
+    .is("deleted_at", null)
+  if (error) return { error: friendlyDbError(error.message) }
+  if (count === 0) return { error: "That payment was cancelled or removed." }
   revalidateApex()
   return {}
 }

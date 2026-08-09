@@ -4,14 +4,16 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import {
   MoreHorizontal,
+  Pause,
   Pencil,
+  Play,
   ReceiptText,
   Repeat,
   XCircle,
   type LucideIcon,
 } from "lucide-react"
 
-import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
+import { ANCHOR_TINTS, TAG_TINTS } from "@/components/apex/anchor-tints"
 import { ConfirmDialog } from "@/components/apex/confirm-dialog"
 import { DueStateBadge, dueState } from "@/components/apex/due-state"
 import { AvatarBadge, EntityAvatar } from "@/components/apex/entity-avatar"
@@ -24,6 +26,7 @@ import {
   TableCard,
   TableCardHeader,
 } from "@/components/apex/table-shell"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -41,7 +44,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { cancelRecurringPayment } from "@/lib/apex/subscriptions/actions"
+import {
+  cancelRecurringPayment,
+  setRecurringPaused,
+} from "@/lib/apex/subscriptions/actions"
 import { formatDayMonthShort } from "@/lib/apex/dates"
 import { formatPence, formatPenceShort } from "@/lib/apex/money"
 import type {
@@ -111,6 +117,26 @@ export function RecurringTable({
   )
   const [cancelError, setCancelError] = React.useState<string | null>(null)
   const [cancelPending, startCancel] = React.useTransition()
+  // One inline alert at a time, in the row it belongs to — the same voice as
+  // Mark paid's error span. Pausing rarely fails (RLS or a row cancelled
+  // elsewhere), so this never earns a dialog.
+  const [pauseError, setPauseError] = React.useState<{
+    id: string
+    message: string
+  } | null>(null)
+  const [, startPause] = React.useTransition()
+
+  function togglePause(payment: RecurringPayment) {
+    setPauseError(null)
+    startPause(async () => {
+      const result = await setRecurringPaused(payment.id, !payment.paused)
+      if (result.error) {
+        setPauseError({ id: payment.id, message: result.error })
+      } else {
+        router.refresh()
+      }
+    })
+  }
 
   function confirmCancel(payment: RecurringPayment) {
     setCancelError(null)
@@ -156,7 +182,13 @@ export function RecurringTable({
               const due = dueState(payment.nextDueOn, today)
               const kind = KIND_META[payment.kind]
               return (
-                <TableRow key={payment.id}>
+                // Dimmed as a whole while paused: a row that doesn't count
+                // toward the totals shouldn't read at the same weight as the
+                // ones that do.
+                <TableRow
+                  key={payment.id}
+                  className={cn(payment.paused && "opacity-60")}
+                >
                   <TableCell className="w-full max-w-0 py-2 pr-2 pl-3">
                     <span className="flex items-center gap-2.5">
                       <EntityAvatar
@@ -195,7 +227,16 @@ export function RecurringTable({
                   </TableCell>
 
                   <TableCell className="py-2">
-                    <DueStateBadge state={due} />
+                    {payment.paused ? (
+                      <Badge
+                        variant="secondary"
+                        className={TAG_TINTS.neutral}
+                      >
+                        Paused
+                      </Badge>
+                    ) : (
+                      <DueStateBadge state={due} />
+                    )}
                   </TableCell>
 
                   {/* The trust column: the reader can see the checklist
@@ -222,7 +263,15 @@ export function RecurringTable({
 
                   <TableCell className="py-2 pr-2">
                     <span className="flex items-center justify-end gap-1">
-                      {due.actionable && (
+                      {pauseError?.id === payment.id && (
+                        <span
+                          role="alert"
+                          className="text-[13px] whitespace-nowrap text-destructive"
+                        >
+                          {pauseError.message}
+                        </span>
+                      )}
+                      {!payment.paused && due.actionable && (
                         <MarkPaidButton
                           paymentId={payment.id}
                           accountId={payment.accountId}
@@ -248,6 +297,12 @@ export function RecurringTable({
                             >
                               <Pencil />
                               Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => togglePause(payment)}
+                            >
+                              {payment.paused ? <Play /> : <Pause />}
+                              {payment.paused ? "Resume" : "Pause"}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               variant="destructive"
