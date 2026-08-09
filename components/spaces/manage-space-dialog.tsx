@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { LogOut, Trash2, UserPlus } from "lucide-react"
 
+import { FormError } from "@/components/shared/form-error"
 import { MetaDot } from "@/components/shared/meta-dot"
 import { Button } from "@/components/ui/button"
 import {
@@ -185,14 +186,7 @@ export function ManageSpaceDialog({
           </div>
         )}
 
-        {actionError && (
-          <p
-            role="alert"
-            className="rounded-lg bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
-          >
-            {actionError}
-          </p>
-        )}
+        <FormError>{actionError}</FormError>
       </DialogContent>
     </Dialog>
   )
@@ -251,14 +245,7 @@ function InviteForm({ spaceId }: { spaceId: string }) {
         They need an account on this address first. The invite then appears in
         their notifications. Nothing is emailed.
       </p>
-      {state?.error && (
-        <p
-          role="alert"
-          className="rounded-lg bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
-        >
-          {state.error}
-        </p>
-      )}
+      <FormError>{state?.error}</FormError>
       {state?.success && (
         <p
           role="status"

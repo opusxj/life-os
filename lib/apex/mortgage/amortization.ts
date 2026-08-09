@@ -20,7 +20,7 @@ export type OverpaymentImpact = {
 const MAX_MONTHS = 1200
 
 /** 4.79 (% per year) → 0.00399… (fraction per month) */
-export function monthlyRate(annualRatePct: number): number {
+function monthlyRate(annualRatePct: number): number {
   return annualRatePct / 100 / 12
 }
 
@@ -51,35 +51,6 @@ export function monthsToRepay(
   if (r === 0) return Math.ceil(principal / payment)
   if (payment <= principal * r) return null
   return Math.ceil(-Math.log(1 - (r * principal) / payment) / Math.log(1 + r))
-}
-
-/**
- * Month-by-month simulation: interest accrues on the balance, the payment
- * lands, repeat until cleared — exact about the final partial month.
- * Null when the payment doesn't cover the interest or payoff would take
- * longer than MAX_MONTHS.
- */
-export function simulatePayoff(
-  principal: number,
-  annualRatePct: number,
-  payment: number
-): PayoffProjection | null {
-  if (principal <= 0) return { months: 0, totalInterest: 0 }
-  if (payment <= 0) return null
-  const r = monthlyRate(annualRatePct)
-  if (r > 0 && payment <= principal * r) return null
-
-  let balance = principal
-  let totalInterest = 0
-  let months = 0
-  while (balance > 0 && months < MAX_MONTHS) {
-    const interest = balance * r
-    totalInterest += interest
-    balance = balance + interest - payment
-    months += 1
-  }
-  if (balance > 0) return null
-  return { months, totalInterest: Math.round(totalInterest) }
 }
 
 /**
@@ -241,8 +212,9 @@ export function projectBalance(
 
 /** One month of the contractual line: interest accrues, then the payment lands.
  *  The single definition of the step — everything that walks a balance forward
- *  (projectBalance, balanceSeries, and through them every card) goes via here,
- *  so no two surfaces can disagree about what a month does. */
+ *  (projectBalance, monthsToBalance, monthsToCapitalMajority, and through them
+ *  every card) goes via here, so no two surfaces can disagree about what a
+ *  month does. */
 function stepBalance(balance: number, r: number, payment: number): number {
   return balance + balance * r - payment
 }
@@ -253,7 +225,7 @@ function stepBalance(balance: number, r: number, payment: number): number {
  * Values are unrounded floats (round only at display) so threshold crossings
  * and chart geometry agree to the penny with projectBalance's arithmetic.
  */
-export function balanceSeries(
+function balanceSeries(
   principal: number,
   annualRatePct: number,
   payment: number,
@@ -322,35 +294,6 @@ export function cumulativeInterestPath(
   }
 
   return { cumulative, paymentAfter }
-}
-
-/**
- * A balance path where the rate changes once, `reversionAt` months in.
- *
- * The payment is held constant on purpose. A lender would recalculate it so
- * the term still clears, which is exactly why holding it still is the useful
- * comparison: it shows what the rate change costs, instead of hiding that
- * cost inside a new payment. Where the payment no longer covers the interest
- * the series rises, which is the honest outcome and not a bug.
- */
-export function balanceSeriesWithReversion(
-  principal: number,
-  ratePct: number,
-  reversionPct: number,
-  payment: number,
-  reversionAt: number,
-  maxMonths: number
-): number[] {
-  const first = monthlyRate(ratePct)
-  const second = monthlyRate(reversionPct)
-  const series = [Math.max(0, principal)]
-  let current = principal
-  for (let month = 1; month <= maxMonths && current > 0; month += 1) {
-    const r = month <= reversionAt ? first : second
-    current = current + current * r - payment
-    series.push(Math.max(0, current))
-  }
-  return series
 }
 
 /**

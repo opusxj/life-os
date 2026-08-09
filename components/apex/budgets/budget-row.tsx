@@ -22,6 +22,7 @@ import {
 import { ConfirmDialog } from "@/components/apex/confirm-dialog"
 import { DataProgress } from "@/components/apex/progress"
 import { ApexStatTag } from "@/components/apex/stat-card"
+import { FormError } from "@/components/shared/form-error"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -191,14 +192,7 @@ function EditBudgetDialog({
             />
           </div>
 
-          {state?.error && (
-            <p
-              role="alert"
-              className="rounded-lg bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
-            >
-              {state.error}
-            </p>
-          )}
+          <FormError>{state?.error}</FormError>
 
           <DialogFooter>
             <Button

@@ -179,16 +179,11 @@ function TotalsFooter({ shown, totals }: { shown: number; totals: Totals }) {
         >
           <span className="flex items-center gap-2 text-muted-foreground">
             {truncated
-              ? `Showing ${shown} of ${totals.rowCount} transactions`
+              ? `Showing ${shown} of ${totals.rowCount} transactions. Narrow the filters to see the rest.`
               : `${totals.rowCount} ${totals.rowCount === 1 ? "transaction" : "transactions"}`}
             {totals.transferCount > 0 && (
               <DataChip color="#0ea5e9">
                 {`${totals.transferCount} ${totals.transferCount === 1 ? "transfer" : "transfers"}`}
-              </DataChip>
-            )}
-            {truncated && (
-              <DataChip color="#f59e0b">
-                Narrow the filters to see the rest
               </DataChip>
             )}
           </span>

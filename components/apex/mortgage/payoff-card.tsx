@@ -2,6 +2,7 @@ import { Flag } from "lucide-react"
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import {
+  ApexCardFootnote,
   ApexStatCard,
   ApexStatHint,
   ApexStatValue,
@@ -64,11 +65,11 @@ export function PayoffCard({
           markerTip={`Term ends ${termLabel}`}
           label={`Today to ${termLabel}, when the balance falls due.`}
         />
-        <FooterNote>
+        <ApexCardFootnote>
           {mortgage.repaymentType === "interest_only"
             ? "Your payments cover the interest only."
             : "Part of this loan is interest only."}
-        </FooterNote>
+        </ApexCardFootnote>
       </Shell>
     )
   }
@@ -119,20 +120,9 @@ export function PayoffCard({
         label={`Today to ${delta > 0 ? payoffLabel : termLabel}, against the ${termLabel} term end.`}
       />
 
-      <FooterNote>{fix(mortgage, status, termMonths, delta)}</FooterNote>
+      {/* Nothing to say is a valid outcome: the card ends at the ruler. */}
+      <ApexCardFootnote>{fix(mortgage, status, termMonths, delta)}</ApexCardFootnote>
     </Shell>
-  )
-}
-
-/** Nothing to say is a valid outcome: the card ends at the ruler. */
-function FooterNote({ children }: { children: React.ReactNode }) {
-  if (!children) return null
-  return (
-    <div className="mt-auto pt-4">
-      <p className="border-t pt-3 text-[12px] leading-snug text-muted-foreground">
-        {children}
-      </p>
-    </div>
   )
 }
 

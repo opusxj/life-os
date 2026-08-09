@@ -2,25 +2,20 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { format } from "date-fns"
 import { MoreHorizontal, Pencil, PiggyBank, Plus, Trash2 } from "lucide-react"
 
 import { ConfirmDialog } from "@/components/apex/confirm-dialog"
 import { DataProgress } from "@/components/apex/progress"
 import {
+  ApexStatCard,
+  ApexStatFigure,
   ApexStatHint,
   ApexStatTag,
   ApexStatUnit,
   ApexStatValue,
 } from "@/components/apex/stat-card"
+import { FormError } from "@/components/shared/form-error"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card"
 import {
   Drawer,
   DrawerContent,
@@ -50,6 +45,7 @@ import {
   type BudgetsFormState,
 } from "@/lib/apex/budgets/actions"
 import type { AccountOption, SavingGoal } from "@/lib/apex/budgets/queries"
+import { formatMonthYear, parseDay } from "@/lib/apex/dates"
 import { formatPenceShort } from "@/lib/apex/money"
 
 import { GoalDrawer } from "./goal-drawer"
@@ -75,9 +71,7 @@ export function GoalCard({
   const fraction = Math.min(1, goal.saved / goal.targetAmount)
   const percent = Math.floor(fraction * 100)
   const reached = goal.saved >= goal.targetAmount
-  const targetLabel = goal.targetOn
-    ? format(new Date(`${goal.targetOn}T00:00:00`), "MMM yyyy")
-    : null
+  const targetLabel = goal.targetOn ? formatMonthYear(goal.targetOn) : null
   // Same month arithmetic as paceHint, so pill and hint can never disagree
   const targetPassed = goal.targetOn
     ? monthsToTarget(goal.targetOn) <= 0
@@ -97,113 +91,84 @@ export function GoalCard({
   }
 
   return (
-    <Card className="gap-3.5 rounded-2xl [--card-spacing:--spacing(5)]">
-      <CardHeader>
-        {/* Mirrors the ApexStatCard header by hand because the 38px chip
-            wears the goal's own data color (an inline style), which the
-            primitive's className-only icon slot can't carry. Chip treatment
-            mirrors account-card.tsx (light mode darkens the icon toward
-            black, dark mode runs the raw hex on a stronger tint); the two
-            chips should someday share a component. */}
-        <div className="flex items-center gap-2.5">
-          <span
-            aria-hidden
-            className="flex size-9.5 shrink-0 items-center justify-center rounded-xl bg-(--chip-bg) text-(--chip-icon) dark:bg-(--chip-bg-dark) dark:text-(--chip-icon-dark) [&>svg]:size-5"
-            style={
-              {
-                "--chip-bg": `color-mix(in srgb, ${goal.color} 14%, transparent)`,
-                "--chip-icon": `color-mix(in srgb, ${goal.color} 75%, black)`,
-                "--chip-bg-dark": `color-mix(in srgb, ${goal.color} 20%, transparent)`,
-                "--chip-icon-dark": goal.color,
-              } as React.CSSProperties
+    <ApexStatCard
+      label={goal.name}
+      description={
+        goal.account
+          ? `From your ${goal.account.name} balance`
+          : "From your top ups"
+      }
+      icon={PiggyBank}
+      iconColor={goal.color}
+      action={
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label={`Actions for ${goal.name}`}
+              />
             }
           >
-            <PiggyBank />
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-medium text-card-foreground">
-              {goal.name}
-            </span>
-            <span className="block truncate text-[12px] leading-snug text-muted-foreground">
-              {goal.account
-                ? `From your ${goal.account.name} balance`
-                : "From your top ups"}
-            </span>
-          </span>
-        </div>
-        <CardAction>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  aria-label={`Actions for ${goal.name}`}
-                />
-              }
+            <MoreHorizontal />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuItem
+              onClick={() => {
+                setEditKey((key) => key + 1)
+                setEditOpen(true)
+              }}
             >
-              <MoreHorizontal />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem
-                onClick={() => {
-                  setEditKey((key) => key + 1)
-                  setEditOpen(true)
-                }}
-              >
-                <Pencil /> Edit goal
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => {
-                  setDeleteError(null)
-                  setConfirmOpen(true)
-                }}
-              >
-                <Trash2 /> Delete goal
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </CardAction>
-      </CardHeader>
-
-      <CardContent className="flex-1">
-        <ApexStatValue>
-          {formatPenceShort(goal.saved)}{" "}
-          <ApexStatUnit>{`of ${formatPenceShort(goal.targetAmount)}`}</ApexStatUnit>
-        </ApexStatValue>
-
-        <DataProgress
-          value={fraction * 100}
-          color={goal.color}
-          aria-label={`${percent}% of target saved`}
-          className="mt-3"
-        />
-
-        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          {reached ? (
-            <ApexStatTag tint="balance">Goal reached</ApexStatTag>
-          ) : (
-            <ApexStatTag tint="balance">{`${percent}% saved`}</ApexStatTag>
-          )}
-          {!reached &&
-            targetLabel &&
-            (targetPassed ? (
-              <ApexStatTag tint="neutral">{`Target was ${targetLabel}`}</ApexStatTag>
-            ) : (
-              <ApexStatTag tint="due">{`Target by ${targetLabel}`}</ApexStatTag>
-            ))}
-        </div>
-
-        {hint && <ApexStatHint className="mt-2.5">{hint}</ApexStatHint>}
-      </CardContent>
-
-      <CardFooter className="gap-1 px-2.5 py-2">
+              <Pencil /> Edit goal
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => {
+                setDeleteError(null)
+                setConfirmOpen(true)
+              }}
+            >
+              <Trash2 /> Delete goal
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
+      footer={
         <Button variant="ghost" size="xs" onClick={() => setTopUpOpen(true)}>
           <Plus data-icon="inline-start" />
           Top up
         </Button>
-      </CardFooter>
+      }
+    >
+      <ApexStatValue>
+        <ApexStatFigure>{formatPenceShort(goal.saved)}</ApexStatFigure>{" "}
+        <ApexStatUnit>{`of ${formatPenceShort(goal.targetAmount)}`}</ApexStatUnit>
+      </ApexStatValue>
+
+      <DataProgress
+        value={fraction * 100}
+        color={goal.color}
+        aria-label={`${percent}% of target saved`}
+        className="mt-3"
+      />
+
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        {reached ? (
+          <ApexStatTag tint="balance">Goal reached</ApexStatTag>
+        ) : (
+          <ApexStatTag tint="balance">{`${percent}% saved`}</ApexStatTag>
+        )}
+        {!reached &&
+          targetLabel &&
+          (targetPassed ? (
+            <ApexStatTag tint="neutral">{`Target was ${targetLabel}`}</ApexStatTag>
+          ) : (
+            <ApexStatTag tint="due">{`Target by ${targetLabel}`}</ApexStatTag>
+          ))}
+      </div>
+
+      {hint && <ApexStatHint className="mt-2.5">{hint}</ApexStatHint>}
 
       <TopUpDrawer
         goal={goal}
@@ -232,7 +197,7 @@ export function GoalCard({
         error={deleteError}
         onConfirm={remove}
       />
-    </Card>
+    </ApexStatCard>
   )
 }
 
@@ -323,14 +288,7 @@ export function TopUpDrawer({
             </div>
           )}
 
-          {state?.error && (
-            <p
-              role="alert"
-              className="rounded-lg bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
-            >
-              {state.error}
-            </p>
-          )}
+          <FormError>{state?.error}</FormError>
 
           <DrawerFooter className="mt-auto flex-row justify-end p-0 pt-2">
             <Button
@@ -367,7 +325,7 @@ function paceHint(goal: SavingGoal): string | null {
 
 /** Whole months from this month to the target's month; 0 or less once passed */
 function monthsToTarget(targetOn: string): number {
-  const target = new Date(`${targetOn}T00:00:00`)
+  const target = parseDay(targetOn)
   const now = new Date()
   return (
     (target.getFullYear() - now.getFullYear()) * 12 +

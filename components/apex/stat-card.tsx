@@ -21,6 +21,7 @@ export function ApexStatCard({
   description,
   icon: Icon,
   iconClassName,
+  iconColor,
   action,
   footer,
   className,
@@ -32,6 +33,10 @@ export function ApexStatCard({
   description?: React.ReactNode
   icon?: LucideIcon
   iconClassName?: string
+  /** The entity's own stored hex — renders the chip as ApexStatChip, tinted
+   *  at runtime, for cards anchored by user data rather than a vocabulary
+   *  tint. Wins over iconClassName. */
+  iconColor?: string
   /** Header-corner slot (menu, small button, countdown pill) */
   action?: React.ReactNode
   /** Muted bottom strip — the card's quick actions live here */
@@ -44,20 +49,25 @@ export function ApexStatCard({
       className={cn("gap-3.5 rounded-2xl [--card-spacing:--spacing(5)]", className)}
     >
       <CardHeader>
-        <div className="flex items-center gap-2.5">
-          {Icon && (
-            <span
-              aria-hidden
-              className={cn(
-                "flex size-9.5 shrink-0 items-center justify-center rounded-xl bg-muted [&>svg]:size-5",
-                iconClassName
-              )}
-            >
-              <Icon />
-            </span>
-          )}
+        <div className="flex min-w-0 items-center gap-2.5">
+          {Icon &&
+            (iconColor ? (
+              <ApexStatChip color={iconColor}>
+                <Icon />
+              </ApexStatChip>
+            ) : (
+              <span
+                aria-hidden
+                className={cn(
+                  "flex size-9.5 shrink-0 items-center justify-center rounded-xl bg-muted [&>svg]:size-5",
+                  iconClassName
+                )}
+              >
+                <Icon />
+              </span>
+            ))}
           <span className="min-w-0">
-            <span className="block text-sm font-medium text-card-foreground">
+            <span className="block truncate text-sm font-medium text-card-foreground">
               {label}
             </span>
             {description && (
@@ -77,6 +87,39 @@ export function ApexStatCard({
         <CardFooter className="gap-1 px-2.5 py-2">{footer}</CardFooter>
       )}
     </Card>
+  )
+}
+
+/**
+ * The 38px chip for a card anchored by user data: its tint is mixed from the
+ * row's own hex at runtime, which the className-only icon slot cannot carry.
+ * A tinted chip, not a solid hex tile — white-on-hex failed 3:1 on the
+ * amber/emerald/sky swatches. Light mode darkens the icon toward black; dark
+ * mode runs the raw hex on a stronger tint.
+ */
+export function ApexStatChip({
+  color,
+  children,
+}: {
+  /** The entity's stored hex */
+  color: string
+  children: React.ReactNode
+}) {
+  return (
+    <span
+      aria-hidden
+      className="flex size-9.5 shrink-0 items-center justify-center rounded-xl bg-(--chip-bg) text-(--chip-icon) dark:bg-(--chip-bg-dark) dark:text-(--chip-icon-dark) [&>svg]:size-5"
+      style={
+        {
+          "--chip-bg": `color-mix(in srgb, ${color} 14%, transparent)`,
+          "--chip-icon": `color-mix(in srgb, ${color} 75%, black)`,
+          "--chip-bg-dark": `color-mix(in srgb, ${color} 20%, transparent)`,
+          "--chip-icon-dark": color,
+        } as React.CSSProperties
+      }
+    >
+      {children}
+    </span>
   )
 }
 
@@ -126,10 +169,14 @@ export function ApexStatUnit({
  */
 export function ApexStatFigure({
   children,
+  negative,
   className,
 }: {
   /** An already-formatted amount, e.g. from formatPence/formatPenceShort */
   children: string
+  /** Fade by opacity instead of grey, so the pence stay in the warning
+   *  colour inside a red figure rather than going muted. */
+  negative?: boolean
   className?: string
 }) {
   const dot = children.lastIndexOf(".")
@@ -137,7 +184,9 @@ export function ApexStatFigure({
   return (
     <span className={className}>
       {children.slice(0, dot)}
-      <span className="text-muted-foreground/60">{children.slice(dot)}</span>
+      <span className={negative ? "opacity-60" : "text-muted-foreground/60"}>
+        {children.slice(dot)}
+      </span>
     </span>
   )
 }
@@ -174,5 +223,49 @@ export function ApexStatHint({
       className={cn("mt-0.5 text-[13px] text-muted-foreground", className)}
       {...props}
     />
+  )
+}
+
+/**
+ * The card grammar's closing note (rule 5): pinned to the base with mt-auto
+ * so cards in a row end on one line however tall they grow, separated by a
+ * hairline rather than a filled strip (that is the footer slot's dress, and
+ * prose in it miscues as a toolbar). Nothing to say is a valid outcome:
+ * renders nothing on empty children. `asRow` swaps the 12px paragraph for a
+ * justify-between row, for the total row that wears the legend's grammar.
+ */
+export function ApexCardFootnote({
+  asRow,
+  className,
+  children,
+}: {
+  asRow?: boolean
+  /** Escape for the destructive variant (`font-medium text-destructive`) */
+  className?: string
+  children?: React.ReactNode
+}) {
+  if (!children) return null
+  return (
+    <div className="mt-auto pt-4">
+      {asRow ? (
+        <div
+          className={cn(
+            "flex items-center justify-between gap-3 border-t pt-3",
+            className
+          )}
+        >
+          {children}
+        </div>
+      ) : (
+        <p
+          className={cn(
+            "border-t pt-3 text-[12px] leading-snug text-muted-foreground",
+            className
+          )}
+        >
+          {children}
+        </p>
+      )}
+    </div>
   )
 }

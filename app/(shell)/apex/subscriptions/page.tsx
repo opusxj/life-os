@@ -8,13 +8,14 @@ import {
   Repeat,
 } from "lucide-react"
 
-import { ANCHOR_TINTS, type TagTint } from "@/components/apex/anchor-tints"
-import { dueState, todayKey, type DueState } from "@/components/apex/due-state"
+import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
+import { duePill, dueState, todayKey } from "@/components/apex/due-state"
 import { AddRecurringButton } from "@/components/apex/subscriptions/add-recurring-button"
 import { RecurringTable } from "@/components/apex/subscriptions/recurring-table"
 import { ApexCardGrid, ApexPage, ApexPageHeader } from "@/components/apex/page"
 import {
   ApexStatCard,
+  ApexStatFigure,
   ApexStatHint,
   ApexStatTag,
   ApexStatUnit,
@@ -109,7 +110,7 @@ export default async function SubscriptionsPage() {
               iconClassName={ANCHOR_TINTS.primary}
             >
               <ApexStatValue>
-                {formatPenceShort(totalMonthly)}{" "}
+                <ApexStatFigure>{formatPenceShort(totalMonthly)}</ApexStatFigure>{" "}
                 <ApexStatUnit>a month</ApexStatUnit>
               </ApexStatValue>
               <div className="mt-2.5">
@@ -127,7 +128,9 @@ export default async function SubscriptionsPage() {
               iconClassName={ANCHOR_TINTS.subscription}
             >
               <ApexStatValue>
-                {formatPenceShort(subscriptionsMonthly)}{" "}
+                <ApexStatFigure>
+                  {formatPenceShort(subscriptionsMonthly)}
+                </ApexStatFigure>{" "}
                 <ApexStatUnit>a month</ApexStatUnit>
               </ApexStatValue>
               <div className="mt-2.5">
@@ -145,7 +148,7 @@ export default async function SubscriptionsPage() {
               iconClassName={ANCHOR_TINTS.bill}
             >
               <ApexStatValue>
-                {formatPenceShort(billsMonthly)}{" "}
+                <ApexStatFigure>{formatPenceShort(billsMonthly)}</ApexStatFigure>{" "}
                 <ApexStatUnit>a month</ApexStatUnit>
               </ApexStatValue>
               <div className="mt-2.5">
@@ -163,7 +166,9 @@ export default async function SubscriptionsPage() {
               {nextDue && nextDuePill ? (
                 <>
                   <ApexStatValue className="truncate">
-                    {formatPenceShort(nextDue.amount)}{" "}
+                    <ApexStatFigure>
+                      {formatPenceShort(nextDue.amount)}
+                    </ApexStatFigure>{" "}
                     <ApexStatUnit>{`to ${nextDue.name}`}</ApexStatUnit>
                   </ApexStatValue>
                   <div className="mt-2.5">
@@ -193,22 +198,4 @@ export default async function SubscriptionsPage() {
       )}
     </ApexPage>
   )
-}
-
-/**
- * The due date as a discrete-fact pill, event stated in the words ("Due
- * tomorrow", never a bare "Tomorrow"). Amber is the deadline tint; overdue
- * escalates to destructive, matching the table's due language below.
- */
-function duePill(state: DueState): { label: string; tint: TagTint } {
-  if (state.status === "overdue") {
-    return { label: "Overdue", tint: "destructive" }
-  }
-  if (state.status === "today") return { label: "Due today", tint: "due" }
-  if (state.days === 1) return { label: "Due tomorrow", tint: "due" }
-  if (state.days <= 7) {
-    return { label: `Due in ${state.days} days`, tint: "due" }
-  }
-  // Beyond a week dueState's label is already the short date, "Mon 3 Aug"
-  return { label: `Due ${state.label}`, tint: "due" }
 }

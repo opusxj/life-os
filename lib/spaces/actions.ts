@@ -3,6 +3,7 @@
 import { cookies } from "next/headers"
 
 import { ACTIVE_SPACE_COOKIE } from "@/lib/data/workspace"
+import { friendlyDbError } from "@/lib/supabase/errors"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 export type SpaceFormState = { error?: string; success?: boolean } | undefined
@@ -205,8 +206,3 @@ async function persistActiveSpace(spaceId: string) {
   })
 }
 
-function friendlyDbError(message?: string) {
-  if (!message) return "Something went wrong. Try again."
-  // Strip Postgres error prefixes, keep our own raised messages readable
-  return message.replace(/^.*?exception:\s*/i, "")
-}

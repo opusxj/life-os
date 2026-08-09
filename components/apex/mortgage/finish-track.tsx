@@ -8,9 +8,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { HOUSE_SPRING } from "@/lib/motion"
 import { cn } from "@/lib/utils"
-
-const HOUSE_SPRING = { type: "spring", stiffness: 500, damping: 32 } as const
 
 /**
  * A ruler, not a meter. Deliberately a thinner class of graphic than the

@@ -1,3 +1,4 @@
+import { todayKey } from "@/lib/apex/dates"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 export const TRANSACTION_KINDS = [
@@ -79,8 +80,10 @@ const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/
 
+// Server-local like every other Apex clock read, never UTC: around midnight
+// the default month filter must agree with todayKey and the budget bounds.
 export function currentMonth(): string {
-  return new Date().toISOString().slice(0, 7)
+  return todayKey().slice(0, 7)
 }
 
 /** URL searchParams → validated filters. Month defaults to the current month; `month=all` clears it. */
@@ -267,18 +270,18 @@ function monthEndExclusive(month: string): string {
 }
 
 function monthsSince(earliest: string | undefined): string[] {
+  // Local clock reads to match currentMonth; Date.UTC below is pure
+  // year/month arithmetic on those parts, so no timezone re-enters.
   const now = new Date()
   let count = 1
   if (earliest && MONTH_RE.test(earliest.slice(0, 7))) {
     const [year, monthNumber] = earliest.slice(0, 7).split("-").map(Number)
     const span =
-      (now.getUTCFullYear() - year) * 12 +
-      (now.getUTCMonth() + 1 - monthNumber) +
-      1
+      (now.getFullYear() - year) * 12 + (now.getMonth() + 1 - monthNumber) + 1
     count = Math.min(24, Math.max(1, span))
   }
   return Array.from({ length: count }, (_, index) =>
-    new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - index, 1))
+    new Date(Date.UTC(now.getFullYear(), now.getMonth() - index, 1))
       .toISOString()
       .slice(0, 7)
   )

@@ -4,6 +4,7 @@ import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import { MeterHead } from "@/components/apex/meter"
 import { DataProgress } from "@/components/apex/progress"
 import {
+  ApexCardFootnote,
   ApexStatCard,
   ApexStatFigure,
   ApexStatTag,
@@ -115,13 +116,11 @@ export function RentCard({
           landlord's valuation, the legal and lender fees, and the fact the
           money would come from a larger mortgage. Quoting a figure from what we
           hold would understate all of it. */}
-      <div className="mt-auto pt-4">
-        <p className="border-t pt-3 text-[12px] leading-snug text-muted-foreground">
-          {isShared
-            ? `Rent is charged on your landlord's ${formatShare(100 - share)}%. Buying more of it, called staircasing, is what lowers it.`
-            : "None of the rent reduces the mortgage."}
-        </p>
-      </div>
+      <ApexCardFootnote>
+        {isShared
+          ? `Rent is charged on your landlord's ${formatShare(100 - share)}%. Buying more of it, called staircasing, is what lowers it.`
+          : "None of the rent reduces the mortgage."}
+      </ApexCardFootnote>
     </ApexStatCard>
   )
 }

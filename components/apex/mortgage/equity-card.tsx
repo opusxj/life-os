@@ -3,6 +3,7 @@ import { Sprout } from "lucide-react"
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import { MeterHead, SegmentMeter } from "@/components/apex/meter"
 import {
+  ApexCardFootnote,
   ApexStatCard,
   ApexStatUnit,
   ApexStatValue,
@@ -133,16 +134,11 @@ export function EquityCard({
         ]}
       />
 
-      <div className="mt-auto pt-4">
-        <p
-          className={cn(
-            "border-t pt-3 text-[12px] leading-snug text-muted-foreground",
-            equity < 0 && "font-medium text-destructive"
-          )}
-        >
-          {closing(equity, outright, shareValue, propertyValue, isShared, share)}
-        </p>
-      </div>
+      <ApexCardFootnote
+        className={cn(equity < 0 && "font-medium text-destructive")}
+      >
+        {closing(equity, outright, shareValue, propertyValue, isShared, share)}
+      </ApexCardFootnote>
     </ApexStatCard>
   )
 }

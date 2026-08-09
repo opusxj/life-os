@@ -2,6 +2,7 @@
 
 import * as React from "react"
 
+import { FormError } from "@/components/shared/form-error"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -224,14 +225,7 @@ export function MortgageDrawer({
               </FormField>
             </FieldPair>
 
-            {state?.error && (
-              <p
-                role="alert"
-                className="rounded-lg bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
-              >
-                {state.error}
-              </p>
-            )}
+            <FormError>{state?.error}</FormError>
           </div>
 
           <SheetFooter className="flex-row justify-end border-t">

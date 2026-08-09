@@ -3,6 +3,7 @@ import { Coins } from "lucide-react"
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import { MeterSwatch, SegmentMeter } from "@/components/apex/meter"
 import {
+  ApexCardFootnote,
   ApexStatCard,
   ApexStatFigure,
   ApexStatValue,
@@ -99,19 +100,16 @@ export function MonthlyCostCard({ mortgage }: { mortgage: Mortgage }) {
 
       {/* The same costs at the longer range, in the legend's own grammar. The
           square is an outline because this row is all of the above rather
-          than one slice. Pinned to the base so the card carries no dead air
-          beside a taller neighbour. */}
-      <div className="mt-auto pt-4">
-        <div className="flex items-center justify-between gap-3 border-t pt-3">
-          <span className="flex items-center gap-2 text-[13px] text-muted-foreground">
-            <MeterSwatch className="border-[1.5px] border-muted-foreground/50" />
-            Annually
-          </span>
-          <span className="shrink-0 text-[13px] font-medium tabular-nums">
-            {formatPence(total * 12)}
-          </span>
-        </div>
-      </div>
+          than one slice. */}
+      <ApexCardFootnote asRow>
+        <span className="flex items-center gap-2 text-[13px] text-muted-foreground">
+          <MeterSwatch className="border-[1.5px] border-muted-foreground/50" />
+          Annually
+        </span>
+        <span className="shrink-0 text-[13px] font-medium tabular-nums">
+          {formatPence(total * 12)}
+        </span>
+      </ApexCardFootnote>
     </ApexStatCard>
   )
 }

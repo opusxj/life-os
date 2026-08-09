@@ -2,6 +2,7 @@
 
 import { parsePoundsToPence } from "@/lib/apex/money"
 import { revalidateApex } from "@/lib/apex/revalidate"
+import { friendlyDbError } from "@/lib/supabase/errors"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 export type RecurringFormState =
@@ -124,8 +125,3 @@ export async function cancelRecurringPayment(
   return {}
 }
 
-function friendlyDbError(message?: string) {
-  if (!message) return "Something went wrong. Try again."
-  // Strip Postgres error prefixes, keep our own raised messages readable
-  return message.replace(/^.*?exception:\s*/i, "")
-}

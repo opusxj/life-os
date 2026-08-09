@@ -1,6 +1,11 @@
+import { TAG_TINTS, type TagTint } from "@/components/apex/anchor-tints"
 import { Badge } from "@/components/ui/badge"
-import { formatWeekdayDateShort } from "@/lib/apex/dates"
+import { formatWeekdayDateShort, todayKey } from "@/lib/apex/dates"
 import { cn } from "@/lib/utils"
+
+// The server clock lives in lib/apex/dates; re-exported here so every
+// due-language consumer keeps one import site.
+export { todayKey }
 
 export type DueState = {
   days: number
@@ -49,13 +54,7 @@ export function DueStateBadge({
   }
   if (state.status === "today") {
     return (
-      <Badge
-        variant="secondary"
-        className={cn(
-          "bg-amber-500/15 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400",
-          className
-        )}
-      >
+      <Badge variant="secondary" className={cn(TAG_TINTS.due, className)}>
         {state.label}
       </Badge>
     )
@@ -67,10 +66,20 @@ export function DueStateBadge({
   )
 }
 
-export function todayKey(): string {
-  const now = new Date()
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+/**
+ * The same language as a discrete-fact pill, event stated in the words
+ * ("Due tomorrow", never a bare "Tomorrow"). Amber is the deadline tint;
+ * overdue escalates to destructive. Beyond a week `state.label` is already
+ * the bare short date, so only that form needs the "Due " prefix.
+ */
+export function duePill(state: DueState): { label: string; tint: TagTint } {
+  if (state.status === "overdue") {
+    return { label: state.label, tint: "destructive" }
+  }
+  return {
+    label: state.days > 7 ? `Due ${state.label}` : state.label,
+    tint: "due",
+  }
 }
 
 /** Badges sit in table rows, so this is one of the surfaces allowed to

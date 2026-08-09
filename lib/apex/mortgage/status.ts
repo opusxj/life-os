@@ -6,6 +6,8 @@
 // uncertainty, not from the number — and a countdown attached to no available
 // action is an avoidance trigger, so `watch` says "nothing to do yet" out loud.
 
+import { parseDay } from "@/lib/apex/dates"
+
 import {
   monthlyPayment,
   monthsBetween,
@@ -176,11 +178,6 @@ function resolveShock(
     shock: reversionPayment - mortgage.monthlyPayment,
     missing: null,
   }
-}
-
-/** yyyy-mm-dd → local midnight, so month arithmetic doesn't drift a day */
-function parseDay(key: string): Date {
-  return new Date(`${key}T00:00:00`)
 }
 
 export type OverpaymentAllowance = {

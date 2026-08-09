@@ -15,6 +15,19 @@ export function parseDay(key: string): Date {
   return new Date(`${key}T00:00:00`)
 }
 
+/** The server clock as a yyyy-mm-dd key, from local parts to match parseDay */
+export function todayKey(): string {
+  return dayKeyAgo(0)
+}
+
+/** The local date `days` ago as a yyyy-mm-dd key */
+export function dayKeyAgo(days: number): string {
+  const date = new Date()
+  date.setDate(date.getDate() - days)
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
 /** 1 → "1st", 2 → "2nd", 11 → "11th", 22 → "22nd" */
 export function ordinal(day: number): string {
   const teens = day % 100

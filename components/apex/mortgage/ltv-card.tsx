@@ -2,6 +2,7 @@ import { ChevronDown, Percent } from "lucide-react"
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
 import {
+  ApexCardFootnote,
   ApexStatCard,
   ApexStatFigure,
   ApexStatHint,
@@ -247,30 +248,22 @@ export function LtvCard({
         <span>Lower rates</span>
       </div>
 
-      {/* The closing note, on the house hairline rather than floating loose
-          under the graphic. mt-auto settles it at the card's base so this and
-          its neighbours in the row end on one line however tall they grow. */}
-      <div className="mt-auto pt-4">
-        <p
-          className={cn(
-            "border-t pt-3 text-[12px] leading-snug text-muted-foreground",
-            underwater && "font-medium text-destructive"
-          )}
-        >
-          {underwater
-            ? edgeVerdict(assessed, lending)
-            : nextBand
-              ? actionLine(
-                  mortgage,
-                  status,
-                  nextBand,
-                  remortgageIn,
-                  when,
-                  today
-                )
-              : "You are in the lowest pricing band lenders offer."}
-        </p>
-      </div>
+      <ApexCardFootnote
+        className={cn(underwater && "font-medium text-destructive")}
+      >
+        {underwater
+          ? edgeVerdict(assessed, lending)
+          : nextBand
+            ? actionLine(
+                mortgage,
+                status,
+                nextBand,
+                remortgageIn,
+                when,
+                today
+              )
+            : "You are in the lowest pricing band lenders offer."}
+      </ApexCardFootnote>
     </ApexStatCard>
   )
 }

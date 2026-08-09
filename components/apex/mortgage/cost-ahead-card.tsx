@@ -4,7 +4,7 @@ import * as React from "react"
 import { Minus, Plus, Route } from "lucide-react"
 
 import { ANCHOR_TINTS } from "@/components/apex/anchor-tints"
-import { ApexStatCard } from "@/components/apex/stat-card"
+import { ApexCardFootnote, ApexStatCard } from "@/components/apex/stat-card"
 import { Button } from "@/components/ui/button"
 import {
   Tooltip,
@@ -288,24 +288,22 @@ export function CostAheadCard({
       </div>
 
       {compares && gap !== 0 && (
-        <div className="mt-auto pt-4">
-          <p className="border-t pt-3 text-[12px] leading-snug text-muted-foreground">
-            <span
-              className={cn(
-                "font-medium",
-                gap > 0
-                  ? "text-red-600 dark:text-red-400"
-                  : "text-emerald-600 dark:text-emerald-400"
-              )}
-            >
-              {formatPenceShort(Math.abs(gap))}
-            </span>
-            {gap > 0 ? " more interest" : " less interest"}
-            {paymentGap === 0
-              ? " than if today's rate carried on."
-              : `, and ${formatPenceShort(Math.abs(paymentGap))} a month ${paymentGap > 0 ? "more" : "less"} to pay.`}
-          </p>
-        </div>
+        <ApexCardFootnote>
+          <span
+            className={cn(
+              "font-medium",
+              gap > 0
+                ? "text-red-600 dark:text-red-400"
+                : "text-emerald-600 dark:text-emerald-400"
+            )}
+          >
+            {formatPenceShort(Math.abs(gap))}
+          </span>
+          {gap > 0 ? " more interest" : " less interest"}
+          {paymentGap === 0
+            ? " than if today's rate carried on."
+            : `, and ${formatPenceShort(Math.abs(paymentGap))} a month ${paymentGap > 0 ? "more" : "less"} to pay.`}
+        </ApexCardFootnote>
       )}
     </ApexStatCard>
   )

@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 
+import { FormError } from "@/components/shared/form-error"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
@@ -59,15 +60,22 @@ export function MarkPaidButton({
 
   if (accountId) {
     return (
-      <Button
-        size="xs"
-        variant={error ? "destructive" : "outline"}
-        title={error ?? undefined}
-        disabled={pending}
-        onClick={() => pay()}
-      >
-        {pending ? "Paying…" : error ? "Retry" : "Mark paid"}
-      </Button>
+      // Spans, not a FormError: callers place this inside inline flex rows
+      <span className="inline-flex items-center gap-2">
+        {error && (
+          <span role="alert" className="text-[13px] text-destructive">
+            {error}
+          </span>
+        )}
+        <Button
+          size="xs"
+          variant={error ? "destructive" : "outline"}
+          disabled={pending}
+          onClick={() => pay()}
+        >
+          {pending ? "Paying…" : error ? "Retry" : "Mark paid"}
+        </Button>
+      </span>
     )
   }
 
@@ -98,11 +106,7 @@ export function MarkPaidButton({
             ))}
           </SelectContent>
         </Select>
-        {error && (
-          <p role="alert" className="text-[13px] text-destructive">
-            {error}
-          </p>
-        )}
+        <FormError plain>{error}</FormError>
         <Button
           size="sm"
           className="w-full"

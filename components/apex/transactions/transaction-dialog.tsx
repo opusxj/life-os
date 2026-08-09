@@ -6,6 +6,7 @@ import { motion, MotionConfig } from "motion/react"
 import { Plus } from "lucide-react"
 
 import { ROW_ICONS } from "@/components/apex/entity-avatar"
+import { FormError } from "@/components/shared/form-error"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -24,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { dayKeyAgo, todayKey } from "@/lib/apex/dates"
 import { parsePoundsToPence } from "@/lib/apex/money"
 import {
   createTransaction,
@@ -35,6 +37,7 @@ import type {
   TransactionOptions,
   TransactionRow,
 } from "@/lib/apex/transactions/queries"
+import { HOUSE_SPRING } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
 type EntryKind = "income" | "expense" | "transfer"
@@ -42,8 +45,6 @@ type EntryKind = "income" | "expense" | "transfer"
 /** Sentinel for the optional "None" choices — Base UI Select item values must
  *  be real strings; the hidden inputs map it back to "" for FormData. */
 const NONE = "none"
-
-const spring = { type: "spring", stiffness: 500, damping: 32 } as const
 
 /** The selected segment takes the colour of the thing being logged. */
 const KIND_TINT: Record<EntryKind, string> = {
@@ -140,7 +141,7 @@ function TransactionForm({
     transaction ? (transaction.amount / 100).toFixed(2) : ""
   )
   const [occurredOn, setOccurredOn] = React.useState(
-    transaction?.occurredOn ?? localToday()
+    transaction?.occurredOn ?? todayKey()
   )
 
   const [state, action, pending] = React.useActionState<
@@ -367,27 +368,20 @@ function TransactionForm({
             />
             <DayChip
               label="Today"
-              day={localToday()}
+              day={todayKey()}
               value={occurredOn}
               onPick={setOccurredOn}
             />
             <DayChip
               label="Yesterday"
-              day={localDaysAgo(1)}
+              day={dayKeyAgo(1)}
               value={occurredOn}
               onPick={setOccurredOn}
             />
           </div>
         </div>
 
-        {state?.error && (
-          <p
-            role="alert"
-            className="rounded-lg bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
-          >
-            {state.error}
-          </p>
-        )}
+        <FormError>{state?.error}</FormError>
       </div>
 
       <DialogFooter className="m-0 shrink-0 flex-row justify-end rounded-none border-t bg-muted/50 px-5 py-3">
@@ -443,7 +437,7 @@ function CategoryChips({
                 aria-pressed={selected}
                 onClick={() => setValue(selected ? "" : category.id)}
                 whileTap={{ scale: 0.96 }}
-                transition={spring}
+                transition={HOUSE_SPRING}
                 style={
                   {
                     "--chip-bg": `color-mix(in srgb, ${category.color} 18%, transparent)`,
@@ -548,16 +542,4 @@ function FieldLabel(props: React.ComponentProps<typeof Label>) {
       className="text-[13px] font-medium text-muted-foreground"
     />
   )
-}
-
-function localToday(): string {
-  return localDaysAgo(0)
-}
-
-function localDaysAgo(days: number): string {
-  const date = new Date()
-  date.setDate(date.getDate() - days)
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const day = String(date.getDate()).padStart(2, "0")
-  return `${date.getFullYear()}-${month}-${day}`
 }

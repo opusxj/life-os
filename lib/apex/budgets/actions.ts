@@ -3,6 +3,7 @@
 import { getWorkspace } from "@/lib/data/workspace"
 import { formatPence, parsePoundsToPence } from "@/lib/apex/money"
 import { revalidateApex } from "@/lib/apex/revalidate"
+import { friendlyDbError } from "@/lib/supabase/errors"
 import { createServerSupabase } from "@/lib/supabase/server"
 
 export type BudgetsFormState = { error?: string; success?: boolean } | undefined
@@ -68,12 +69,13 @@ export async function updateBudgetAmount(
   const context = await requireContext()
   if (!context) return { error: "Not signed in." }
 
-  const { error } = await context.supabase
+  const { error, count } = await context.supabase
     .from("budgets")
-    .update({ amount })
+    .update({ amount }, { count: "exact" })
     .eq("id", budgetId)
     .is("deleted_at", null)
   if (error) return { error: friendlyDbError(error.message) }
+  if (count === 0) return { error: "That budget no longer exists." }
   revalidateApex()
   return { success: true }
 }
@@ -85,15 +87,19 @@ export async function removeBudget(
   if (!context) return { error: "Not signed in." }
 
   // One UPDATE, stamped: RLS rejects a soft delete without deleted_by
-  const { error } = await context.supabase
+  const { error, count } = await context.supabase
     .from("budgets")
-    .update({
-      deleted_at: new Date().toISOString(),
-      deleted_by: context.userId,
-    })
+    .update(
+      {
+        deleted_at: new Date().toISOString(),
+        deleted_by: context.userId,
+      },
+      { count: "exact" }
+    )
     .eq("id", budgetId)
     .is("deleted_at", null)
   if (error) return { error: friendlyDbError(error.message) }
+  if (count === 0) return { error: "That budget is already gone." }
   revalidateApex()
   return {}
 }
@@ -132,12 +138,13 @@ export async function updateSavingGoal(
   const context = await requireContext()
   if (!context) return { error: "Not signed in." }
 
-  const { error } = await context.supabase
+  const { error, count } = await context.supabase
     .from("saving_goals")
-    .update(parsed)
+    .update(parsed, { count: "exact" })
     .eq("id", goalId)
     .is("deleted_at", null)
   if (error) return { error: friendlyDbError(error.message) }
+  if (count === 0) return { error: "That goal no longer exists." }
   revalidateApex()
   return { success: true }
 }
@@ -148,15 +155,19 @@ export async function deleteSavingGoal(
   const context = await requireContext()
   if (!context) return { error: "Not signed in." }
 
-  const { error } = await context.supabase
+  const { error, count } = await context.supabase
     .from("saving_goals")
-    .update({
-      deleted_at: new Date().toISOString(),
-      deleted_by: context.userId,
-    })
+    .update(
+      {
+        deleted_at: new Date().toISOString(),
+        deleted_by: context.userId,
+      },
+      { count: "exact" }
+    )
     .eq("id", goalId)
     .is("deleted_at", null)
   if (error) return { error: friendlyDbError(error.message) }
+  if (count === 0) return { error: "That goal is already gone." }
   revalidateApex()
   return {}
 }
@@ -216,6 +227,7 @@ export async function topUpGoal(
       created_by: context.userId,
     })
     if (error) return { error: friendlyDbError(error.message) }
+    revalidateApex()
     return { success: true }
   }
 
@@ -261,7 +273,3 @@ function parseGoalFields(formData: FormData): GoalFields | { error: string } {
   }
 }
 
-function friendlyDbError(message?: string) {
-  if (!message) return "Something went wrong. Try again."
-  return message.replace(/^.*?exception:\s*/i, "")
-}
