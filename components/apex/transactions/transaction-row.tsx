@@ -12,7 +12,6 @@ import {
 import { AvatarBadge, EntityAvatar } from "@/components/apex/entity-avatar"
 import { DataChip } from "@/components/apex/table-shell"
 import { MetaDot } from "@/components/shared/meta-dot"
-import { TableCell, TableRow } from "@/components/ui/table"
 import { formatPence } from "@/lib/apex/money"
 import type {
   TransactionOptions,
@@ -24,7 +23,7 @@ import { TransactionRowActions } from "./transaction-row-actions"
 
 /**
  * Direction, as a corner badge on the avatar. The avatar says what the money
- * was for; the badge says which way it moved — so a row is readable before
+ * was for; the badge says which way it moved — so a line is readable before
  * the amount is.
  */
 const KIND_BADGE: Record<
@@ -54,13 +53,14 @@ const KIND_BADGE: Record<
 }
 
 /**
- * One ledger row. The whole row opens the edit dialog — except adjustment
- * rows, which are Sync-balance audit entries and stay view-only. The kebab
- * cell stops propagation so menu clicks never double-trigger the row; the
- * dialog mounts as a sibling of the row so its (portalled) clicks don't
- * bubble back into the row handler through the React tree.
+ * One ledger line: an open flex row, no cell walls (the day rules above it
+ * are the structure). The whole line opens the edit dialog — except
+ * adjustment lines, which are Sync-balance audit entries and stay view-only.
+ * The actions slot stops propagation so menu clicks never double-trigger the
+ * line; the dialog mounts as a sibling so its (portalled) clicks don't bubble
+ * back through the React tree.
  */
-export function TransactionTableRow({
+export function TransactionLine({
   spaceId,
   options,
   transaction,
@@ -75,47 +75,47 @@ export function TransactionTableRow({
 
   return (
     <>
-      <TableRow
-        className={cn("group/row", canEdit && "cursor-pointer")}
+      <div
+        className={cn(
+          "group/row flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/50",
+          canEdit && "cursor-pointer"
+        )}
         onClick={canEdit ? () => setEditOpen(true) : undefined}
       >
-        <TableCell className="w-full max-w-0 py-2 pr-2 pl-3">
-          <span className="flex items-center gap-2.5">
-            <EntityAvatar
-              label={transaction.description}
-              icon={avatarIcon(transaction)}
-              color={avatarColor(transaction)}
-            >
-              <AvatarBadge title={badge.label} className={badge.className}>
-                <badge.icon />
-              </AvatarBadge>
-            </EntityAvatar>
-            <span className="flex min-w-0 flex-col">
-              <span className="truncate font-medium">
-                {transaction.description}
-              </span>
-              <span className="truncate text-[12px] text-muted-foreground">
-                {sourceLine(transaction)}
-              </span>
-            </span>
+        <EntityAvatar
+          label={transaction.description}
+          icon={avatarIcon(transaction)}
+          color={avatarColor(transaction)}
+        >
+          <AvatarBadge title={badge.label} className={badge.className}>
+            <badge.icon />
+          </AvatarBadge>
+        </EntityAvatar>
+
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-[13px] font-medium">
+            {transaction.description}
           </span>
-        </TableCell>
+          <span className="truncate text-[12px] text-muted-foreground">
+            {sourceLine(transaction)}
+          </span>
+        </span>
 
-        <TableCell className="hidden py-2 md:table-cell">
-          <CategoryCell row={transaction} />
-        </TableCell>
+        <span className="hidden shrink-0 md:block">
+          <CategoryChip row={transaction} />
+        </span>
 
-        <TableCell
+        <span
           className={cn(
-            "py-2 pr-2 text-right font-medium whitespace-nowrap tabular-nums",
+            "shrink-0 text-right text-[13px] font-medium whitespace-nowrap tabular-nums",
             amountClass(transaction.kind)
           )}
         >
           {amountText(transaction)}
-        </TableCell>
+        </span>
 
-        <TableCell
-          className="w-10 py-2 pr-2 text-right"
+        <span
+          className="shrink-0"
           onClick={(event) => event.stopPropagation()}
         >
           <TransactionRowActions
@@ -123,8 +123,8 @@ export function TransactionTableRow({
             canEdit={canEdit}
             onEdit={() => setEditOpen(true)}
           />
-        </TableCell>
-      </TableRow>
+        </span>
+      </div>
       {canEdit && (
         <TransactionDialog
           open={editOpen}
@@ -168,7 +168,7 @@ function sourceLine(row: TransactionRowData): React.ReactNode {
   return row.accountName
 }
 
-function CategoryCell({ row }: { row: TransactionRowData }) {
+function CategoryChip({ row }: { row: TransactionRowData }) {
   if (row.kind === "adjustment") {
     return <DataChip>Sync</DataChip>
   }
