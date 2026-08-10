@@ -428,6 +428,21 @@ reader already holds: a rung says "loans up to £139,500" on hover, because
   bar goes red-dimmed whole (red is money-bad; a full category-coloured bar
   reads as done), and the honesty card ("Outside your budgets") wears sky,
   because unbudgeted is unwatched, not bad.
+- The statement head and the ruled-line ledger (transactions redesign,
+  2026-08-10). The page bar promotes the month to a stepper (arrows plus a
+  select bounded by the months the data spans) and Filters slims to
+  account/card/category; three cashflow cards state the filtered window,
+  with the in/out bars sharing one scale so the gap reads as a length; the
+  ledger then abandons table markup entirely. Each day opens on a ruled
+  line — the date sitting on a hairline that runs across to the day's own
+  in-minus-out — with open, roomy rows beneath: 36px avatars, 13px names,
+  no column labels, no cell walls, hover as a soft rounded wash. Transfers
+  and balance syncs count in no total anywhere, and a transfers-only day
+  shows no net at all. Chosen across two mockup rounds: a card per day, a
+  calendar-tile gutter, a sticky day pill, a timeline spine and a strict
+  statement grid all lost to the ruled line ("variation 8 is the best"),
+  and slim or single-line print rows lost to the roomy row ("Let's go with
+  Row C") — the icon chips stay, per the ratified dialect.
 - Price creep beside the calendar (2026-08-09, "Option B makes most sense"):
   the page's two forward-looking cards share a 2+1 row rather than widening
   the ratified three-card headline row or polluting the Subscriptions card
