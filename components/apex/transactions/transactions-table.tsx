@@ -1,7 +1,6 @@
 import { ReceiptText } from "lucide-react"
 
 import {
-  DataChip,
   TABLE_FOOT,
   TABLE_PINNED_HEAD,
   TableCard,
@@ -24,7 +23,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { formatPence, formatPenceShort } from "@/lib/apex/money"
+import {
+  formatWeekdayDate,
+  formatWeekdayFullDate,
+  parseDay,
+} from "@/lib/apex/dates"
+import { formatPenceShort } from "@/lib/apex/money"
 import type {
   TransactionOptions,
   TransactionRow,
@@ -35,46 +39,40 @@ import { AddTransactionDialog } from "./transaction-dialog"
 import { TransactionTableRow } from "./transaction-row"
 
 /**
- * The page's headline answer, rendered beneath the title: what came in, what
- * went out, and where that leaves you. Income and expense sums only —
- * transfers and adjustments count in neither. Figures come from the database
- * aggregate, so they describe the whole filtered set even when the table below
- * is showing one page of it.
+ * The ledger reads as days, not as one wall of rows: each day gets a quiet
+ * divider carrying the date (so the rows don't repeat it) and the day's own
+ * in-minus-out, transfers and syncs counting in neither.
  */
-export function TransactionTotals({ totals }: { totals: Totals }) {
-  const incomeTotal = totals.income
-  const expenseTotal = totals.expense
-  const net = incomeTotal - expenseTotal
-
-  return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 tabular-nums">
-      <span className="text-muted-foreground">
-        In{" "}
-        <span className="font-medium text-emerald-600 dark:text-emerald-400">
-          {`+${formatPenceShort(incomeTotal)}`}
-        </span>
-      </span>
-      <span className="text-muted-foreground">
-        Out{" "}
-        <span className="font-medium text-foreground">
-          {`−${formatPenceShort(expenseTotal)}`}
-        </span>
-      </span>
-      <span
-        className={cn(
-          "font-medium",
-          net < 0
-            ? "text-destructive"
-            : "text-emerald-600 dark:text-emerald-400"
-        )}
-      >
-        {`Net ${net < 0 ? "−" : "+"}${formatPenceShort(Math.abs(net))}`}
-      </span>
-    </div>
-  )
+type DayGroup = {
+  date: string
+  rows: TransactionRow[]
+  /** Pence; income minus expense across the day's rows */
+  net: number
+  /** Whether any row is income or expense — a transfers-only day has no net */
+  hasFlow: boolean
 }
 
-/** The ledger: one card, table edge to edge, only the rows scrolling. */
+function groupByDay(rows: TransactionRow[]): DayGroup[] {
+  const groups: DayGroup[] = []
+  for (const row of rows) {
+    let group = groups[groups.length - 1]
+    if (!group || group.date !== row.occurredOn) {
+      group = { date: row.occurredOn, rows: [], net: 0, hasFlow: false }
+      groups.push(group)
+    }
+    group.rows.push(row)
+    if (row.kind === "income") {
+      group.net += row.amount
+      group.hasFlow = true
+    } else if (row.kind === "expense") {
+      group.net -= row.amount
+      group.hasFlow = true
+    }
+  }
+  return groups
+}
+
+/** The ledger: one card, day-grouped rows, only the rows scrolling. */
 export function TransactionsCard({
   spaceId,
   options,
@@ -90,7 +88,7 @@ export function TransactionsCard({
   totals: Totals
   /** Whether any non-default filter is active (changes the empty-state copy) */
   filtered: boolean
-  /** yyyy-mm-dd resolved server-side, for the rows' date cells */
+  /** yyyy-mm-dd resolved server-side, for the day dividers */
   today: string
 }) {
   if (rows.length === 0) {
@@ -116,6 +114,11 @@ export function TransactionsCard({
     )
   }
 
+  const truncated = rows.length < totals.rowCount
+  // A day cut in half at the page boundary would show a partial sum with no
+  // signal, so a truncated page keeps its dividers to the dates alone.
+  const showDayNets = !truncated
+
   return (
     <TableCard className="min-h-0 flex-1">
       <TableScroll>
@@ -130,11 +133,6 @@ export function TransactionsCard({
               >
                 Category
               </TableHead>
-              <TableHead
-                className={cn(TABLE_PINNED_HEAD, "hidden sm:table-cell")}
-              >
-                Date
-              </TableHead>
               <TableHead className={cn(TABLE_PINNED_HEAD, "pr-2 text-right")}>
                 Amount
               </TableHead>
@@ -144,65 +142,98 @@ export function TransactionsCard({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((row) => (
-              <TransactionTableRow
-                key={row.id}
+            {groupByDay(rows).map((group) => (
+              <DayRows
+                key={group.date}
+                group={group}
+                today={today}
+                showNet={showDayNets}
                 spaceId={spaceId}
                 options={options}
-                transaction={row}
-                today={today}
               />
             ))}
           </TableBody>
-          <TotalsFooter shown={rows.length} totals={totals} />
+          {truncated && (
+            <TableFooter className="border-t-0 bg-transparent font-normal">
+              <TableRow className="hover:bg-transparent">
+                <TableCell
+                  colSpan={4}
+                  className={cn(TABLE_FOOT, "py-2 pl-3 text-muted-foreground")}
+                >
+                  {`Showing ${rows.length} of ${totals.rowCount} transactions. Narrow the filters to see the rest.`}
+                </TableCell>
+              </TableRow>
+            </TableFooter>
+          )}
         </Table>
       </TableScroll>
     </TableCard>
   )
 }
 
-/**
- * Pinned to the bottom of the scroll region: exact pence, always in view.
- * Says plainly when the rows above are a page rather than everything — the
- * totals stay correct either way, so silence here would read as "this is all
- * of it".
- */
-function TotalsFooter({ shown, totals }: { shown: number; totals: Totals }) {
-  const truncated = shown < totals.rowCount
-
+function DayRows({
+  group,
+  today,
+  showNet,
+  spaceId,
+  options,
+}: {
+  group: DayGroup
+  today: string
+  showNet: boolean
+  spaceId: string
+  options: TransactionOptions
+}) {
   return (
-    <TableFooter className="border-t-0 bg-transparent font-normal">
-      <TableRow className="hover:bg-transparent">
-        <TableCell
-          colSpan={3}
-          className={cn(TABLE_FOOT, "py-2 pl-3 whitespace-nowrap")}
-        >
-          <span className="flex items-center gap-2 text-muted-foreground">
-            {truncated
-              ? `Showing ${shown} of ${totals.rowCount} transactions. Narrow the filters to see the rest.`
-              : `${totals.rowCount} ${totals.rowCount === 1 ? "transaction" : "transactions"}`}
-            {totals.transferCount > 0 && (
-              <DataChip color="#0ea5e9">
-                {`${totals.transferCount} ${totals.transferCount === 1 ? "transfer" : "transfers"}`}
-              </DataChip>
+    <>
+      <TableRow className="border-b-0 hover:bg-transparent">
+        <TableCell colSpan={4} className="bg-muted/40 px-3 py-1.5">
+          <span className="flex items-baseline justify-between gap-3 text-[12px] font-medium text-muted-foreground">
+            {dividerLabel(group.date, today)}
+            {showNet && group.hasFlow && group.net !== 0 && (
+              <span
+                className={cn(
+                  "font-normal tabular-nums",
+                  group.net > 0 && "text-emerald-600 dark:text-emerald-400"
+                )}
+              >
+                {group.net > 0
+                  ? `+${formatPenceShort(group.net)}`
+                  : `−${formatPenceShort(-group.net)}`}
+              </span>
             )}
           </span>
         </TableCell>
-        <TableCell
-          className={cn(
-            TABLE_FOOT,
-            "py-2 pr-2 text-right whitespace-nowrap tabular-nums"
-          )}
-        >
-          <span className="inline-flex items-baseline gap-3">
-            <span className="text-emerald-600 dark:text-emerald-400">
-              {`+${formatPence(totals.income)}`}
-            </span>
-            <span>{`−${formatPence(totals.expense)}`}</span>
-          </span>
-        </TableCell>
-        <TableCell className={cn(TABLE_FOOT, "w-10")} />
       </TableRow>
-    </TableFooter>
+      {group.rows.map((row) => (
+        <TransactionTableRow
+          key={row.id}
+          spaceId={spaceId}
+          options={options}
+          transaction={row}
+        />
+      ))}
+    </>
   )
+}
+
+/**
+ * Today and yesterday read as themselves before the calendar date; other
+ * years spell the year, where a bare "Friday 12th December" would read as
+ * upcoming.
+ */
+function dividerLabel(date: string, today: string): string {
+  if (date === today) return `Today, ${formatWeekdayDate(date)}`
+  if (date === dayBefore(today)) return `Yesterday, ${formatWeekdayDate(date)}`
+  return date.slice(0, 4) === today.slice(0, 4)
+    ? formatWeekdayDate(date)
+    : formatWeekdayFullDate(date)
+}
+
+/** "2026-08-10" → "2026-08-09", from local parts like every other key. */
+function dayBefore(key: string): string {
+  const date = parseDay(key)
+  date.setDate(date.getDate() - 1)
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }

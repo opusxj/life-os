@@ -111,6 +111,14 @@ export function formatWeekdayDate(date: string | Date): string {
   return `${WEEKDAY_LONG.format(value)} ${ordinal(value.getDate())} ${MONTH_LONG.format(value)}`
 }
 
+/** "2025-12-12" → "Friday 12th December 2025". Weekday prose outside the
+ *  current year, where a bare "Friday 12th December" would read as upcoming. */
+export function formatWeekdayFullDate(date: string | Date): string {
+  const value = resolve(date)
+  if (!value) return "—"
+  return `${WEEKDAY_LONG.format(value)} ${ordinal(value.getDate())} ${MONTH_LONG.format(value)} ${value.getFullYear()}`
+}
+
 /** "2026-08-02" → "Sun 2nd Aug". Dense surfaces only. */
 export function formatWeekdayDateShort(date: string | Date): string {
   const value = resolve(date)

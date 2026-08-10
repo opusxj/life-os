@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { SlidersHorizontal } from "lucide-react"
+import { ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -36,9 +36,114 @@ const KIND_TABS = [
 ] as const
 
 /**
- * Filters live inline with the page title: the kinds people switch between
- * constantly as tabs, everything else folded into a popover that shows how
- * many are on.
+ * Filter state → the URL it lives at. Default month stays out of the query,
+ * all-time is the explicit `month=all`; shared by every control that writes
+ * filters so they can never disagree on the encoding.
+ */
+function transactionsUrl(
+  merged: TransactionFilters,
+  defaultMonth: string
+): string {
+  const params = new URLSearchParams()
+  if (merged.account) params.set("account", merged.account)
+  if (merged.card) params.set("card", merged.card)
+  if (merged.category) params.set("category", merged.category)
+  if (merged.kind) params.set("kind", merged.kind)
+  if (merged.month === undefined) params.set("month", "all")
+  else if (merged.month !== defaultMonth) params.set("month", merged.month)
+  const query = params.toString()
+  return query ? `/apex/transactions?${query}` : "/apex/transactions"
+}
+
+/**
+ * The ledger's primary scope, promoted out of the filter popover: arrows walk
+ * a month at a time, the label is a select for far jumps and all time. Bounded
+ * by the months transactions actually span, so the far end of an arrow is the
+ * edge of the data rather than a warning.
+ */
+export function MonthStepper({
+  options,
+  filters,
+  defaultMonth,
+}: {
+  options: TransactionOptions
+  filters: TransactionFilters
+  defaultMonth: string
+}) {
+  const router = useRouter()
+
+  function apply(month: string | undefined) {
+    router.replace(
+      transactionsUrl({ ...filters, month }, defaultMonth),
+      { scroll: false }
+    )
+  }
+
+  // A hand-edited URL can name a month outside the data's span; re-sorting
+  // after injection keeps the arrows stepping in calendar order regardless.
+  const months = React.useMemo(() => {
+    if (!filters.month || options.months.includes(filters.month)) {
+      return options.months
+    }
+    return [...new Set([filters.month, ...options.months])].sort().reverse()
+  }, [filters.month, options.months])
+
+  const index = filters.month ? months.indexOf(filters.month) : -1
+  const previous = index >= 0 ? months[index + 1] : undefined
+  const next = index > 0 ? months[index - 1] : undefined
+
+  const monthItems = {
+    ...Object.fromEntries(months.map((month) => [month, formatMonth(month)])),
+    all: "All time",
+  }
+
+  return (
+    <div className="flex items-center gap-0.5">
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        aria-label="Previous month"
+        disabled={!previous}
+        onClick={() => previous && apply(previous)}
+      >
+        <ChevronLeft />
+      </Button>
+      <Select
+        items={monthItems}
+        value={filters.month ?? "all"}
+        onValueChange={(value) =>
+          apply(value === "all" ? undefined : (value as string))
+        }
+      >
+        <SelectTrigger size="sm" aria-label="Month" className="font-medium">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {months.map((month) => (
+            <SelectItem key={month} value={month}>
+              {formatMonth(month)}
+            </SelectItem>
+          ))}
+          <SelectItem value="all">All time</SelectItem>
+        </SelectContent>
+      </Select>
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        aria-label="Next month"
+        disabled={!next}
+        onClick={() => next && apply(next)}
+      >
+        <ChevronRight />
+      </Button>
+    </div>
+  )
+}
+
+/**
+ * Kind tabs plus the refinements popover. The kinds people switch between
+ * constantly stay one tap; account, card and category fold away with a badge
+ * counting how many are on. The month lives in `MonthStepper`, not here.
  */
 export function TransactionFilterBar({
   options,
@@ -51,36 +156,18 @@ export function TransactionFilterBar({
 }) {
   const router = useRouter()
 
-  // Every change rebuilds the full query string from the merged filter state;
-  // default month is kept out of the URL, all-time is the explicit `month=all`.
   function apply(next: Partial<TransactionFilters>) {
-    const merged = { ...filters, ...next }
-    const params = new URLSearchParams()
-    if (merged.account) params.set("account", merged.account)
-    if (merged.card) params.set("card", merged.card)
-    if (merged.category) params.set("category", merged.category)
-    if (merged.kind) params.set("kind", merged.kind)
-    if (merged.month === undefined) params.set("month", "all")
-    else if (merged.month !== defaultMonth) params.set("month", merged.month)
-    const query = params.toString()
     router.replace(
-      query ? `/apex/transactions?${query}` : "/apex/transactions",
+      transactionsUrl({ ...filters, ...next }, defaultMonth),
       { scroll: false }
     )
   }
 
-  const months =
-    filters.month && !options.months.includes(filters.month)
-      ? [filters.month, ...options.months]
-      : options.months
-
-  // The kind tabs carry themselves; the badge counts only what's hidden.
-  const refinedCount = [
-    filters.account,
-    filters.card,
-    filters.category,
-    filters.month !== defaultMonth ? "month" : undefined,
-  ].filter(Boolean).length
+  // The kind tabs carry themselves and the stepper carries the month; the
+  // badge counts only what's folded away.
+  const refinedCount = [filters.account, filters.card, filters.category].filter(
+    Boolean
+  ).length
 
   const expenseCategories = options.categories.filter(
     (category) => category.kind === "expense"
@@ -89,10 +176,6 @@ export function TransactionFilterBar({
     (category) => category.kind === "income"
   )
 
-  const monthItems = {
-    ...Object.fromEntries(months.map((month) => [month, formatMonth(month)])),
-    all: "All time",
-  }
   const accountItems = {
     all: "All accounts",
     ...Object.fromEntries(
@@ -158,30 +241,6 @@ export function TransactionFilterBar({
           )}
         </PopoverTrigger>
         <PopoverContent align="end" className="w-64">
-          <FilterField label="Month">
-            <Select
-              items={monthItems}
-              value={filters.month ?? "all"}
-              onValueChange={(value) =>
-                apply({
-                  month: value === "all" ? undefined : (value as string),
-                })
-              }
-            >
-              <SelectTrigger size="sm" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {months.map((month) => (
-                  <SelectItem key={month} value={month}>
-                    {formatMonth(month)}
-                  </SelectItem>
-                ))}
-                <SelectItem value="all">All time</SelectItem>
-              </SelectContent>
-            </Select>
-          </FilterField>
-
           <FilterField label="Account">
             <Select
               items={accountItems}
@@ -277,7 +336,6 @@ export function TransactionFilterBar({
                   account: undefined,
                   card: undefined,
                   category: undefined,
-                  month: defaultMonth,
                 })
               }
             >
